@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Calculador de Andaimes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 15px;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 100%;
+        }
+
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+
+        .version {
+            color: #27ae60;
+            font-weight: 700;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .upload-zone {
+            background: #e8f5e9;
+            padding: 30px 20px;
+            border-radius: 8px;
+            border: 3px dashed #4caf50;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .upload-zone:active {
+            background: #c8e6c9;
+        }
+
+        .upload-zone h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .canvas-wrapper {
+            border: 3px solid #2c3e50;
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            max-height: 500px;
+            background: white;
+        }
+
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+
+        .stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        input[type="checkbox"] {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            padding: 16px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            background: #2980b9;
+            transform: scale(0.98);
+        }
+
+        button.success {
+            background: #27ae60;
+        }
+
+        button.success:active {
+            background: #229954;
+        }
+
+        button.danger {
+            background: #e74c3c;
+        }
+
+        button.danger:active {
+            background: #c0392b;
+        }
+
+        .btn-small {
+            padding: 10px 20px;
+            width: auto;
+            font-size: 14px;
+        }
+
+        .resumo {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .resumo-item {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+
+        .resumo-item:last-child {
+            border-bottom: none;
+        }
+
+        .success-msg {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .error-msg {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 400px) {
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Calculador de Andaimes</h1>
+        <div class="version">v1.0 - Mobile Optimized</div>
+
+        <div class="info-box">
+            <strong>📋 Instruções:</strong>
+            <ol style="padding-left: 20px; margin-top: 10px;">
+                <li>Carregue a planta baixa (alicerce)</li>
+                <li>Toque nos cantos com terreno disponível</li>
+                <li>Informe terreno e muro para cada ponto</li>
+                <li>Toque "Concluir" quando terminar</li>
+            </ol>
+        </div>
+
+        <!-- Upload -->
+        <div class="upload-zone" id="uploadZone">
+            <h3>📄 Carregar Planta</h3>
+            <p style="margin-top: 10px; color: #666; font-size: 14px;">Toque para selecionar</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <!-- Mensagens -->
+        <div id="messages"></div>
+
+        <!-- Canvas -->
+        <div id="canvasArea" class="hidden">
+            <div class="stats">
+                <strong style="font-size: 14px;">Pontos: <span id="pointCount">0</span></strong>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-small danger" onclick="desfazerPonto()" id="btnUndo" style="display: none;">
+                        ↶ Desfazer
+                    </button>
+                    <button class="btn-small success" onclick="concluir()" id="btnFinish" style="display: none;">
+                        ✓ Concluir
+                    </button>
+                </div>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Resumo -->
+        <div id="resumoArea" class="hidden">
+            <h3 style="margin-bottom: 15px;">📊 Resumo dos Pontos</h3>
+            <div class="resumo" id="resumoContent"></div>
+            
+            <div class="action-buttons">
+                <button onclick="recomecar()">🔄 Recomeçar</button>
+                <button class="success" onclick="proximoPasso()">Próximo →</button>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <div class="modal-title" id="modalTitle">Ponto X</div>
+                <div>
+                    <label>Terreno Disponível (mm):</label>
+                    <input type="number" id="inputTerr" placeholder="Ex: 900" inputmode="numeric">
+                </div>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="inputMuro">
+                    <span>Pode usar muro (120mm)</span>
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="danger" onclick="cancelarPonto()">✕ Cancelar</button>
+                    <button class="success" onclick="salvar()">✓ Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let img = null;
+        let pontos = [];
+        let indiceAtual = -1;
+        let finalizado = false;
+
+        // Upload
+        document.getElementById('uploadZone').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            mostrarMensagem('📂 Carregando imagem...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                img = new Image();
+                img.onload = () => {
+                    mostrarMensagem('✅ Imagem carregada! Toque nos pontos.', 'success');
+                    iniciarCanvas();
+                };
+                img.onerror = () => {
+                    mostrarMensagem('❌ Erro ao carregar imagem. Tente outra.', 'error');
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function mostrarMensagem(texto, tipo) {
+            const classe = tipo === 'success' ? 'success-msg' : tipo === 'error' ? 'error-msg' : 'info-box';
+            document.getElementById('messages').innerHTML = `<div class="${classe}">${texto}</div>`;
+        }
+
+        function iniciarCanvas() {
+            document.getElementById('canvasArea').classList.remove('hidden');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Configurar tamanho
+            const maxW = Math.min(800, window.innerWidth - 60);
+            const scale = maxW / img.width;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+
+            // Desenhar imagem
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Touch events para mobile
+            canvas.addEventListener('touchstart', handleTouch, {passive: false});
+            canvas.addEventListener('click', handleClick);
+        }
+
+        function handleTouch(e) {
+            e.preventDefault();
+            if (finalizado) return;
+            
+            const touch = e.touches[0];
+            const rect = e.target.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            adicionarPonto(x, y);
+        }
+
+        function handleClick(e) {
+            if (finalizado) return;
+            
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            adicionarPonto(x, y);
+        }
+
+        function adicionarPonto(x, y) {
+            pontos.push({x, y, terreno: null, muro: false});
+            indiceAtual = pontos.length - 1;
+            redesenhar();
+            abrirModal();
+
+            if (pontos.length >= 4) {
+                document.getElementById('btnFinish').style.display = 'block';
+            }
+            if (pontos.length >= 1) {
+                document.getElementById('btnUndo').style.display = 'block';
+            }
+        }
+
+        function redesenhar() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Limpar
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Desenhar pontos
+            pontos.forEach((p, i) => {
+                // Círculo
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Borda
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+
+                // Número
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(i + 1, p.x, p.y);
+
+                // Dados
+                if (p.terreno) {
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.fillText(p.terreno + 'mm', p.x, p.y - 30);
+                }
+            });
+
+            document.getElementById('pointCount').textContent = pontos.length;
+        }
+
+        function abrirModal() {
+            document.getElementById('modalTitle').textContent = `Ponto ${indiceAtual + 1}`;
+            document.getElementById('inputTerr').value = '';
+            document.getElementById('inputMuro').checked = false;
+            document.getElementById('modal').classList.add('show');
+            
+            setTimeout(() => {
+                document.getElementById('inputTerr').focus();
+            }, 300);
+        }
+
+        function salvar() {
+            const terreno = parseInt(document.getElementById('inputTerr').value);
+            
+            if (!terreno || terreno <= 0) {
+                alert('⚠️ Digite um valor válido!');
+                return;
+            }
+
+            pontos[indiceAtual].terreno = terreno;
+            pontos[indiceAtual].muro = document.getElementById('inputMuro').checked;
+
+            fecharModal();
+            redesenhar();
+        }
+
+        function cancelarPonto() {
+            if (pontos[indiceAtual] && !pontos[indiceAtual].terreno) {
+                pontos.pop();
+                redesenhar();
+            }
+            fecharModal();
+        }
+
+        function fecharModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        function desfazerPonto() {
+            if (pontos.length === 0) return;
+            pontos.pop();
+            redesenhar();
+            
+            if (pontos.length < 4) {
+                document.getElementById('btnFinish').style.display = 'none';
+            }
+            if (pontos.length === 0) {
+                document.getElementById('btnUndo').style.display = 'none';
+            }
+        }
+
+        function concluir() {
+            const todosPreenchidos = pontos.every(p => p.terreno !== null);
+            
+            if (!todosPreenchidos) {
+                alert('⚠️ Preencha todos os pontos!');
+                return;
+            }
+
+            if (pontos.length < 4) {
+                alert('⚠️ Marque pelo menos 4 pontos!');
+                return;
+            }
+
+            finalizado = true;
+            document.getElementById('canvas').style.cursor = 'default';
+            document.getElementById('btnFinish').style.display = 'none';
+            document.getElementById('btnUndo').style.display = 'none';
+
+            mostrarResumo();
+        }
+
+        function mostrarResumo() {
+            let html = '';
+            pontos.forEach((p, i) => {
+                html += `
+                    <div class="resumo-item">
+                        <strong>Ponto ${i + 1}</strong>
+                        <span>${p.terreno}mm ${p.muro ? '+ Muro' : ''}</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('resumoContent').innerHTML = html;
+            document.getElementById('resumoArea').classList.remove('hidden');
+            mostrarMensagem('✅ Marcação concluída!', 'success');
+        }
+
+        function recomecar() {
+            if (confirm('🔄 Recomeçar do zero?')) {
+                location.reload();
+            }
+        }
+
+        function proximoPasso() {
+            alert('🚧 Próximas etapas em desenvolvimento!\n\nEm breve:\n• Upload das elevações\n• Calibração 1/100\n• Desenho das linhas vermelhas');
+        }
+
+        // Enter para salvar
+        document.getElementById('inputTerr').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                salvar();
+            }
+        });
+
+        // Fechar modal tocando fora
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') {
+                cancelarPonto();
+            }
+        });
+    </script>
+</body>
+</html>
