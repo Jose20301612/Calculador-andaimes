@@ -434,7 +434,7 @@
             <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
                 <h3>Carregar Planta Baixa</h3>
                 <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar foto</p>
-                <input type="file" id="fileInput" accept="image/*" capture="environment">
+                <input type="file" id="fileInput" accept="image/*">
             </div>
 
             <div id="msgArea"></div>
@@ -668,17 +668,24 @@
 
             showMsg('Carregando imagem...', 'info');
 
+            // Verificar tamanho (max 20MB)
+            if (file.size > 20 * 1024 * 1024) {
+                showMsg('ERRO: Foto muito grande! Use uma foto menor.', 'error');
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = (evt) => {
+                const src = evt.target.result;
                 img = new Image();
                 img.onload = () => {
-                    showMsg('Imagem carregada com sucesso!', 'success');
-                    setTimeout(irParaPasso2, 500);
+                    showMsg('Imagem carregada! Agora marque a porta.', 'success');
+                    setTimeout(irParaPasso2, 600);
                 };
                 img.onerror = () => {
-                    showMsg('ERRO: Nao foi possivel carregar a imagem. Tente outra foto.', 'error');
+                    showMsg('ERRO: Nao foi possivel carregar. Tente outra foto.', 'error');
                 };
-                img.src = evt.target.result;
+                img.src = src;
             };
             reader.onerror = () => {
                 showMsg('ERRO: Falha ao ler o arquivo. Tente novamente.', 'error');
