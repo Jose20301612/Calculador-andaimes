@@ -662,9 +662,11 @@
         let beiraisCompletos = false;
 
         // Upload
-        document.getElementById('fileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+        <label for="fileInput" class="upload-zone">
+   <h3>Carregar Planta Baixa</h3>
+   <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque aqui para escolher foto</p>
+</label>
+<input type="file" id="fileInput" accept="image/*" style="display:none;">
 
             showMsg('Carregando imagem...', 'info');
 
@@ -1138,3 +1140,4 @@
     </script>
 </body>
 </html>
+
