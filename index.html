@@ -373,11 +373,6 @@
             color: #155724;
         }
 
-        .msg-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
         .legend {
             background: #f8f9fa;
             padding: 15px;
@@ -414,7 +409,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>[ANDAIME] Calculador de Andaimes</h1>
+        <h1>🏗️ Calculador de Andaimes</h1>
         <div class="version">v3.0 - Interface Visual</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
@@ -422,20 +417,19 @@
         <!-- Passo 1: Upload -->
         <div id="step1">
             <div class="info">
-                <strong>[INFO] Novo Sistema Visual:</strong><br>
+                <strong>📋 Novo Sistema Visual:</strong><br>
                 1. Carregue a planta e marque a porta<br>
                 2. Clique nos 8 cantos da casa<br>
                 3. Digite a medida de cada canto<br>
                 4. Marque muros se houver<br>
-                5. Calcule!<br><br>
-                <strong style="color: #e74c3c;">[!] IMPORTANTE:</strong> Se baixou o arquivo, pode não funcionar devido a restrições de segurança do navegador. Para usar corretamente, <strong>hospede no GitHub Pages</strong>!
+                5. Calcule!
             </div>
 
-            <label for="fileInput" class="upload-zone" style="display:block; cursor:pointer;">
-   <h3>Carregar Planta Baixa</h3>
-   <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar</p>
-</label>
-            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="carregarFoto(event)">
+            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+                <h3>📄 Carregar Planta Baixa</h3>
+                <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar</p>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
 
             <div id="msgArea"></div>
         </div>
@@ -443,7 +437,7 @@
         <!-- Passo 2: Marcar Porta -->
         <div id="step2" class="hidden">
             <div class="reference">
-                <strong>[PONTO] Marque a PORTA da casa</strong><br>
+                <strong>📍 Marque a PORTA da casa</strong><br>
                 Isso define: Porta = Sul (南 Minami)
             </div>
 
@@ -455,8 +449,8 @@
         <!-- Passo 3: Interface Visual -->
         <div id="step3" class="hidden">
             <div class="reference">
-                <strong>[CASA] Clique nos 8 cantos para definir terrenos</strong><br>
-                Azul [O] = Vazio | Verde [V] = Preenchido
+                <strong>🏠 Clique nos 8 cantos para definir terrenos</strong><br>
+                Azul 🔵 = Vazio | Verde 🟢 = Preenchido
             </div>
 
             <div class="house-visual">
@@ -507,7 +501,7 @@
                         <div class="corner-value v8" id="value8"></div>
 
                         <!-- Porta -->
-                        <div class="door-marker">[PORTA]</div>
+                        <div class="door-marker">🚪</div>
                     </div>
                 </div>
 
@@ -528,51 +522,38 @@
                 </div>
             </div>
 
-            <!-- Informação sobre medidas -->
-            <div id="infoMedidas" class="hidden" style="background:#e3f2fd; padding:15px; border-radius:8px; margin:20px 0; border-left:4px solid #2196f3;">
-                <strong>[MEDIDA] Nota:</strong> As medidas da casa são fixas nesta versão (Comp: 9100mm, Larg: 8190mm, Kiso: 150mm).
-                <br>Em breve: inputs customizáveis!
-            </div>
-
-            <!-- NOVO: Interface de Beirais -->
-            <div id="beiraisSection" class="hidden" style="margin-top: 30px;">
-                <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
-                    <strong>[CASA] Saída do Telhado (Beirais)</strong><br>
-                    Clique em cada lado para informar quanto o telhado sai.<br>
-                    Se não sai, digite <strong>0</strong> ou deixe em branco.
-                </div>
-
-                <div class="house-visual">
-                    <div class="house-container">
-                        <div class="house-diagram" style="background: #fef5e7; border-color: #f39c12;">
-                            <!-- Labels -->
-                            <div class="side-label label-norte" style="cursor: pointer; background: #3498db;" onclick="abrirModalBeiral('norte')">
-                                北 NORTE<br><small id="beiralNorteLabel">Clique aqui</small>
-                            </div>
-                            <div class="side-label label-sul" style="cursor: pointer; background: #e74c3c;" onclick="abrirModalBeiral('sul')">
-                                南 SUL<br><small id="beiralSulLabel">Clique aqui</small>
-                            </div>
-                            <div class="side-label label-leste" style="cursor: pointer; background: #f39c12;" onclick="abrirModalBeiral('leste')">
-                                東 LESTE<br><small id="beiralLesteLabel">Clique aqui</small>
-                            </div>
-                            <div class="side-label label-oeste" style="cursor: pointer; background: #9b59b6;" onclick="abrirModalBeiral('oeste')">
-                                西 OESTE<br><small id="beiralOesteLabel">Clique aqui</small>
-                            </div>
-
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 60px; opacity: 0.3;">
-                                [CASA]
-                            </div>
+            <!-- Campos Simples de Beirais e Varanda -->
+            <div id="camposExtras" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-bottom: 15px; color: #2c3e50;">📏 Beirais e Varanda</h3>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="margin-bottom: 10px; font-size: 14px;">Beirais (quanto o telhado sai em mm):</h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                        <div>
+                            <label>Sul (南):</label>
+                            <input type="number" id="beiralSul" placeholder="Ex: 300" value="0">
+                        </div>
+                        <div>
+                            <label>Leste (東):</label>
+                            <input type="number" id="beiralLeste" placeholder="Ex: 250" value="0">
+                        </div>
+                        <div>
+                            <label>Norte (北):</label>
+                            <input type="number" id="beiralNorte" placeholder="Ex: 300" value="0">
+                        </div>
+                        <div>
+                            <label>Oeste (西):</label>
+                            <input type="number" id="beiralOeste" placeholder="Ex: 250" value="0">
                         </div>
                     </div>
                 </div>
 
-                <!-- Varanda -->
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 20px;">
-                    <h3 style="margin-bottom: 15px;">[PREDIO] Tem Varanda no 2º Andar?</h3>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                <div style="background: white; padding: 15px; border-radius: 8px;">
+                    <h4 style="margin-bottom: 10px; font-size: 14px;">Varanda (2º andar):</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                         <div>
-                            <label>Varanda em qual lado?</label>
-                            <select id="varandaLado" onchange="toggleVarandaMedida()">
+                            <label>Lado:</label>
+                            <select id="varandaLado">
                                 <option value="">Sem varanda</option>
                                 <option value="sul">Sul (南)</option>
                                 <option value="leste">Leste (東)</option>
@@ -580,16 +561,16 @@
                                 <option value="oeste">Oeste (西)</option>
                             </select>
                         </div>
-                        <div id="varandaMedidaDiv" style="display: none;">
-                            <label>Quanto sai a varanda? (mm)</label>
-                            <input type="number" id="varandaMedida" placeholder="Ex: 900">
+                        <div>
+                            <label>Saída (mm):</label>
+                            <input type="number" id="varandaSaida" placeholder="910" value="910">
                         </div>
                     </div>
                 </div>
             </div>
 
             <button class="btn-success" onclick="calcularAndaimes()" id="btnFinalizar" style="display: none;">
-                OK CALCULAR ANDAIMES
+                ✓ CALCULAR ANDAIMES
             </button>
         </div>
 
@@ -619,28 +600,8 @@
                 </div>
 
                 <div class="btn-grid">
-                    <button class="btn-danger" onclick="fecharModal()">X Cancelar</button>
-                    <button class="btn-success" onclick="salvarPonto()">OK Salvar</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal de Beiral -->
-        <div class="modal" id="modalBeiral">
-            <div class="modal-content">
-                <div class="modal-title" id="modalBeiralTitle">Beiral - Lado X</div>
-                
-                <div>
-                    <label>Quanto o telhado sai neste lado? (mm)</label>
-                    <input type="number" id="inputBeiral" placeholder="Digite 0 se não sai" inputmode="numeric">
-                    <p style="font-size: 13px; color: #666; margin-top: 8px;">
-                        [DICA] Se não tem beiral, digite <strong>0</strong>
-                    </p>
-                </div>
-
-                <div class="btn-grid">
-                    <button class="btn-danger" onclick="fecharModalBeiral()">X Cancelar</button>
-                    <button class="btn-success" onclick="salvarBeiral()">OK Salvar</button>
+                    <button class="btn-danger" onclick="fecharModal()">✕ Cancelar</button>
+                    <button class="btn-success" onclick="salvarPonto()">✓ Salvar</button>
                 </div>
             </div>
         </div>
@@ -651,75 +612,30 @@
         let pontoAtual = 0;
         let dados = {
             pontos: {},
-            muros: {},
-            beirais: {
-                sul: null,
-                leste: null,
-                norte: null,
-                oeste: null
-            }
+            muros: {}
         };
-        let beiraisCompletos = false;
 
         // Upload
-        function carregarFoto(e) {
-   alert('Funcao chamada!'); // teste
-   const file = e.target.files[0];
-   if (!file) {
-       alert('Nenhum arquivo!');
-       return;
-   }
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-   alert('Arquivo: ' + file.name);
-   showMsg('Carregando imagem...', 'info');
-
-   const reader = new FileReader();
-   reader.onload = (evt) => {
-       img = new Image();
-       img.onload = () => {
-           showMsg('Imagem carregada! Agora marque a porta.', 'success');
-           setTimeout(irParaPasso2, 600);
-       };
-       img.onerror = () => {
-           alert('ERRO: Imagem nao carregou!');
-       };
-       img.src = evt.target.result;
-   };
-   reader.onerror = () => {
-       alert('ERRO: FileReader falhou!');
-   };
-   reader.readAsDataURL(file);
-}
-
-            showMsg('Carregando imagem...', 'info');
-
-            // Verificar tamanho (max 20MB)
-            if (file.size > 20 * 1024 * 1024) {
-                showMsg('ERRO: Foto muito grande! Use uma foto menor.', 'error');
-                return;
-            }
+            showMsg('📂 Carregando...', 'info');
 
             const reader = new FileReader();
             reader.onload = (evt) => {
-                const src = evt.target.result;
                 img = new Image();
                 img.onload = () => {
-                    showMsg('Imagem carregada! Agora marque a porta.', 'success');
-                    setTimeout(irParaPasso2, 600);
+                    showMsg('✅ Imagem carregada!', 'success');
+                    irParaPasso2();
                 };
-                img.onerror = () => {
-                    showMsg('ERRO: Nao foi possivel carregar. Tente outra foto.', 'error');
-                };
-                img.src = src;
-            };
-            reader.onerror = () => {
-                showMsg('ERRO: Falha ao ler o arquivo. Tente novamente.', 'error');
+                img.src = evt.target.result;
             };
             reader.readAsDataURL(file);
         });
 
         function showMsg(texto, tipo) {
-            const classe = tipo === 'success' ? 'msg-success' : tipo === 'error' ? 'msg-error' : 'info';
+            const classe = tipo === 'success' ? 'msg-success' : 'info';
             document.getElementById('msgArea').innerHTML = `<div class="msg ${classe}">${texto}</div>`;
         }
 
@@ -840,7 +756,7 @@
             const terreno = parseInt(document.getElementById('inputTerreno').value);
             
             if (!terreno || terreno <= 0) {
-                alert('[!] Digite um valor válido!');
+                alert('⚠️ Digite um valor válido!');
                 return;
             }
 
@@ -871,8 +787,8 @@
 
             // Verificar se todos os 8 pontos foram preenchidos
             if (Object.keys(dados.pontos).length === 8) {
-                document.getElementById('infoMedidas').classList.remove('hidden');
-                document.getElementById('beiraisSection').classList.remove('hidden');
+                document.getElementById('camposExtras').classList.remove('hidden');
+                document.getElementById('btnFinalizar').style.display = 'block';
             }
         }
 
@@ -903,226 +819,123 @@
             });
         }
 
-        // FUNÇÕES DE BEIRAL
-        let ladoBeiralAtual = '';
-
-        function abrirModalBeiral(lado) {
-            ladoBeiralAtual = lado;
-            const nomes = {sul: '南 Sul', leste: '東 Leste', norte: '北 Norte', oeste: '西 Oeste'};
-            document.getElementById('modalBeiralTitle').textContent = 'Beiral - ' + nomes[lado];
-            document.getElementById('inputBeiral').value = dados.beirais[lado] !== null ? dados.beirais[lado] : '';
-            document.getElementById('modalBeiral').classList.add('show');
-            setTimeout(() => document.getElementById('inputBeiral').focus(), 300);
-        }
-
-        function salvarBeiral() {
-            const valor = document.getElementById('inputBeiral').value;
-            const beiral = valor === '' ? 0 : parseInt(valor);
-            
-            if (beiral < 0) {
-                alert('[!] Digite um valor válido (0 ou maior)!');
-                return;
-            }
-
-            dados.beirais[ladoBeiralAtual] = beiral;
-            
-            // Atualizar label
-            const labelId = 'beiral' + ladoBeiralAtual.charAt(0).toUpperCase() + ladoBeiralAtual.slice(1) + 'Label';
-            document.getElementById(labelId).textContent = beiral === 0 ? 'Sem beiral' : beiral + 'mm';
-            
-            fecharModalBeiral();
-            verificarBeiraisCompletos();
-        }
-
-        function fecharModalBeiral() {
-            document.getElementById('modalBeiral').classList.remove('show');
-        }
-
-        function verificarBeiraisCompletos() {
-            const completos = Object.values(dados.beirais).every(v => v !== null);
-            if (completos) {
-                beiraisCompletos = true;
-                document.getElementById('btnFinalizar').style.display = 'block';
-            }
-        }
-
-        function toggleVarandaMedida() {
-            const lado = document.getElementById('varandaLado').value;
-            const div = document.getElementById('varandaMedidaDiv');
-            if (lado) {
-                div.style.display = 'block';
-            } else {
-                div.style.display = 'none';
-            }
-        }
-
         function calcularAndaimes() {
-            console.log('[GO] Função calcularAndaimes chamada!');
-            console.log('[DADOS] Dados atuais:', dados);
+            console.log('Iniciando calculo...');
             
-            try {
-                // Verificar se tem todos os 8 pontos
-                if (Object.keys(dados.pontos).length !== 8) {
-                    alert('[!] Preencha todos os 8 pontos primeiro!');
-                    return;
+            // Pegar beirais
+            const beirais = {
+                sul: parseInt(document.getElementById('beiralSul').value) || 0,
+                leste: parseInt(document.getElementById('beiralLeste').value) || 0,
+                norte: parseInt(document.getElementById('beiralNorte').value) || 0,
+                oeste: parseInt(document.getElementById('beiralOeste').value) || 0
+            };
+            
+            // Pegar varanda
+            const varandaLado = document.getElementById('varandaLado').value;
+            const varandaSaida = parseInt(document.getElementById('varandaSaida').value) || 910;
+            
+            // Medidas fixas
+            const comp = 9100;
+            const larg = 8190;
+            const kiso = 150;
+            
+            // Função de cálculo
+            function calcSpan(medida, kiso, t1, t2, muro, beiral, temVaranda) {
+                let u1 = t1 - 70;
+                let u2 = t2 - 70;
+                if (muro) {
+                    u1 += muro;
+                    u2 += muro;
                 }
                 
-                console.log('[OK] Todos os 8 pontos preenchidos');
+                let total = medida + kiso + u1 + u2;
+                let n18 = Math.floor(total / 1800);
+                let sobra = total - (n18 * 1800);
                 
-                // Pegar medidas básicas
-                const comp = 9100; // Comprimento padrão
-                const larg = 8190; // Largura padrão
-                const kiso = 150;
-                
-                console.log('[MEDIDA] Medidas base:', {comp, larg, kiso});
-                
-                // Função auxiliar de cálculo
-                function calcSpan(medida, kiso, t1, t2, muro, beiral, temVaranda) {
-                    console.log('[NUM] calcSpan chamado:', {medida, kiso, t1, t2, muro, beiral, temVaranda});
-                    
-                    let u1 = t1 - 70;
-                    let u2 = t2 - 70;
-                    if (muro) {
-                        u1 += muro;
-                        u2 += muro;
-                    }
-                    
-                    let total = medida + kiso + u1 + u2;
-                    let n18 = Math.floor(total / 1800);
-                    let sobra = total - (n18 * 1800);
-                    
-                    console.log('[DADOS] Total:', total, 'Spans 1.8:', n18, 'Sobra:', sobra);
-                    
-                    // Ajustar
-                    const pad = [1800,1200,900,600,400,200];
-                    let aj1=0, aj2=0;
-                    if (!pad.includes(sobra)) {
-                        for(let i=10; i<=200; i+=10) {
-                            if(pad.includes(sobra-i)){
-                                aj1=Math.floor(i/2); aj2=i-aj1;
-                                sobra-=i; break;
-                            }
+                const pad = [1800,1200,900,600,400,200];
+                let aj1=0, aj2=0;
+                if (!pad.includes(sobra)) {
+                    for(let i=10; i<=200; i+=10) {
+                        if(pad.includes(sobra-i)){
+                            aj1=Math.floor(i/2); aj2=i-aj1;
+                            sobra-=i; break;
                         }
                     }
-                    
-                    let spans = [];
-                    for(let i=0; i<n18; i++) spans.push(1.8);
-                    if(sobra>=200) spans.push(sobra/1000);
-                    
-                    u1-=aj1; u2-=aj2;
-                    let esp = Math.max(u1, u2);
-                    
-                    // Determinar plataforma - LÓGICA CORRIGIDA
-                    let plat;
-                    
-                    // Verificar se precisa WW (beiral > 900mm OU tem varanda)
-                    if ((beiral > 900 || temVaranda) && esp >= 780) {
-                        plat = 'WW'; // Dupla W
-                    }
-                    // Sempre preferir W quando couber (>=780mm)
-                    else if (esp >= 780 && esp <= 930) {
-                        plat = 'W';
-                    }
-                    else if (esp > 930) {
-                        plat = 'W'; // Muito espaço, mas sem beiral grande = usa W mesmo
-                    }
-                    // S corrigido: 580-700mm
-                    else if (esp >= 580 && esp <= 700) {
-                        plat = 'S';
-                    }
-                    else if (esp >= 550 && esp < 580) {
-                        plat = 'Sb';
-                    }
-                    else if (esp >= 450 && esp < 550) {
-                        plat = 'M';
-                    }
-                    else if (esp >= 250 && esp < 450) {
-                        plat = 'Centa';
-                    }
-                    else if (esp < 250) {
-                        plat = '[!] INSUFICIENTE (' + esp + 'mm)';
-                    }
-                    
-                    console.log('[PLAT] Plataforma:', plat, '| Espaço:', esp, 'mm | Beiral:', beiral, 'mm | Varanda:', temVaranda);
-                    
-                    return {n18, spans, t1:u1, t2:u2, plat, tot:medida+kiso+u1+u2};
                 }
                 
-                // Calcular lados
-                // Verificar varanda
-                const varandaLado = document.getElementById('varandaLado').value;
-                const varandaMedida = varandaLado ? parseInt(document.getElementById('varandaMedida').value) || 0 : 0;
+                let spans = [];
+                for(let i=0; i<n18; i++) spans.push(1.8);
+                if(sobra>=200) spans.push(sobra/1000);
                 
-                console.log('[DIR] Calculando SUL...');
-                const sul = calcSpan(comp, kiso, dados.pontos[1].terreno, dados.pontos[2].terreno, dados.muros['sul'] || 0, dados.beirais.sul, varandaLado === 'sul');
+                u1-=aj1; u2-=aj2;
+                let esp = Math.max(u1, u2);
                 
-                console.log('[DIR] Calculando LESTE...');
-                const leste = calcSpan(larg, kiso, dados.pontos[3].terreno, dados.pontos[4].terreno, dados.muros['leste'] || 0, dados.beirais.leste, varandaLado === 'leste');
+                // Determinar plataforma
+                let plat;
+                if ((beiral > 900 || temVaranda) && esp >= 780) {
+                    plat = 'WW';
+                } else if (esp >= 780) {
+                    plat = 'W';
+                } else if (esp >= 580 && esp <= 700) {
+                    plat = 'S';
+                } else if (esp >= 550 && esp < 580) {
+                    plat = 'Sb';
+                } else if (esp >= 450 && esp < 550) {
+                    plat = 'M';
+                } else if (esp >= 250 && esp < 450) {
+                    plat = 'Centa';
+                } else {
+                    plat = 'ERRO';
+                }
                 
-                console.log('[DIR] Calculando NORTE...');
-                const norte = calcSpan(comp, kiso, dados.pontos[5].terreno, dados.pontos[6].terreno, dados.muros['norte'] || 0, dados.beirais.norte, varandaLado === 'norte');
-                
-                console.log('[DIR] Calculando OESTE...');
-                const oeste = calcSpan(larg, kiso, dados.pontos[7].terreno, dados.pontos[8].terreno, dados.muros['oeste'] || 0, dados.beirais.oeste, varandaLado === 'oeste');
-                
-                console.log('[OK] Cálculos completos:', {sul, leste, norte, oeste});
-                
-                // Mostrar
-                let html = '<div style="background:white; padding:25px; border-radius:12px; border:3px solid #27ae60; margin-top:30px;">';
-                html += '<h2 style="color:#27ae60; margin-bottom:20px;">[OK] Cálculos Concluídos!</h2>';
-                
-                const lados = [
-                    {nome:'SUL',cor:'#e74c3c',data:sul},
-                    {nome:'LESTE',cor:'#f39c12',data:leste},
-                    {nome:'NORTE',cor:'#3498db',data:norte},
-                    {nome:'OESTE',cor:'#9b59b6',data:oeste}
-                ];
-                
-                lados.forEach(l => {
-                    html += `<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin:15px 0; border-left:6px solid ${l.cor};">`;
-                    html += `<h3 style="color:${l.cor}; margin-bottom:15px;">[DIR] ${l.nome}</h3>`;
-                    html += '<div style="font-size:14px; line-height:2;">';
-                    html += `<div><strong>Spans 1.8m:</strong> ${l.data.n18}x</div>`;
-                    html += `<div><strong>Plataforma:</strong> <span style="background:#27ae60; color:white; padding:4px 12px; border-radius:12px; font-weight:700;">${l.data.plat}</span></div>`;
-                    html += `<div><strong>Terrenos:</strong> ${l.data.t1}mm | ${l.data.t2}mm</div>`;
-                    html += `<div><strong>Sequência:</strong> ${l.data.spans.map(s=>s.toFixed(1)+'m').join(' + ')}</div>`;
-                    html += `<div><strong>Total:</strong> ${l.data.tot}mm</div>`;
-                    html += '</div></div>';
-                
-                // Adicionar legenda
-                html += '<div style="background:#ecf0f1; padding:20px; border-radius:8px; margin-top:25px;">';
-                html += '<h3 style="color:#2c3e50; margin-bottom:15px;">[INFO] Legenda de Plataformas:</h3>';
-                html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:10px; font-size:13px;">';
-                html += '<div><strong>W:</strong> 780-930mm (plataforma 400mm, 2 colunas)</div>';
-                html += '<div><strong>WW:</strong> Dupla W (quando beiral > 900mm OU varanda)</div>';
-                html += '<div><strong>S:</strong> 580-700mm (plataforma 250mm, 2 colunas)</div>';
-                html += '<div><strong>Sb:</strong> 550-580mm (bracket normal 340mm)</div>';
-                html += '<div><strong>M:</strong> 450-550mm (bracket curto 300mm)</div>';
-                html += '<div><strong>Centa:</strong> 250-450mm (1 coluna, plataforma no meio)</div>';
-                html += '</div></div>';
-                
-                html += '</div>';
-                
-                console.log('[ART] HTML gerado, adicionando ao DOM...');
-                
-                const div = document.createElement('div');
-                div.id = 'resultadoCalculo';
-                div.innerHTML = html;
-                div.style.display = 'block';
-                
-                // Remover resultado anterior se existir
-                const antigo = document.getElementById('resultadoCalculo');
-                if (antigo) antigo.remove();
-                
-                document.getElementById('step3').appendChild(div);
-                div.scrollIntoView({behavior:'smooth'});
-                
-                console.log('[OK] Resultado mostrado com sucesso!');
-                
-            } catch (error) {
-                console.error('[X] ERRO:', error);
-                alert('[X] Erro ao calcular: ' + error.message + '\n\nAbra o console (F12) para mais detalhes.');
+                return {n18, spans, t1:u1, t2:u2, plat, tot:medida+kiso+u1+u2};
             }
+            
+            // Calcular lados
+            const sul = calcSpan(comp, kiso, dados.pontos[1].terreno, dados.pontos[2].terreno, dados.muros['sul'] || 0, beirais.sul, varandaLado === 'sul');
+            const leste = calcSpan(larg, kiso, dados.pontos[3].terreno, dados.pontos[4].terreno, dados.muros['leste'] || 0, beirais.leste, varandaLado === 'leste');
+            const norte = calcSpan(comp, kiso, dados.pontos[5].terreno, dados.pontos[6].terreno, dados.muros['norte'] || 0, beirais.norte, varandaLado === 'norte');
+            const oeste = calcSpan(larg, kiso, dados.pontos[7].terreno, dados.pontos[8].terreno, dados.muros['oeste'] || 0, beirais.oeste, varandaLado === 'oeste');
+            
+            // Mostrar resultado
+            let html = '<div style="background:white; padding:25px; border-radius:12px; border:3px solid #27ae60; margin-top:30px;">';
+            html += '<h2 style="color:#27ae60; margin-bottom:20px;">RESULTADO DOS CALCULOS</h2>';
+            
+            const lados = [
+                {nome:'SUL',cor:'#e74c3c',data:sul},
+                {nome:'LESTE',cor:'#f39c12',data:leste},
+                {nome:'NORTE',cor:'#3498db',data:norte},
+                {nome:'OESTE',cor:'#9b59b6',data:oeste}
+            ];
+            
+            lados.forEach(l => {
+                html += `<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin:15px 0; border-left:6px solid ${l.cor};">`;
+                html += `<h3 style="color:${l.cor}; margin-bottom:15px;">${l.nome}</h3>`;
+                html += '<div style="font-size:14px; line-height:2;">';
+                html += `<div><strong>Spans 1.8m:</strong> ${l.data.n18} circulos</div>`;
+                html += `<div><strong>Plataforma:</strong> <span style="background:#27ae60; color:white; padding:4px 12px; border-radius:12px; font-weight:700;">${l.data.plat}</span></div>`;
+                html += `<div><strong>Terrenos:</strong> ${l.data.t1}mm | ${l.data.t2}mm</div>`;
+                html += `<div><strong>Sequencia:</strong> ${l.data.spans.map(s=>s.toFixed(1)+'m').join(' + ')}</div>`;
+                html += `<div><strong>Total:</strong> ${l.data.tot}mm</div>`;
+                html += '</div></div>';
+            });
+            
+            html += '<div style="background:#ecf0f1; padding:15px; border-radius:8px; margin-top:20px;">';
+            html += '<strong>Legenda:</strong><br>';
+            html += 'W: 780-930mm | S: 580-700mm | Sb: 550-580mm | M: 450-550mm | Centa: 250-450mm | WW: Dupla W (beiral>900 ou varanda)';
+            html += '</div>';
+            
+            html += '</div>';
+            
+            const div = document.createElement('div');
+            div.id = 'resultadoCalculo';
+            div.innerHTML = html;
+            
+            const antigo = document.getElementById('resultadoCalculo');
+            if (antigo) antigo.remove();
+            
+            document.getElementById('step3').appendChild(div);
+            div.scrollIntoView({behavior:'smooth'});
         }
 
         // Enter para salvar
@@ -1138,31 +951,6 @@
                 fecharModal();
             }
         });
-
-        // Fechar modal beiral tocando fora (verificar se existe)
-        const modalBeiral = document.getElementById('modalBeiral');
-        if (modalBeiral) {
-            modalBeiral.addEventListener('click', (e) => {
-                if (e.target.id === 'modalBeiral') {
-                    fecharModalBeiral();
-                }
-            });
-        }
-
-        // Enter para salvar beiral (verificar se existe)
-        const inputBeiral = document.getElementById('inputBeiral');
-        if (inputBeiral) {
-            inputBeiral.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    salvarBeiral();
-                }
-            });
-        }
-
-        console.log('[OK] Script carregado completamente');
     </script>
 </body>
 </html>
-
-
-
