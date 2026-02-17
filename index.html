@@ -435,7 +435,7 @@
    <h3>Carregar Planta Baixa</h3>
    <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar</p>
 </label>
-<input type="file" id="fileInput" accept="image/*" style="display:none;">
+            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="carregarFoto(event)">
 
             <div id="msgArea"></div>
         </div>
@@ -662,7 +662,34 @@
         let beiraisCompletos = false;
 
         // Upload
-        
+        function carregarFoto(e) {
+   alert('Funcao chamada!'); // teste
+   const file = e.target.files[0];
+   if (!file) {
+       alert('Nenhum arquivo!');
+       return;
+   }
+
+   alert('Arquivo: ' + file.name);
+   showMsg('Carregando imagem...', 'info');
+
+   const reader = new FileReader();
+   reader.onload = (evt) => {
+       img = new Image();
+       img.onload = () => {
+           showMsg('Imagem carregada! Agora marque a porta.', 'success');
+           setTimeout(irParaPasso2, 600);
+       };
+       img.onerror = () => {
+           alert('ERRO: Imagem nao carregou!');
+       };
+       img.src = evt.target.result;
+   };
+   reader.onerror = () => {
+       alert('ERRO: FileReader falhou!');
+   };
+   reader.readAsDataURL(file);
+}
 
             showMsg('Carregando imagem...', 'info');
 
@@ -1136,5 +1163,6 @@
     </script>
 </body>
 </html>
+
 
 
