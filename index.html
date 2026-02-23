@@ -1,956 +1,2043 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Calculador de Andaimes v3.0</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <title>Calculador de Andaimes v3.0</title>
+   <style>
+       * {
+           margin: 0;
+           padding: 0;
+           box-sizing: border-box;
+           -webkit-tap-highlight-color: transparent;
+       }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f5f5f5;
-            padding: 15px;
-            padding-bottom: 100px;
-        }
+       body {
+           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+           background: #f5f5f5;
+           padding: 15px;
+           padding-bottom: 100px;
+       }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+       .container {
+           background: white;
+           border-radius: 12px;
+           padding: 20px;
+           max-width: 800px;
+           margin: 0 auto;
+           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+       }
 
-        h1 {
-            color: #2c3e50;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
+       h1 {
+           color: #2c3e50;
+           font-size: 24px;
+           margin-bottom: 5px;
+       }
 
-        .version {
-            color: #27ae60;
-            font-weight: 700;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
+       .version {
+           color: #27ae60;
+           font-weight: 700;
+           font-size: 14px;
+           margin-bottom: 20px;
+       }
 
-        .step {
-            background: #ecf0f1;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-            color: #34495e;
-            font-size: 14px;
-        }
+       .step {
+           background: #ecf0f1;
+           padding: 12px;
+           border-radius: 8px;
+           margin-bottom: 20px;
+           text-align: center;
+           font-weight: 600;
+           color: #34495e;
+           font-size: 14px;
+       }
 
-        .upload-zone {
-            background: #e8f5e9;
-            padding: 30px 20px;
-            border-radius: 8px;
-            border: 3px dashed #4caf50;
-            text-align: center;
-            cursor: pointer;
-            margin-bottom: 20px;
-        }
+       .upload-zone {
+           background: #e8f5e9;
+           padding: 30px 20px;
+           border-radius: 8px;
+           border: 3px dashed #4caf50;
+           text-align: center;
+           cursor: pointer;
+           margin-bottom: 20px;
+       }
 
-        .upload-zone:active {
-            background: #c8e6c9;
-        }
+       .upload-zone:active {
+           background: #c8e6c9;
+       }
 
-        input[type="file"] {
-            display: none;
-        }
+       input[type="file"] {
+           display: none;
+       }
 
-        .info {
-            background: #fff3cd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #ffc107;
-            font-size: 14px;
-            line-height: 1.6;
-        }
+       .info {
+           background: #fff3cd;
+           padding: 15px;
+           border-radius: 8px;
+           margin: 15px 0;
+           border-left: 4px solid #ffc107;
+           font-size: 14px;
+           line-height: 1.6;
+       }
 
-        .reference {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #2196f3;
-        }
+       .reference {
+           background: #e3f2fd;
+           padding: 15px;
+           border-radius: 8px;
+           margin: 15px 0;
+           border-left: 4px solid #2196f3;
+       }
 
-        .canvas-area {
-            border: 3px solid #2c3e50;
-            border-radius: 8px;
-            margin: 20px 0;
-            overflow: auto;
-            max-height: 400px;
-        }
+       .canvas-area {
+           border: 3px solid #2c3e50;
+           border-radius: 8px;
+           margin: 20px 0;
+           overflow: auto;
+           max-height: 400px;
+       }
 
-        canvas {
-            display: block;
-            touch-action: none;
-        }
+       canvas {
+           display: block;
+           touch-action: none;
+       }
 
-        /* Interface Visual da Casa */
-        .house-visual {
-            background: white;
-            padding: 30px;
-            margin: 30px 0;
-            border-radius: 12px;
-            border: 3px solid #34495e;
-        }
+       /* Interface Visual da Casa */
+       .house-visual {
+           background: white;
+           padding: 30px;
+           margin: 30px 0;
+           border-radius: 12px;
+           border: 3px solid #34495e;
+       }
 
-        .house-container {
-            position: relative;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+       .house-container {
+           position: relative;
+           max-width: 600px;
+           margin: 0 auto;
+       }
 
-        .house-diagram {
-            width: 100%;
-            aspect-ratio: 1.2;
-            border: 4px solid #34495e;
-            border-radius: 8px;
-            position: relative;
-            background: #ecf0f1;
-        }
+       .house-diagram {
+           width: 100%;
+           aspect-ratio: 1.2;
+           border: 4px solid #34495e;
+           border-radius: 8px;
+           position: relative;
+           background: #ecf0f1;
+       }
 
-        .corner-point {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: #3498db;
-            border: 4px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 700;
-            font-size: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            z-index: 10;
-            touch-action: manipulation;
-        }
+       .corner-point {
+           position: absolute;
+           width: 50px;
+           height: 50px;
+           background: #3498db;
+           border: 4px solid white;
+           border-radius: 50%;
+           cursor: pointer;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+           color: white;
+           font-weight: 700;
+           font-size: 12px;
+           box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+           z-index: 10;
+           touch-action: manipulation;
+       }
 
-        .corner-point:active {
-            transform: scale(0.95);
-            background: #2980b9;
-        }
+       .corner-point:active {
+           transform: scale(0.95);
+           background: #2980b9;
+       }
 
-        .corner-point.filled {
-            background: #27ae60;
-        }
+       .corner-point.filled {
+           background: #27ae60;
+       }
 
-        .corner-value {
-            position: absolute;
-            background: #2c3e50;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
+       .corner-value {
+           position: absolute;
+           background: #2c3e50;
+           color: white;
+           padding: 4px 8px;
+           border-radius: 4px;
+           font-size: 11px;
+           font-weight: 600;
+           white-space: nowrap;
+       }
 
-        /* Posições dos cantos - SEQUÊNCIA ANTI-HORÁRIA */
-        /* SUL (Porta): 1, 2 */
-        .p1 { bottom: -25px; left: 20%; }
-        .p2 { bottom: -25px; right: 20%; }
-        /* LESTE: 3, 4 */
-        .p3 { right: -25px; top: 20%; }
-        .p4 { right: -25px; bottom: 20%; }
-        /* NORTE: 5, 6 */
-        .p5 { top: -25px; left: 20%; }
-        .p6 { top: -25px; right: 20%; }
-        /* OESTE: 7, 8 */
-        .p7 { left: -25px; top: 20%; }
-        .p8 { left: -25px; bottom: 20%; }
+       /* Posições dos cantos - SEQUÊNCIA ANTI-HORÁRIA */
+       /* SUL (Porta): 1, 2 */
+       .p1 { bottom: -25px; left: 20%; }
+       .p2 { bottom: -25px; right: 20%; }
+       /* LESTE: 3, 4 */
+       .p3 { right: -25px; top: 20%; }
+       .p4 { right: -25px; bottom: 20%; }
+       /* NORTE: 5, 6 */
+       .p5 { top: -25px; left: 20%; }
+       .p6 { top: -25px; right: 20%; }
+       /* OESTE: 7, 8 */
+       .p7 { left: -25px; top: 20%; }
+       .p8 { left: -25px; bottom: 20%; }
 
-        /* Valores próximos aos pontos */
-        .v1 { bottom: -45px; left: 20%; transform: translateX(-50%); }
-        .v2 { bottom: -45px; right: 20%; transform: translateX(50%); }
-        .v3 { right: -65px; top: 20%; }
-        .v4 { right: -65px; bottom: 20%; }
-        .v5 { top: -45px; left: 20%; transform: translateX(-50%); }
-        .v6 { top: -45px; right: 20%; transform: translateX(50%); }
-        .v7 { left: -65px; top: 20%; }
-        .v8 { left: -65px; bottom: 20%; }
+       /* Valores próximos aos pontos */
+       .v1 { bottom: -45px; left: 20%; transform: translateX(-50%); }
+       .v2 { bottom: -45px; right: 20%; transform: translateX(50%); }
+       .v3 { right: -65px; top: 20%; }
+       .v4 { right: -65px; bottom: 20%; }
+       .v5 { top: -45px; left: 20%; transform: translateX(-50%); }
+       .v6 { top: -45px; right: 20%; transform: translateX(50%); }
+       .v7 { left: -65px; top: 20%; }
+       .v8 { left: -65px; bottom: 20%; }
 
-        .door-marker {
-            position: absolute;
-            bottom: -60px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 40px;
-        }
+       .door-marker {
+           position: absolute;
+           bottom: -60px;
+           left: 50%;
+           transform: translateX(-50%);
+           font-size: 40px;
+       }
 
-        .side-label {
-            position: absolute;
-            font-weight: 700;
-            font-size: 14px;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 15px;
-        }
+       .side-label {
+           position: absolute;
+           font-weight: 700;
+           font-size: 14px;
+           color: white;
+           padding: 6px 12px;
+           border-radius: 15px;
+       }
 
-        .label-norte { top: -50px; left: 50%; transform: translateX(-50%); background: #3498db; }
-        .label-sul { bottom: -80px; left: 50%; transform: translateX(-50%); background: #e74c3c; }
-        .label-leste { right: -80px; top: 50%; transform: translateY(-50%); background: #f39c12; }
-        .label-oeste { left: -80px; top: 50%; transform: translateY(-50%); background: #9b59b6; }
+       .label-norte { top: -50px; left: 50%; transform: translateX(-50%); background: #3498db; }
+       .label-sul { bottom: -80px; left: 50%; transform: translateX(-50%); background: #e74c3c; }
+       .label-leste { right: -80px; top: 50%; transform: translateY(-50%); background: #f39c12; }
+       .label-oeste { left: -80px; top: 50%; transform: translateY(-50%); background: #9b59b6; }
 
-        /* Linhas de muro */
-        .wall-line {
-            position: absolute;
-            background: #e67e22;
-            display: none;
-        }
+       /* Linhas de muro */
+       .wall-line {
+           position: absolute;
+           background: #e67e22;
+           display: none;
+       }
 
-        .wall-line.show {
-            display: block;
-        }
+       .wall-line.show {
+           display: block;
+       }
 
-        .wall-line.top { top: -2px; left: 0; right: 0; height: 8px; }
-        .wall-line.bottom { bottom: -2px; left: 0; right: 0; height: 8px; }
-        .wall-line.left { left: -2px; top: 0; bottom: 0; width: 8px; }
-        .wall-line.right { right: -2px; top: 0; bottom: 0; width: 8px; }
+       .wall-line.top { top: -2px; left: 0; right: 0; height: 8px; }
+       .wall-line.bottom { bottom: -2px; left: 0; right: 0; height: 8px; }
+       .wall-line.left { left: -2px; top: 0; bottom: 0; width: 8px; }
+       .wall-line.right { right: -2px; top: 0; bottom: 0; width: 8px; }
 
-        .wall-label {
-            position: absolute;
-            background: #e67e22;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-        }
+       .wall-label {
+           position: absolute;
+           background: #e67e22;
+           color: white;
+           padding: 3px 8px;
+           border-radius: 4px;
+           font-size: 11px;
+           font-weight: 700;
+       }
 
-        .wall-label.top { top: 5px; left: 50%; transform: translateX(-50%); }
-        .wall-label.bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
-        .wall-label.left { left: 5px; top: 50%; transform: translateY(-50%); }
-        .wall-label.right { right: 5px; top: 50%; transform: translateY(-50%); }
+       .wall-label.top { top: 5px; left: 50%; transform: translateX(-50%); }
+       .wall-label.bottom { bottom: 5px; left: 50%; transform: translateX(-50%); }
+       .wall-label.left { left: 5px; top: 50%; transform: translateY(-50%); }
+       .wall-label.right { right: 5px; top: 50%; transform: translateY(-50%); }
 
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.85);
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
+       /* Modal */
+       .modal {
+           display: none;
+           position: fixed;
+           top: 0;
+           left: 0;
+           right: 0;
+           bottom: 0;
+           background: rgba(0,0,0,0.85);
+           align-items: center;
+           justify-content: center;
+           z-index: 1000;
+           padding: 20px;
+       }
 
-        .modal.show {
-            display: flex;
-        }
+       .modal.show {
+           display: flex;
+       }
 
-        .modal-content {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 400px;
-        }
+       .modal-content {
+           background: white;
+           padding: 25px;
+           border-radius: 12px;
+           width: 100%;
+           max-width: 400px;
+       }
 
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #2c3e50;
-        }
+       .modal-title {
+           font-size: 20px;
+           font-weight: 700;
+           margin-bottom: 20px;
+           color: #2c3e50;
+       }
 
-        label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2c3e50;
-            font-size: 14px;
-        }
+       label {
+           display: block;
+           font-weight: 600;
+           margin-bottom: 8px;
+           color: #2c3e50;
+           font-size: 14px;
+       }
 
-        input[type="number"], select {
-            width: 100%;
-            padding: 14px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-bottom: 15px;
-        }
+       input[type="number"], select {
+           width: 100%;
+           padding: 14px;
+           border: 2px solid #e0e0e0;
+           border-radius: 8px;
+           font-size: 16px;
+           margin-bottom: 15px;
+       }
 
-        input[type="number"]:focus, select:focus {
-            outline: none;
-            border-color: #3498db;
-        }
+       input[type="number"]:focus, select:focus {
+           outline: none;
+           border-color: #3498db;
+       }
 
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 15px 0;
-        }
+       .checkbox-row {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           margin: 15px 0;
+       }
 
-        input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-        }
+       input[type="checkbox"] {
+           width: 24px;
+           height: 24px;
+           cursor: pointer;
+       }
 
-        .muro-select {
-            display: none;
-            margin-top: 10px;
-        }
+       .muro-select {
+           display: none;
+           margin-top: 10px;
+       }
 
-        .muro-select.show {
-            display: block;
-        }
+       .muro-select.show {
+           display: block;
+       }
 
-        button {
-            background: #3498db;
-            color: white;
-            padding: 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            touch-action: manipulation;
-        }
+       button {
+           background: #3498db;
+           color: white;
+           padding: 16px;
+           border: none;
+           border-radius: 8px;
+           font-size: 16px;
+           font-weight: 600;
+           width: 100%;
+           cursor: pointer;
+           touch-action: manipulation;
+       }
 
-        button:active {
-            background: #2980b9;
-            transform: scale(0.98);
-        }
+       button:active {
+           background: #2980b9;
+           transform: scale(0.98);
+       }
 
-        .btn-success {
-            background: #27ae60;
-        }
+       .btn-success {
+           background: #27ae60;
+       }
 
-        .btn-success:active {
-            background: #229954;
-        }
+       .btn-success:active {
+           background: #229954;
+       }
 
-        .btn-danger {
-            background: #e74c3c;
-        }
+       .btn-danger {
+           background: #e74c3c;
+       }
 
-        .btn-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+       .btn-grid {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 10px;
+       }
 
-        .hidden {
-            display: none !important;
-        }
+       .hidden {
+           display: none !important;
+       }
 
-        .msg {
-            padding: 15px;
-            border-radius: 6px;
-            margin: 15px 0;
-            font-weight: 600;
-            font-size: 14px;
-        }
+       .msg {
+           padding: 15px;
+           border-radius: 6px;
+           margin: 15px 0;
+           font-weight: 600;
+           font-size: 14px;
+       }
 
-        .msg-success {
-            background: #d4edda;
-            color: #155724;
-        }
+       .msg-success {
+           background: #d4edda;
+           color: #155724;
+       }
 
-        .legend {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 20px;
-            font-size: 13px;
-        }
+       .legend {
+           background: #f8f9fa;
+           padding: 15px;
+           border-radius: 8px;
+           margin-top: 20px;
+           font-size: 13px;
+       }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 8px 0;
-        }
+       .legend-item {
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           margin: 8px 0;
+       }
 
-        .legend-circle {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            border: 3px solid white;
-        }
+       .legend-circle {
+           width: 30px;
+           height: 30px;
+           border-radius: 50%;
+           border: 3px solid white;
+       }
 
-        @media (max-width: 600px) {
-            .house-visual {
-                padding: 20px 10px;
-            }
-            
-            .side-label {
-                font-size: 11px;
-                padding: 4px 8px;
-            }
-        }
-    </style>
+       @media (max-width: 600px) {
+           .house-visual {
+               padding: 20px 10px;
+           }
+
+           .side-label {
+               font-size: 11px;
+               padding: 4px 8px;
+           }
+       }
+   </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version">v3.0 - Interface Visual</div>
+   <div class="container">
+       <h1>🏗️ Calculador de Andaimes</h1>
+       <div class="version">v3.0 - Interface Visual</div>
 
-        <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
+       <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
-        <!-- Passo 1: Upload -->
-        <div id="step1">
-            <div class="info">
-                <strong>📋 Novo Sistema Visual:</strong><br>
-                1. Carregue a planta e marque a porta<br>
-                2. Clique nos 8 cantos da casa<br>
-                3. Digite a medida de cada canto<br>
-                4. Marque muros se houver<br>
-                5. Calcule!
-            </div>
+       <!-- Passo 1: Upload -->
+       <div id="step1">
+           <div class="info">
+               <strong>📋 Novo Sistema Visual:</strong><br>
+               1. Carregue a planta e marque a porta<br>
+               2. Clique nos 8 cantos da casa<br>
+               3. Digite a medida de cada canto<br>
+               4. Marque muros se houver<br>
+               5. Calcule!
+           </div>
 
-            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                <h3>📄 Carregar Planta Baixa</h3>
-                <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar</p>
-                <input type="file" id="fileInput" accept="image/*">
-            </div>
+           <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+               <h3>📄 Carregar Planta Baixa</h3>
+               <p style="color: #666; margin-top: 8px; font-size: 14px;">Toque para selecionar</p>
+               <input type="file" id="fileInput" accept="image/*">
+           </div>
 
-            <div id="msgArea"></div>
-        </div>
+           <div id="msgArea"></div>
+       </div>
 
-        <!-- Passo 2: Marcar Porta -->
-        <div id="step2" class="hidden">
-            <div class="reference">
-                <strong>📍 Marque a PORTA da casa</strong><br>
-                Isso define: Porta = Sul (南 Minami)
-            </div>
+       <!-- Passo 2: Selecionar lado da porta -->
+       <div id="step2" class="hidden">
+           <div class="reference">
+               <strong>🚪 Em qual lado está a PORTA principal?</strong><br>
+               Isso orienta o diagrama da casa corretamente
+           </div>
+           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+               <button onclick="selecionarPorta('sul')"   id="btnPortaSul"   style="padding:25px 10px; font-size:16px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7;">🚪 SUL<br><span style="font-size:12px;">南 Minami</span></button>
+               <button onclick="selecionarPorta('norte')" id="btnPortaNorte" style="padding:25px 10px; font-size:16px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7;">🚪 NORTE<br><span style="font-size:12px;">北 Kita</span></button>
+               <button onclick="selecionarPorta('leste')" id="btnPortaLeste" style="padding:25px 10px; font-size:16px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7;">🚪 LESTE<br><span style="font-size:12px;">東 Higashi</span></button>
+               <button onclick="selecionarPorta('oeste')" id="btnPortaOeste" style="padding:25px 10px; font-size:16px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7;">🚪 OESTE<br><span style="font-size:12px;">西 Nishi</span></button>
+           </div>
+       </div>
 
-            <div class="canvas-area">
-                <canvas id="canvas"></canvas>
-            </div>
-        </div>
+       <!-- Passo 2B: Formato do alicerce -->
+       <div id="step2b" class="hidden">
+           <div class="reference">
+               <strong>🏠 Qual é o formato do alicerce?</strong>
+           </div>
+           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:20px 0;">
+               <!-- Retângulo -->
+               <button onclick="selecionarFormato('retangulo')" id="btnFormatoRetangulo"
+                   style="padding:20px 8px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7; border-radius:8px; font-size:13px; font-weight:600;">
+                   <svg width="60" height="45" viewBox="0 0 60 45" style="display:block;margin:0 auto 8px;">
+                       <rect x="5" y="5" width="50" height="35" fill="none" stroke="#2c3e50" stroke-width="3"/>
+                   </svg>
+                   Retângulo<br><span style="font-size:10px;color:#777;">8 pontos</span>
+               </button>
+               <!-- L shape -->
+               <button onclick="selecionarFormato('L')" id="btnFormatoL"
+                   style="padding:20px 8px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7; border-radius:8px; font-size:13px; font-weight:600;">
+                   <svg width="60" height="45" viewBox="0 0 60 45" style="display:block;margin:0 auto 8px;">
+                       <polyline points="5,5 5,40 55,40 55,22 32,22 32,5 5,5" fill="none" stroke="#2c3e50" stroke-width="3"/>
+                   </svg>
+                   Formato L<br><span style="font-size:10px;color:#777;">12 pontos</span>
+               </button>
+               <!-- Escada -->
+               <button onclick="selecionarFormato('escada')" id="btnFormatoEscada"
+                   style="padding:20px 8px; background:#ecf0f1; color:#2c3e50; border:3px solid #bdc3c7; border-radius:8px; font-size:13px; font-weight:600;">
+                   <svg width="60" height="45" viewBox="0 0 60 45" style="display:block;margin:0 auto 8px;">
+                       <polyline points="5,40 5,28 18,28 18,17 32,17 32,7 55,7 55,40 5,40" fill="none" stroke="#2c3e50" stroke-width="3"/>
+                   </svg>
+                   Escada<br><span style="font-size:10px;color:#e74c3c;">Em breve</span>
+               </button>
+           </div>
+       </div>
 
-        <!-- Passo 3: Interface Visual -->
-        <div id="step3" class="hidden">
-            <div class="reference">
-                <strong>🏠 Clique nos 8 cantos para definir terrenos</strong><br>
-                Azul 🔵 = Vazio | Verde 🟢 = Preenchido
-            </div>
+       <!-- Passo 3: Interface Visual -->
+       <div id="step3" class="hidden">
+           <div class="reference">
+               <strong>🏠 Clique nos 8 cantos para definir terrenos</strong><br>
+               Azul 🔵 = Vazio | Verde 🟢 = Preenchido
+           </div>
 
-            <div class="house-visual">
-                <div class="house-container">
-                    <div class="house-diagram" id="houseDiagram">
-                        <!-- Labels dos lados -->
-                        <div class="side-label label-norte">北 NORTE</div>
-                        <div class="side-label label-sul">南 SUL</div>
-                        <div class="side-label label-leste">東 LESTE</div>
-                        <div class="side-label label-oeste">西 OESTE</div>
+           <div class="house-visual">
+               <div class="house-container">
+                   <div class="house-diagram" id="houseDiagram">
+                       <!-- Labels dos lados -->
+                       <div class="side-label label-norte">北 NORTE</div>
+                       <div class="side-label label-sul">南 SUL</div>
+                       <div class="side-label label-leste">東 LESTE</div>
+                       <div class="side-label label-oeste">西 OESTE</div>
 
-                        <!-- Linhas de muro -->
-                        <div class="wall-line top" id="wallNorte">
-                            <div class="wall-label top" id="wallNorteLabel"></div>
-                        </div>
-                        <div class="wall-line bottom" id="wallSul">
-                            <div class="wall-label bottom" id="wallSulLabel"></div>
-                        </div>
-                        <div class="wall-line left" id="wallOeste">
-                            <div class="wall-label left" id="wallOesteLabel"></div>
-                        </div>
-                        <div class="wall-line right" id="wallLeste">
-                            <div class="wall-label right" id="wallLesteLabel"></div>
-                        </div>
+                       <!-- Linhas de muro -->
+                       <div class="wall-line top" id="wallNorte">
+                           <div class="wall-label top" id="wallNorteLabel"></div>
+                       </div>
+                       <div class="wall-line bottom" id="wallSul">
+                           <div class="wall-label bottom" id="wallSulLabel"></div>
+                       </div>
+                       <div class="wall-line left" id="wallOeste">
+                           <div class="wall-label left" id="wallOesteLabel"></div>
+                       </div>
+                       <div class="wall-line right" id="wallLeste">
+                           <div class="wall-label right" id="wallLesteLabel"></div>
+                       </div>
 
-                        <!-- 8 Pontos clicáveis - SEQUÊNCIA ANTI-HORÁRIA -->
-                        <!-- SUL (Porta): 1, 2 -->
-                        <div class="corner-point p1" onclick="abrirModal(1, 'Sul Esq')">1</div>
-                        <div class="corner-point p2" onclick="abrirModal(2, 'Sul Dir')">2</div>
-                        <!-- LESTE: 3, 4 -->
-                        <div class="corner-point p3" onclick="abrirModal(3, 'Leste Sup')">3</div>
-                        <div class="corner-point p4" onclick="abrirModal(4, 'Leste Inf')">4</div>
-                        <!-- NORTE: 5, 6 -->
-                        <div class="corner-point p5" onclick="abrirModal(5, 'Norte Esq')">5</div>
-                        <div class="corner-point p6" onclick="abrirModal(6, 'Norte Dir')">6</div>
-                        <!-- OESTE: 7, 8 -->
-                        <div class="corner-point p7" onclick="abrirModal(7, 'Oeste Sup')">7</div>
-                        <div class="corner-point p8" onclick="abrirModal(8, 'Oeste Inf')">8</div>
+                       <!-- 8 Pontos clicáveis - SEQUÊNCIA ANTI-HORÁRIA -->
+                       <!-- SUL (Porta): 1, 2 -->
+                       <div class="corner-point p1" onclick="abrirModal(1, 'Sul Esq')">1</div>
+                       <div class="corner-point p2" onclick="abrirModal(2, 'Sul Dir')">2</div>
+                       <!-- LESTE: 3, 4 -->
+                       <div class="corner-point p3" onclick="abrirModal(3, 'Leste Sup')">3</div>
+                       <div class="corner-point p4" onclick="abrirModal(4, 'Leste Inf')">4</div>
+                       <!-- NORTE: 5, 6 -->
+                       <div class="corner-point p5" onclick="abrirModal(5, 'Norte Esq')">5</div>
+                       <div class="corner-point p6" onclick="abrirModal(6, 'Norte Dir')">6</div>
+                       <!-- OESTE: 7, 8 -->
+                       <div class="corner-point p7" onclick="abrirModal(7, 'Oeste Sup')">7</div>
+                       <div class="corner-point p8" onclick="abrirModal(8, 'Oeste Inf')">8</div>
 
-                        <!-- Valores -->
-                        <div class="corner-value v1" id="value1"></div>
-                        <div class="corner-value v2" id="value2"></div>
-                        <div class="corner-value v3" id="value3"></div>
-                        <div class="corner-value v4" id="value4"></div>
-                        <div class="corner-value v5" id="value5"></div>
-                        <div class="corner-value v6" id="value6"></div>
-                        <div class="corner-value v7" id="value7"></div>
-                        <div class="corner-value v8" id="value8"></div>
+                       <!-- Valores -->
+                       <div class="corner-value v1" id="value1"></div>
+                       <div class="corner-value v2" id="value2"></div>
+                       <div class="corner-value v3" id="value3"></div>
+                       <div class="corner-value v4" id="value4"></div>
+                       <div class="corner-value v5" id="value5"></div>
+                       <div class="corner-value v6" id="value6"></div>
+                       <div class="corner-value v7" id="value7"></div>
+                       <div class="corner-value v8" id="value8"></div>
 
-                        <!-- Porta -->
-                        <div class="door-marker">🚪</div>
-                    </div>
-                </div>
+                       <!-- Porta -->
+                       <div class="door-marker">🚪</div>
+                   </div>
+               </div>
 
-                <div class="legend">
-                    <strong>Legenda:</strong>
-                    <div class="legend-item">
-                        <div class="legend-circle" style="background: #3498db;"></div>
-                        <span>Azul = Ponto vazio (clique para preencher)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-circle" style="background: #27ae60;"></div>
-                        <span>Verde = Ponto preenchido</span>
-                    </div>
-                    <div class="legend-item">
-                        <div style="width: 30px; height: 8px; background: #e67e22;"></div>
-                        <span>Laranja = Muro</span>
-                    </div>
-                </div>
-            </div>
+               <div class="legend">
+                   <strong>Legenda:</strong>
+                   <div class="legend-item">
+                       <div class="legend-circle" style="background: #3498db;"></div>
+                       <span>Azul = Ponto vazio (clique para preencher)</span>
+                   </div>
+                   <div class="legend-item">
+                       <div class="legend-circle" style="background: #27ae60;"></div>
+                       <span>Verde = Ponto preenchido</span>
+                   </div>
+                   <div class="legend-item">
+                       <div style="width: 30px; height: 8px; background: #e67e22;"></div>
+                       <span>Laranja = Muro</span>
+                   </div>
+               </div>
+           </div>
 
-            <!-- Campos Simples de Beirais e Varanda -->
-            <div id="camposExtras" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-bottom: 15px; color: #2c3e50;">📏 Beirais e Varanda</h3>
-                
-                <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <h4 style="margin-bottom: 10px; font-size: 14px;">Beirais (quanto o telhado sai em mm):</h4>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                        <div>
-                            <label>Sul (南):</label>
-                            <input type="number" id="beiralSul" placeholder="Ex: 300" value="0">
-                        </div>
-                        <div>
-                            <label>Leste (東):</label>
-                            <input type="number" id="beiralLeste" placeholder="Ex: 250" value="0">
-                        </div>
-                        <div>
-                            <label>Norte (北):</label>
-                            <input type="number" id="beiralNorte" placeholder="Ex: 300" value="0">
-                        </div>
-                        <div>
-                            <label>Oeste (西):</label>
-                            <input type="number" id="beiralOeste" placeholder="Ex: 250" value="0">
-                        </div>
-                    </div>
-                </div>
+           <!-- Campos Simples de Beirais e Varanda -->
+           <div id="camposExtras" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+               <h3 style="margin-bottom: 15px; color: #2c3e50;">📐 Medidas e Configurações</h3>
 
-                <div style="background: white; padding: 15px; border-radius: 8px;">
-                    <h4 style="margin-bottom: 10px; font-size: 14px;">Varanda (2º andar):</h4>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <div>
-                            <label>Lado:</label>
-                            <select id="varandaLado">
-                                <option value="">Sem varanda</option>
-                                <option value="sul">Sul (南)</option>
-                                <option value="leste">Leste (東)</option>
-                                <option value="norte">Norte (北)</option>
-                                <option value="oeste">Oeste (西)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label>Saída (mm):</label>
-                            <input type="number" id="varandaSaida" placeholder="910" value="910">
-                        </div>
-                    </div>
-                </div>
-            </div>
+               <!-- Medidas do Alicerce -->
+               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                   <h4 style="margin-bottom: 10px; font-size: 14px;">Medidas do Alicerce:</h4>
+                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+                       <div>
+                           <label>Comprimento (mm):</label>
+                           <input type="number" id="comprimento" placeholder="Ex: 9100" value="9100">
+                       </div>
+                       <div>
+                           <label>Largura (mm):</label>
+                           <input type="number" id="largura" placeholder="Ex: 8190" value="8190">
+                       </div>
+                       <div>
+                           <label>Kiso (mm):</label>
+                           <input type="number" id="kiso" placeholder="Ex: 150" value="150">
+                       </div>
+                   </div>
+               </div>
 
-            <button class="btn-success" onclick="calcularAndaimes()" id="btnFinalizar" style="display: none;">
-                ✓ CALCULAR ANDAIMES
-            </button>
-        </div>
+               <!-- Beirais -->
+               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                   <h4 style="margin-bottom: 10px; font-size: 14px;">Beirais (quanto o telhado sai em mm):</h4>
+                   <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                       <div>
+                           <label>Sul (南):</label>
+                           <input type="number" id="beiralSul" placeholder="Ex: 300" value="0">
+                       </div>
+                       <div>
+                           <label>Leste (東):</label>
+                           <input type="number" id="beiralLeste" placeholder="Ex: 250" value="0">
+                       </div>
+                       <div>
+                           <label>Norte (北):</label>
+                           <input type="number" id="beiralNorte" placeholder="Ex: 300" value="0">
+                       </div>
+                       <div>
+                           <label>Oeste (西):</label>
+                           <input type="number" id="beiralOeste" placeholder="Ex: 250" value="0">
+                       </div>
+                   </div>
+               </div>
 
-        <!-- Modal de Input -->
-        <div class="modal" id="modal">
-            <div class="modal-content">
-                <div class="modal-title" id="modalTitle">Ponto X</div>
-                
-                <div>
-                    <label>Terreno Disponível (mm):</label>
-                    <input type="number" id="inputTerreno" placeholder="Ex: 900" inputmode="numeric">
-                </div>
+               <!-- Varanda -->
+               <div style="background: white; padding: 15px; border-radius: 8px;">
+                   <h4 style="margin-bottom: 10px; font-size: 14px;">Varanda (2º andar):</h4>
+                   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                       <div>
+                           <label>Lado:</label>
+                           <select id="varandaLado">
+                               <option value="">Sem varanda</option>
+                               <option value="sul">Sul (南)</option>
+                               <option value="leste">Leste (東)</option>
+                               <option value="norte">Norte (北)</option>
+                               <option value="oeste">Oeste (西)</option>
+                           </select>
+                       </div>
+                       <div>
+                           <label>Saída (mm):</label>
+                           <input type="number" id="varandaSaida" placeholder="910" value="910">
+                       </div>
+                   </div>
+               </div>
+           </div>
 
-                <div id="muroSection" class="hidden">
-                    <div class="checkbox-row">
-                        <input type="checkbox" id="inputMuro" onchange="toggleMuroModal()">
-                        <label style="margin: 0;">Tem muro neste lado?</label>
-                    </div>
-                    <div class="muro-select" id="muroSelectModal">
-                        <label>Largura do muro:</label>
-                        <select id="inputMuroLargura">
-                            <option value="120">120mm</option>
-                            <option value="150">150mm</option>
-                            <option value="220">220mm</option>
-                        </select>
-                    </div>
-                </div>
+           <button class="btn-success" onclick="calcularAndaimes()" id="btnFinalizar" style="display: none;">
+               ✓ CALCULAR ANDAIMES
+           </button>
+       </div>
 
-                <div class="btn-grid">
-                    <button class="btn-danger" onclick="fecharModal()">✕ Cancelar</button>
-                    <button class="btn-success" onclick="salvarPonto()">✓ Salvar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+       <!-- Passo 3-L: Formato L (12 pontos) -->
+       <div id="step3L" class="hidden">
+           <div class="reference">
+               <strong>🏠 Formato L — Clique nos 12 pontos para definir terrenos</strong><br>
+               Azul 🔵 = Vazio | Verde 🟢 = Preenchido
+           </div>
+           <div class="house-visual">
+               <div style="position:relative; width:100%; max-width:600px; margin:0 auto;">
+                   <svg id="svgL" viewBox="0 0 400 320" style="width:100%; overflow:visible;">
+                       <!-- L shape body -->
+                       <polygon points="60,20 60,260 340,260 340,140 220,140 220,20" fill="#ecf0f1" stroke="#34495e" stroke-width="4"/>
+                       <!-- Side labels -->
+                       <text x="30" y="145" text-anchor="middle" font-size="13" font-weight="bold" fill="#9b59b6">OESTE</text>
+                       <text x="200" y="285" text-anchor="middle" font-size="13" font-weight="bold" fill="#e74c3c">SUL</text>
+                       <text x="362" y="205" text-anchor="middle" font-size="13" font-weight="bold" fill="#f39c12">LESTE</text>
+                       <text x="290" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#3498db">N-DIR</text>
+                       <text x="140" y="10"  text-anchor="middle" font-size="13" font-weight="bold" fill="#3498db">N-ESQ</text>
+                       <text x="237" y="155" text-anchor="middle" font-size="11" fill="#27ae60">INNER</text>
 
-    <script>
-        let img = null;
-        let pontoAtual = 0;
-        let dados = {
-            pontos: {},
-            muros: {}
-        };
+                       <!-- Segment length labels (updated by JS) -->
+                       <text id="lblL-oeste"  x="30"  y="80"  text-anchor="middle" font-size="11" fill="#9b59b6"></text>
+                       <text id="lblL-sul"    x="200" y="272" text-anchor="middle" font-size="11" fill="#e74c3c"></text>
+                       <text id="lblL-leste"  x="356" y="205" text-anchor="middle" font-size="11" fill="#f39c12"></text>
+                       <text id="lblL-ndir"   x="285" y="132" text-anchor="middle" font-size="11" fill="#3498db"></text>
+                       <text id="lblL-inner"  x="232" y="100" text-anchor="middle" font-size="11" fill="#27ae60"></text>
+                       <text id="lblL-nesq"   x="140" y="22"  text-anchor="middle" font-size="11" fill="#3498db"></text>
+                   </svg>
 
-        // Upload
-        document.getElementById('fileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+                   <!-- 12 clickable points overlaid -->
+                   <!-- OESTE side: pL7 (top), pL8 (bottom) -->
+                   <div class="corner-point" id="pL7"  style="position:absolute;top:calc(20/320*100%);  left:calc(60/400*100%);  transform:translate(-50%,-50%);" onclick="abrirModalL('L7','Oeste Sup')">L7</div>
+                   <div class="corner-point" id="pL8"  style="position:absolute;top:calc(260/320*100%); left:calc(60/400*100%);  transform:translate(-50%,-50%);" onclick="abrirModalL('L8','Oeste Inf')">L8</div>
+                   <!-- SUL side: pL1 (left), pL2 (right) -->
+                   <div class="corner-point" id="pL1"  style="position:absolute;top:calc(260/320*100%); left:calc(60/400*100%);  transform:translate(-50%,-50%);" onclick="abrirModalL('L1','Sul Esq')">L1</div>
+                   <div class="corner-point" id="pL2"  style="position:absolute;top:calc(260/320*100%); left:calc(340/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L2','Sul Dir')">L2</div>
+                   <!-- LESTE side: pL3 (bottom), pL4 (top) -->
+                   <div class="corner-point" id="pL3"  style="position:absolute;top:calc(260/320*100%); left:calc(340/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L3','Leste Inf')">L3</div>
+                   <div class="corner-point" id="pL4"  style="position:absolute;top:calc(140/320*100%); left:calc(340/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L4','Leste Sup')">L4</div>
+                   <!-- NORTE-DIR: pL5 (right), pL6 (left/inner) -->
+                   <div class="corner-point" id="pL5"  style="position:absolute;top:calc(140/320*100%); left:calc(340/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L5','Norte-Dir Dir')">L5</div>
+                   <div class="corner-point" id="pL6"  style="position:absolute;top:calc(140/320*100%); left:calc(220/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L6','Norte-Dir Esq')">L6</div>
+                   <!-- INNER: pL9 (bottom), pL10 (top) -->
+                   <div class="corner-point" id="pL9"  style="position:absolute;top:calc(140/320*100%); left:calc(220/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L9','Inner Inf')">L9</div>
+                   <div class="corner-point" id="pL10" style="position:absolute;top:calc(20/320*100%);  left:calc(220/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L10','Inner Sup')">10</div>
+                   <!-- NORTE-ESQ: pL11 (right), pL12 (left) -->
+                   <div class="corner-point" id="pL11" style="position:absolute;top:calc(20/320*100%);  left:calc(220/400*100%); transform:translate(-50%,-50%);" onclick="abrirModalL('L11','Norte-Esq Dir')">11</div>
+                   <div class="corner-point" id="pL12" style="position:absolute;top:calc(20/320*100%);  left:calc(60/400*100%);  transform:translate(-50%,-50%);" onclick="abrirModalL('L12','Norte-Esq Esq')">12</div>
+               </div>
+           </div>
 
-            showMsg('📂 Carregando...', 'info');
+           <!-- Medidas do alicerce para L -->
+           <div id="camposExtrasL" class="hidden" style="background:#f8f9fa; padding:20px; border-radius:8px; margin:20px 0;">
+               <h3 style="margin-bottom:15px; color:#2c3e50;">📐 Medidas do Formato L</h3>
+               <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px;">
+                   <h4 style="margin-bottom:10px; font-size:14px;">Lados principais (mm):</h4>
+                   <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;">
+                       <div><label>Oeste (altura total):</label><input type="number" id="L_oeste" placeholder="Ex: 7280"></div>
+                       <div><label>Sul (largura total):</label><input type="number" id="L_sul" placeholder="Ex: 5460"></div>
+                       <div><label>Leste (altura curta):</label><input type="number" id="L_leste" placeholder="Ex: 3640"></div>
+                       <div><label>Norte-Dir:</label><input type="number" id="L_ndir" placeholder="Ex: 3640"></div>
+                       <div><label>Inner (vertical):</label><input type="number" id="L_inner" placeholder="Ex: 3640"></div>
+                       <div><label>Norte-Esq:</label><input type="number" id="L_nesq" placeholder="Ex: 1820"></div>
+                       <div><label>Kiso (mm):</label><input type="number" id="L_kiso" placeholder="Ex: 150" value="150"></div>
+                   </div>
+               </div>
+               <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px;">
+                   <h4 style="margin-bottom:10px; font-size:14px;">Beirais (mm):</h4>
+                   <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+                       <div><label>Sul:</label><input type="number" id="L_beiralSul" value="0"></div>
+                       <div><label>Norte:</label><input type="number" id="L_beiralNorte" value="0"></div>
+                       <div><label>Leste:</label><input type="number" id="L_beiralLeste" value="0"></div>
+                       <div><label>Oeste:</label><input type="number" id="L_beiralOeste" value="0"></div>
+                       <div><label>Inner:</label><input type="number" id="L_beiralInner" value="0"></div>
+                   </div>
+               </div>
+               <button class="btn-success" onclick="calcularAndaimesL()">✓ CALCULAR ANDAIMES (L)</button>
+           </div>
+       </div>
 
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                img = new Image();
-                img.onload = () => {
-                    showMsg('✅ Imagem carregada!', 'success');
-                    irParaPasso2();
-                };
-                img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
+       <!-- Passo 4: Marcar linhas nas fotos -->
+       <div id="step4" class="hidden">
+           <div class="reference" style="margin-bottom:15px;">
+               <strong>📐 Passo 4: Marcar spans nas fotos</strong><br>
+               Carregue a foto de cada lado e calibre a escala clicando em 2 pontos
+           </div>
 
-        function showMsg(texto, tipo) {
-            const classe = tipo === 'success' ? 'msg-success' : 'info';
-            document.getElementById('msgArea').innerHTML = `<div class="msg ${classe}">${texto}</div>`;
-        }
+           <!-- Abas dos 4 lados -->
+           <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:15px;">
+               <button id="tab-sul"   onclick="abrirAba('sul')"   style="padding:12px 4px; font-size:13px; background:#e74c3c; color:white; border:none; border-radius:8px;">南 SUL</button>
+               <button id="tab-norte" onclick="abrirAba('norte')" style="padding:12px 4px; font-size:13px; background:#ecf0f1; color:#333; border:none; border-radius:8px;">北 NORTE</button>
+               <button id="tab-leste" onclick="abrirAba('leste')" style="padding:12px 4px; font-size:13px; background:#ecf0f1; color:#333; border:none; border-radius:8px;">東 LESTE</button>
+               <button id="tab-oeste" onclick="abrirAba('oeste')" style="padding:12px 4px; font-size:13px; background:#ecf0f1; color:#333; border:none; border-radius:8px;">西 OESTE</button>
+           </div>
 
-        function irParaPasso2() {
-            document.getElementById('step1').classList.add('hidden');
-            document.getElementById('step2').classList.remove('hidden');
-            document.getElementById('stepIndicator').textContent = 'Passo 2: Marcar Porta';
+           <!-- Painel de cada aba -->
+           <div id="painel-foto" style="background:#f8f9fa; padding:15px; border-radius:8px;">
 
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
+               <!-- Upload -->
+               <div id="zona-upload" style="background:#e8f5e9; border:3px dashed #4caf50; border-radius:8px; padding:25px; text-align:center; margin-bottom:15px;">
+                   <div style="font-size:16px; margin-bottom:8px;">📷 Carregar foto do lado <strong id="nomeLadoAtual">SUL</strong></div>
+                   <label for="fotoInput" style="display:inline-block; background:#27ae60; color:white; padding:12px 24px; border-radius:8px; cursor:pointer; font-weight:600;">Selecionar foto</label>
+                   <input type="file" id="fotoInput" accept="image/*" style="display:none;" onchange="carregarFotoLado(event)">
+               </div>
 
-            const maxW = Math.min(700, window.innerWidth - 70);
-            const scale = maxW / img.width;
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
+               <!-- Controles de zoom -->
+               <div id="zoom-controls" style="display:none; display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                   <span style="font-size:13px; font-weight:600; color:#2c3e50;">🔍 Zoom:</span>
+                   <button onclick="ajustarZoom(-0.25)" style="background:#34495e; color:white; padding:8px 14px; border:none; border-radius:6px; font-size:18px; font-weight:700; width:auto; line-height:1;">−</button>
+                   <span id="zoom-label" style="font-size:13px; font-weight:700; min-width:42px; text-align:center;">1×</span>
+                   <button onclick="ajustarZoom(+0.25)" style="background:#34495e; color:white; padding:8px 14px; border:none; border-radius:6px; font-size:18px; font-weight:700; width:auto; line-height:1;">+</button>
+                   <button onclick="resetZoom()" style="background:#7f8c8d; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Reset</button>
+                   <span style="font-size:11px; color:#888;">Pinch também funciona no iPhone</span>
+               </div>
 
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+               <!-- Canvas da foto -->
+               <div id="canvas-container" style="display:none; border:2px solid #2c3e50; border-radius:8px; overflow:auto; margin-bottom:10px; max-height:65vh; -webkit-overflow-scrolling:touch;">
+                   <canvas id="fotoCanvas" style="display:block; touch-action:pan-x pan-y;"></canvas>
+               </div>
 
-            canvas.addEventListener('touchstart', marcarPorta, {passive: false});
-            canvas.addEventListener('click', marcarPorta);
-        }
+               <!-- Painel de calibração -->
+               <div id="painel-calib" style="display:none; background:white; border-radius:8px; padding:12px; margin-bottom:10px;">
+                   <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:10px;">📏 Calibração de escala</div>
 
-        function marcarPorta(e) {
-            e.preventDefault();
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            const rect = canvas.getBoundingClientRect();
+                   <!-- Opção 1/100 automática -->
+                   <div id="calib-auto" style="background:#e8f5e9; border:1px solid #4caf50; padding:10px; border-radius:6px; margin-bottom:10px;">
+                       <div style="font-size:13px; font-weight:600; color:#2c3e50; margin-bottom:8px;">⚡ Auto (escala 1:100 da planta):</div>
+                       <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                           <span style="font-size:13px;">Usar medida:</span>
+                           <button id="btn-auto-comp" onclick="calibAutoEscala('comp')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Comprimento</button>
+                           <button id="btn-auto-larg" onclick="calibAutoEscala('larg')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Largura</button>
+                           <span id="label-auto-medidas" style="font-size:12px; color:#555;"></span>
+                       </div>
+                   </div>
 
-            let x, y;
-            if (e.type === 'touchstart') {
-                x = e.touches[0].clientX - rect.left;
-                y = e.touches[0].clientY - rect.top;
-            } else {
-                x = e.clientX - rect.left;
-                y = e.clientY - rect.top;
-            }
+                   <!-- Calibração manual por 2 pontos + GL -->
+                   <div style="background:#e3f2fd; border:1px solid #2196f3; padding:10px; border-radius:6px;">
+                       <div style="font-size:13px; font-weight:600; color:#2c3e50; margin-bottom:6px;">🖱 Manual — 3 pontos:</div>
 
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                       <!-- Indicador de progresso dos 3 pontos -->
+                       <div style="display:flex; gap:6px; margin-bottom:8px; align-items:center;">
+                           <div id="badge-p1" style="background:#bdc3c7; color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;">📍 P1</div>
+                           <div style="color:#bdc3c7; font-size:12px;">Esq. base parede</div>
+                           <div style="color:#bdc3c7;">→</div>
+                           <div id="badge-p2" style="background:#bdc3c7; color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;">📍 P2</div>
+                           <div style="color:#bdc3c7; font-size:12px;">Dir. base parede</div>
+                           <div style="color:#bdc3c7;">→</div>
+                           <div id="badge-p3" style="background:#bdc3c7; color:white; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:700;">📍 GL</div>
+                       </div>
 
-            // Triângulo
-            ctx.fillStyle = '#e74c3c';
-            ctx.beginPath();
-            ctx.moveTo(x, y - 20);
-            ctx.lineTo(x - 15, y + 10);
-            ctx.lineTo(x + 15, y + 10);
-            ctx.closePath();
-            ctx.fill();
+                       <div id="status-calib" style="background:#fff3cd; border:1px solid #ffc107; padding:8px; border-radius:6px; margin-bottom:8px; font-size:13px; text-align:center; display:none;">
+                           👆 Clique no <strong>1º ponto</strong> de referência na foto
+                       </div>
+                       <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                           <button onclick="iniciarCalibManual()" style="background:#3498db; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">📍 Iniciar calibração</button>
+                           <button id="btn-limpar-pontos" onclick="limparPontosCalib()" style="background:#e67e22; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto; display:none;">🗑 Recomeçar</button>
+                       </div>
+                       <div id="input-medida-real" style="display:none; margin-top:8px;">
+                           <label style="font-size:13px; font-weight:600;">Distância real P1→P2 (mm):</label>
+                           <div style="display:flex; gap:8px; margin-top:6px;">
+                               <input type="number" id="medidaReal" placeholder="Ex: 9100" style="flex:1; padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px;">
+                               <button onclick="confirmarCalib()" style="background:#27ae60; color:white; padding:10px 14px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">✓ OK</button>
+                               <button onclick="limparPontosCalib()" style="background:#e74c3c; color:white; padding:10px 14px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">✕</button>
+                           </div>
+                       </div>
+                   </div>
 
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 3;
-            ctx.stroke();
+                   <!-- Status da escala atual -->
+                   <div id="status-escala" style="display:none; background:#d4edda; border:1px solid #27ae60; padding:8px; border-radius:6px; margin-top:8px; font-size:13px; font-weight:600; color:#155724;">
+                       ✅ Escala calibrada: <span id="valor-escala"></span>
+                   </div>
+               </div>
 
-            canvas.onclick = null;
-            setTimeout(irParaPasso3, 800);
-        }
+               <!-- Configurações de altura -->
+               <div id="painel-altura" style="display:none; background:white; border-radius:8px; padding:12px; margin-bottom:10px;">
+                   <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:10px;">📐 Altura e cobertura</div>
+                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                       <div>
+                           <label style="font-size:13px;">Altura da calha/beiral (mm):</label>
+                           <input type="number" id="alturaCalha" placeholder="Ex: 5200" style="padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px; width:100%; margin-top:4px;">
+                       </div>
+                       <div>
+                           <label style="font-size:13px;">Beiral deste lado (mm):</label>
+                           <input type="number" id="beiralLadoAtual" placeholder="0" style="padding:10px; border:2px solid #e0e0e0; border-radius:6px; font-size:15px; width:100%; margin-top:4px;" value="0">
+                       </div>
+                   </div>
+                   <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+                       <button onclick="desenharLinhas()" style="background:#e74c3c; color:white; padding:12px 16px; border:none; border-radius:8px; font-size:14px; font-weight:700; flex:1;">🔴 Desenhar linhas</button>
+                   </div>
+               </div>
 
-        function irParaPasso3() {
-            document.getElementById('step2').classList.add('hidden');
-            document.getElementById('step3').classList.remove('hidden');
-            document.getElementById('stepIndicator').textContent = 'Passo 3: Definir Terrenos (Clique nos Pontos)';
-        }
+               <!-- Botões de ação -->
+               <div id="acoes-foto" style="display:none; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                   <button onclick="trocarFoto()" style="background:#9b59b6; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">📷 Nova foto</button>
+                   <button onclick="baixarFoto()" style="background:#27ae60; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">⬇ Baixar foto</button>
+               </div>
+           </div>
+       </div>
 
-        function abrirModal(ponto, descricao) {
-            pontoAtual = ponto;
-            document.getElementById('modalTitle').textContent = `Ponto ${ponto} - ${descricao}`;
-            
-            // Preencher valores existentes
-            if (dados.pontos[ponto]) {
-                document.getElementById('inputTerreno').value = dados.pontos[ponto].terreno;
-            } else {
-                document.getElementById('inputTerreno').value = '';
-            }
+       <!-- Modal de Input -->
+       <div class="modal" id="modal">
+           <div class="modal-content">
+               <div class="modal-title" id="modalTitle">Ponto X</div>
 
-            // Mostrar opção de muro apenas para pontos do mesmo lado
-            const ladosMuro = {
-                1: 'sul', 2: 'sul',
-                3: 'leste', 4: 'leste',
-                5: 'norte', 6: 'norte',
-                7: 'oeste', 8: 'oeste'
-            };
+               <div>
+                   <label>Terreno Disponível (mm):</label>
+                   <input type="number" id="inputTerreno" placeholder="Ex: 900" inputmode="numeric">
+               </div>
 
-            const lado = ladosMuro[ponto];
-            const primeiroDoLado = (ponto === 1 || ponto === 3 || ponto === 5 || ponto === 7);
+               <div id="muroSection" class="hidden">
+                   <div class="checkbox-row">
+                       <input type="checkbox" id="inputMuro" onchange="toggleMuroModal()">
+                       <label style="margin: 0;">Tem muro neste lado?</label>
+                   </div>
+                   <div class="muro-select" id="muroSelectModal">
+                       <label>Largura do muro:</label>
+                       <select id="inputMuroLargura">
+                           <option value="120">120mm</option>
+                           <option value="150">150mm</option>
+                           <option value="220">220mm</option>
+                       </select>
+                   </div>
+               </div>
 
-            if (primeiroDoLado) {
-                document.getElementById('muroSection').classList.remove('hidden');
-                if (dados.muros[lado]) {
-                    document.getElementById('inputMuro').checked = true;
-                    document.getElementById('muroSelectModal').classList.add('show');
-                    document.getElementById('inputMuroLargura').value = dados.muros[lado];
-                } else {
-                    document.getElementById('inputMuro').checked = false;
-                    document.getElementById('muroSelectModal').classList.remove('show');
-                }
-            } else {
-                document.getElementById('muroSection').classList.add('hidden');
-            }
+               <div class="btn-grid">
+                   <button class="btn-danger" onclick="fecharModal()">✕ Cancelar</button>
+                   <button class="btn-success" onclick="salvarPonto()">✓ Salvar</button>
+               </div>
+           </div>
+       </div>
+   </div>
 
-            document.getElementById('modal').classList.add('show');
-            setTimeout(() => document.getElementById('inputTerreno').focus(), 300);
-        }
+   <script>
+       let img = null;
+       let pontoAtual = 0;
+       let ladoPorta = 'sul'; // padrão
+       let dados = {
+           pontos: {},
+           muros: {}
+       };
 
-        function toggleMuroModal() {
-            const checked = document.getElementById('inputMuro').checked;
-            const select = document.getElementById('muroSelectModal');
-            if (checked) {
-                select.classList.add('show');
-            } else {
-                select.classList.remove('show');
-            }
-        }
+       // Upload
+       document.getElementById('fileInput').addEventListener('change', (e) => {
+           const file = e.target.files[0];
+           if (!file) return;
 
-        function fecharModal() {
-            document.getElementById('modal').classList.remove('show');
-        }
+           showMsg('📂 Carregando...', 'info');
 
-        function salvarPonto() {
-            const terreno = parseInt(document.getElementById('inputTerreno').value);
-            
-            if (!terreno || terreno <= 0) {
-                alert('⚠️ Digite um valor válido!');
-                return;
-            }
+           const reader = new FileReader();
+           reader.onload = (evt) => {
+               img = new Image();
+               img.onload = () => {
+                   showMsg('✅ Imagem carregada!', 'success');
+                   irParaPasso2();
+               };
+               img.src = evt.target.result;
+           };
+           reader.readAsDataURL(file);
+       });
 
-            // Salvar terreno
-            dados.pontos[pontoAtual] = { terreno };
+       function showMsg(texto, tipo) {
+           const classe = tipo === 'success' ? 'msg-success' : 'info';
+           document.getElementById('msgArea').innerHTML = `<div class="msg ${classe}">${texto}</div>`;
+       }
 
-            // Salvar muro se for primeiro do lado
-            const ladosMuro = {
-                1: 'sul', 2: 'sul',
-                3: 'leste', 4: 'leste',
-                5: 'norte', 6: 'norte',
-                7: 'oeste', 8: 'oeste'
-            };
+       function irParaPasso2() {
+           document.getElementById('step1').classList.add('hidden');
+           document.getElementById('step2').classList.remove('hidden');
+           document.getElementById('stepIndicator').textContent = 'Passo 2: Selecionar lado da porta';
+       }
 
-            const lado = ladosMuro[pontoAtual];
-            const primeiroDoLado = (pontoAtual === 1 || pontoAtual === 3 || pontoAtual === 5 || pontoAtual === 7);
+       function selecionarPorta(lado) {
+           ladoPorta = lado;
+           ['sul','norte','leste','oeste'].forEach(l => {
+               const btn = document.getElementById('btnPorta' + l.charAt(0).toUpperCase() + l.slice(1));
+               btn.style.background = l === lado ? '#27ae60' : '#ecf0f1';
+               btn.style.color = l === lado ? 'white' : '#2c3e50';
+               btn.style.borderColor = l === lado ? '#27ae60' : '#bdc3c7';
+           });
+           setTimeout(() => {
+               document.getElementById('step2').classList.add('hidden');
+               document.getElementById('step2b').classList.remove('hidden');
+               document.getElementById('stepIndicator').textContent = 'Passo 2B: Formato do Alicerce';
+           }, 400);
+       }
 
-            if (primeiroDoLado) {
-                if (document.getElementById('inputMuro').checked) {
-                    dados.muros[lado] = parseInt(document.getElementById('inputMuroLargura').value);
-                } else {
-                    delete dados.muros[lado];
-                }
-            }
+       let formatoAlicerce = 'retangulo';
+       function selecionarFormato(formato) {
+           if (formato === 'escada') { alert('Formato Escada em breve!'); return; }
+           formatoAlicerce = formato;
+           ['retangulo','L','escada'].forEach(f => {
+               const btn = document.getElementById('btnFormato' + f.charAt(0).toUpperCase() + f.slice(1));
+               if (btn) { btn.style.background = f === formato ? '#27ae60' : '#ecf0f1'; btn.style.color = f === formato ? 'white' : '#2c3e50'; btn.style.borderColor = f === formato ? '#27ae60' : '#bdc3c7'; }
+           });
+           setTimeout(() => {
+               document.getElementById('step2b').classList.add('hidden');
+               if (formato === 'retangulo') {
+                   document.getElementById('step3').classList.remove('hidden');
+                   document.getElementById('stepIndicator').textContent = 'Passo 3: Definir Terrenos (Clique nos Pontos)';
+                   atualizarPortaDiagrama();
+               } else if (formato === 'L') {
+                   document.getElementById('step3L').classList.remove('hidden');
+                   document.getElementById('stepIndicator').textContent = 'Passo 3: Formato L — 12 Pontos';
+               }
+           }, 300);
+       }
 
-            atualizarVisual();
-            fecharModal();
+       function irParaPasso3() {
+           // mantido para compatibilidade — uso via selecionarFormato()
+           document.getElementById('step2').classList.add('hidden');
+           document.getElementById('step3').classList.remove('hidden');
+           document.getElementById('stepIndicator').textContent = 'Passo 3: Definir Terrenos (Clique nos Pontos)';
+           atualizarPortaDiagrama();
+       }
 
-            // Verificar se todos os 8 pontos foram preenchidos
-            if (Object.keys(dados.pontos).length === 8) {
-                document.getElementById('camposExtras').classList.remove('hidden');
-                document.getElementById('btnFinalizar').style.display = 'block';
-            }
-        }
+       // L-shape point data
+       let dadosL = { pontos: {} };
+       function abrirModalL(ponto, descricao) {
+           pontoAtual = ponto;
+           document.getElementById('modalTitle').textContent = `${ponto} - ${descricao}`;
+           document.getElementById('inputTerreno').value = dadosL.pontos[ponto] ? dadosL.pontos[ponto].terreno : '';
+           document.getElementById('muroSection').classList.add('hidden');
+           document.getElementById('modal').classList.add('show');
+           setTimeout(() => document.getElementById('inputTerreno').focus(), 300);
+       }
 
-        function atualizarVisual() {
-            // Atualizar cor do ponto
-            for (let i = 1; i <= 8; i++) {
-                const ponto = document.querySelector(`.p${i}`);
-                if (dados.pontos[i]) {
-                    ponto.classList.add('filled');
-                    document.getElementById(`value${i}`).textContent = dados.pontos[i].terreno + 'mm';
-                    document.getElementById(`value${i}`).style.display = 'block';
-                }
-            }
+       function calcularAndaimesL() {
+           const kiso   = parseInt(document.getElementById('L_kiso').value)   || 150;
+           const oeste  = parseInt(document.getElementById('L_oeste').value);
+           const sul    = parseInt(document.getElementById('L_sul').value);
+           const leste  = parseInt(document.getElementById('L_leste').value);
+           const ndir   = parseInt(document.getElementById('L_ndir').value);
+           const inner  = parseInt(document.getElementById('L_inner').value);
+           const nesq   = parseInt(document.getElementById('L_nesq').value);
+           if (!oeste||!sul||!leste||!ndir||!inner||!nesq) { alert('Preencha todas as medidas do L!'); return; }
+           const beirais = {
+               sul:   parseInt(document.getElementById('L_beiralSul').value)   || 0,
+               norte: parseInt(document.getElementById('L_beiralNorte').value) || 0,
+               leste: parseInt(document.getElementById('L_beiralLeste').value) || 0,
+               oeste: parseInt(document.getElementById('L_beiralOeste').value) || 0,
+               inner: parseInt(document.getElementById('L_beiralInner').value) || 0,
+           };
+           // Usar pontos do dadosL (simplificado — usa terreno médio por lado se disponível)
+           const t = dadosL.pontos;
+           function tOu(id, def) { return t[id] ? t[id].terreno : def; }
+           const resOeste  = calcSpan(oeste,  kiso, tOu('L7',800), tOu('L8',800), 0, beirais.oeste, false);
+           const resSul    = calcSpan(sul,    kiso, tOu('L1',800), tOu('L2',800), 0, beirais.sul,   false);
+           const resLeste  = calcSpan(leste,  kiso, tOu('L3',800), tOu('L4',800), 0, beirais.leste, false);
+           const resNdir   = calcSpan(ndir,   kiso, tOu('L5',800), tOu('L6',800), 0, beirais.norte, false);
+           const resInner  = calcSpan(inner,  kiso, tOu('L9',800), tOu('L10',800),0, beirais.inner, false);
+           const resNesq   = calcSpan(nesq,   kiso, tOu('L11',800),tOu('L12',800),0, beirais.norte, false);
 
-            // Atualizar muros
-            const lados = ['norte', 'sul', 'leste', 'oeste'];
-            lados.forEach(lado => {
-                const capitalize = lado.charAt(0).toUpperCase() + lado.slice(1);
-                const wallEl = document.getElementById(`wall${capitalize}`);
-                const labelEl = document.getElementById(`wall${capitalize}Label`);
-                
-                if (dados.muros[lado]) {
-                    wallEl.classList.add('show');
-                    labelEl.textContent = `MURO ${dados.muros[lado]}mm`;
-                } else {
-                    wallEl.classList.remove('show');
-                }
-            });
-        }
+           function fmtSpans(spans) {
+               const g = {}; spans.forEach(s => { g[s]=(g[s]||0)+1; });
+               return Object.entries(g).sort((a,b)=>b[0]-a[0]).map(([v,n])=>n>1?`${n}×${(v/1000).toFixed(1)}m`:`${(v/1000).toFixed(1)}m`).join(' + ');
+           }
+           function blocoL(res, titulo, cor) {
+               if (!res || res.spans.length === 0) return `<div style="background:#f8d7da;padding:15px;border-radius:8px;margin:10px 0;border-left:6px solid ${cor}"><strong>${titulo}</strong><br>❌ Sem solução</div>`;
+               let h = `<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:10px 0;border-left:6px solid ${cor};">`;
+               h += `<strong style="color:${cor}">${titulo}</strong><br>`;
+               h += `Plataforma: <strong>${res.plat}</strong> | Sequência: ${fmtSpans(res.spans)}<br>`;
+               h += `T1=${res.t1}mm | T2=${res.t2}mm | Total=${res.tot}mm`;
+               if (res.avisos.length) h += `<div style="background:#fff3cd;padding:8px;border-radius:4px;margin-top:8px;">${res.avisos.join('<br>')}</div>`;
+               h += '</div>'; return h;
+           }
+           let html = '<div style="background:white;padding:20px;border-radius:12px;border:3px solid #27ae60;margin-top:20px;">';
+           html += '<h2 style="color:#27ae60;margin-bottom:15px;">RESULTADO — FORMATO L</h2>';
+           html += blocoL(resOeste, 'OESTE ('+oeste+'mm)', '#9b59b6');
+           html += blocoL(resSul,   'SUL   ('+sul  +'mm)', '#e74c3c');
+           html += blocoL(resLeste, 'LESTE ('+leste+'mm)', '#f39c12');
+           html += blocoL(resNdir,  'NORTE-DIR ('+ndir+'mm)', '#3498db');
+           html += blocoL(resInner, 'INNER ('+inner+'mm)', '#27ae60');
+           html += blocoL(resNesq,  'NORTE-ESQ ('+nesq+'mm)', '#2980b9');
+           html += '</div>';
+           const el = document.createElement('div');
+           el.innerHTML = html;
+           const antigo = document.getElementById('resultadoCalculo');
+           if (antigo) antigo.remove();
+           el.id = 'resultadoCalculo';
+           document.getElementById('step3L').appendChild(el);
+           el.scrollIntoView({ behavior:'smooth' });
+       }
 
-        function calcularAndaimes() {
-            console.log('Iniciando calculo...');
-            
-            // Pegar beirais
-            const beirais = {
-                sul: parseInt(document.getElementById('beiralSul').value) || 0,
-                leste: parseInt(document.getElementById('beiralLeste').value) || 0,
-                norte: parseInt(document.getElementById('beiralNorte').value) || 0,
-                oeste: parseInt(document.getElementById('beiralOeste').value) || 0
-            };
-            
-            // Pegar varanda
-            const varandaLado = document.getElementById('varandaLado').value;
-            const varandaSaida = parseInt(document.getElementById('varandaSaida').value) || 910;
-            
-            // Medidas fixas
-            const comp = 9100;
-            const larg = 8190;
-            const kiso = 150;
-            
-            // Função de cálculo
-            function calcSpan(medida, kiso, t1, t2, muro, beiral, temVaranda) {
-                let u1 = t1 - 70;
-                let u2 = t2 - 70;
-                if (muro) {
-                    u1 += muro;
-                    u2 += muro;
-                }
-                
-                let total = medida + kiso + u1 + u2;
-                let n18 = Math.floor(total / 1800);
-                let sobra = total - (n18 * 1800);
-                
-                const pad = [1800,1200,900,600,400,200];
-                let aj1=0, aj2=0;
-                if (!pad.includes(sobra)) {
-                    for(let i=10; i<=200; i+=10) {
-                        if(pad.includes(sobra-i)){
-                            aj1=Math.floor(i/2); aj2=i-aj1;
-                            sobra-=i; break;
-                        }
-                    }
-                }
-                
-                let spans = [];
-                for(let i=0; i<n18; i++) spans.push(1.8);
-                if(sobra>=200) spans.push(sobra/1000);
-                
-                u1-=aj1; u2-=aj2;
-                let esp = Math.max(u1, u2);
-                
-                // Determinar plataforma
-                let plat;
-                if ((beiral > 900 || temVaranda) && esp >= 780) {
-                    plat = 'WW';
-                } else if (esp >= 780) {
-                    plat = 'W';
-                } else if (esp >= 580 && esp <= 700) {
-                    plat = 'S';
-                } else if (esp >= 550 && esp < 580) {
-                    plat = 'Sb';
-                } else if (esp >= 450 && esp < 550) {
-                    plat = 'M';
-                } else if (esp >= 250 && esp < 450) {
-                    plat = 'Centa';
-                } else {
-                    plat = 'ERRO';
-                }
-                
-                return {n18, spans, t1:u1, t2:u2, plat, tot:medida+kiso+u1+u2};
-            }
-            
-            // Calcular lados
-            const sul = calcSpan(comp, kiso, dados.pontos[1].terreno, dados.pontos[2].terreno, dados.muros['sul'] || 0, beirais.sul, varandaLado === 'sul');
-            const leste = calcSpan(larg, kiso, dados.pontos[3].terreno, dados.pontos[4].terreno, dados.muros['leste'] || 0, beirais.leste, varandaLado === 'leste');
-            const norte = calcSpan(comp, kiso, dados.pontos[5].terreno, dados.pontos[6].terreno, dados.muros['norte'] || 0, beirais.norte, varandaLado === 'norte');
-            const oeste = calcSpan(larg, kiso, dados.pontos[7].terreno, dados.pontos[8].terreno, dados.muros['oeste'] || 0, beirais.oeste, varandaLado === 'oeste');
-            
-            // Mostrar resultado
-            let html = '<div style="background:white; padding:25px; border-radius:12px; border:3px solid #27ae60; margin-top:30px;">';
-            html += '<h2 style="color:#27ae60; margin-bottom:20px;">RESULTADO DOS CALCULOS</h2>';
-            
-            const lados = [
-                {nome:'SUL',cor:'#e74c3c',data:sul},
-                {nome:'LESTE',cor:'#f39c12',data:leste},
-                {nome:'NORTE',cor:'#3498db',data:norte},
-                {nome:'OESTE',cor:'#9b59b6',data:oeste}
-            ];
-            
-            lados.forEach(l => {
-                html += `<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin:15px 0; border-left:6px solid ${l.cor};">`;
-                html += `<h3 style="color:${l.cor}; margin-bottom:15px;">${l.nome}</h3>`;
-                html += '<div style="font-size:14px; line-height:2;">';
-                html += `<div><strong>Spans 1.8m:</strong> ${l.data.n18} circulos</div>`;
-                html += `<div><strong>Plataforma:</strong> <span style="background:#27ae60; color:white; padding:4px 12px; border-radius:12px; font-weight:700;">${l.data.plat}</span></div>`;
-                html += `<div><strong>Terrenos:</strong> ${l.data.t1}mm | ${l.data.t2}mm</div>`;
-                html += `<div><strong>Sequencia:</strong> ${l.data.spans.map(s=>s.toFixed(1)+'m').join(' + ')}</div>`;
-                html += `<div><strong>Total:</strong> ${l.data.tot}mm</div>`;
-                html += '</div></div>';
-            });
-            
-            html += '<div style="background:#ecf0f1; padding:15px; border-radius:8px; margin-top:20px;">';
-            html += '<strong>Legenda:</strong><br>';
-            html += 'W: 780-930mm | S: 580-700mm | Sb: 550-580mm | M: 450-550mm | Centa: 250-450mm | WW: Dupla W (beiral>900 ou varanda)';
-            html += '</div>';
-            
-            html += '</div>';
-            
-            const div = document.createElement('div');
-            div.id = 'resultadoCalculo';
-            div.innerHTML = html;
-            
-            const antigo = document.getElementById('resultadoCalculo');
-            if (antigo) antigo.remove();
-            
-            document.getElementById('step3').appendChild(div);
-            div.scrollIntoView({behavior:'smooth'});
-        }
+       function atualizarPortaDiagrama() {
+           // Remover marcação anterior
+           document.querySelectorAll('.door-marker').forEach(el => el.remove());
 
-        // Enter para salvar
-        document.getElementById('inputTerreno').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                salvarPonto();
-            }
-        });
+           const diagrama = document.getElementById('houseDiagram');
+           const porta = document.createElement('div');
+           porta.className = 'door-marker';
+           porta.textContent = '🚪';
 
-        // Fechar modal tocando fora
-        document.getElementById('modal').addEventListener('click', (e) => {
-            if (e.target.id === 'modal') {
-                fecharModal();
-            }
-        });
-    </script>
+           // Posicionar conforme o lado selecionado
+           const estilos = {
+               sul:   'position:absolute; bottom:-60px; left:50%; transform:translateX(-50%); font-size:32px;',
+               norte: 'position:absolute; top:-60px;    left:50%; transform:translateX(-50%); font-size:32px;',
+               leste: 'position:absolute; right:-60px;  top:50%;  transform:translateY(-50%); font-size:32px;',
+               oeste: 'position:absolute; left:-60px;   top:50%;  transform:translateY(-50%); font-size:32px;'
+           };
+           porta.style.cssText = estilos[ladoPorta];
+           diagrama.appendChild(porta);
+       }
+
+       function abrirModal(ponto, descricao) {
+           pontoAtual = ponto;
+           document.getElementById('modalTitle').textContent = `Ponto ${ponto} - ${descricao}`;
+
+           // Preencher valores existentes
+           if (dados.pontos[ponto]) {
+               document.getElementById('inputTerreno').value = dados.pontos[ponto].terreno;
+           } else {
+               document.getElementById('inputTerreno').value = '';
+           }
+
+           // Mostrar opção de muro apenas para pontos do mesmo lado
+           const ladosMuro = {
+               1: 'sul', 2: 'sul',
+               3: 'leste', 4: 'leste',
+               5: 'norte', 6: 'norte',
+               7: 'oeste', 8: 'oeste'
+           };
+
+           const lado = ladosMuro[ponto];
+           const primeiroDoLado = (ponto === 1 || ponto === 3 || ponto === 5 || ponto === 7);
+
+           if (primeiroDoLado) {
+               document.getElementById('muroSection').classList.remove('hidden');
+               if (dados.muros[lado]) {
+                   document.getElementById('inputMuro').checked = true;
+                   document.getElementById('muroSelectModal').classList.add('show');
+                   document.getElementById('inputMuroLargura').value = dados.muros[lado];
+               } else {
+                   document.getElementById('inputMuro').checked = false;
+                   document.getElementById('muroSelectModal').classList.remove('show');
+               }
+           } else {
+               document.getElementById('muroSection').classList.add('hidden');
+           }
+
+           document.getElementById('modal').classList.add('show');
+           setTimeout(() => document.getElementById('inputTerreno').focus(), 300);
+       }
+
+       function toggleMuroModal() {
+           const checked = document.getElementById('inputMuro').checked;
+           const select = document.getElementById('muroSelectModal');
+           if (checked) {
+               select.classList.add('show');
+           } else {
+               select.classList.remove('show');
+           }
+       }
+
+       function fecharModal() {
+           document.getElementById('modal').classList.remove('show');
+       }
+
+       function salvarPonto() {
+           const terreno = parseInt(document.getElementById('inputTerreno').value);
+
+           if (!terreno || terreno <= 0) {
+               alert('⚠️ Digite um valor válido!');
+               return;
+           }
+
+           // Salvar terreno
+           dados.pontos[pontoAtual] = { terreno };
+
+           // Salvar muro se for primeiro do lado
+           const ladosMuro = {
+               1: 'sul', 2: 'sul',
+               3: 'leste', 4: 'leste',
+               5: 'norte', 6: 'norte',
+               7: 'oeste', 8: 'oeste'
+           };
+
+           const lado = ladosMuro[pontoAtual];
+           const primeiroDoLado = (pontoAtual === 1 || pontoAtual === 3 || pontoAtual === 5 || pontoAtual === 7);
+
+           if (primeiroDoLado) {
+               if (document.getElementById('inputMuro').checked) {
+                   dados.muros[lado] = parseInt(document.getElementById('inputMuroLargura').value);
+               } else {
+                   delete dados.muros[lado];
+               }
+           }
+
+           atualizarVisual();
+           fecharModal();
+
+           // Verificar se todos os 8 pontos foram preenchidos
+           if (Object.keys(dados.pontos).length === 8) {
+               document.getElementById('camposExtras').classList.remove('hidden');
+               document.getElementById('btnFinalizar').style.display = 'block';
+           }
+       }
+
+       function atualizarVisual() {
+           // Atualizar cor do ponto
+           for (let i = 1; i <= 8; i++) {
+               const ponto = document.querySelector(`.p${i}`);
+               if (dados.pontos[i]) {
+                   ponto.classList.add('filled');
+                   document.getElementById(`value${i}`).textContent = dados.pontos[i].terreno + 'mm';
+                   document.getElementById(`value${i}`).style.display = 'block';
+               }
+           }
+
+           // Atualizar muros
+           const lados = ['norte', 'sul', 'leste', 'oeste'];
+           lados.forEach(lado => {
+               const capitalize = lado.charAt(0).toUpperCase() + lado.slice(1);
+               const wallEl = document.getElementById(`wall${capitalize}`);
+               const labelEl = document.getElementById(`wall${capitalize}Label`);
+
+               if (dados.muros[lado]) {
+                   wallEl.classList.add('show');
+                   labelEl.textContent = `MURO ${dados.muros[lado]}mm`;
+               } else {
+                   wallEl.classList.remove('show');
+               }
+           });
+       }
+
+       function calcularAndaimes() {
+           console.log('Iniciando calculo v2...');
+
+           const comp = parseInt(document.getElementById('comprimento').value);
+           const larg = parseInt(document.getElementById('largura').value);
+           const kiso = parseInt(document.getElementById('kiso').value);
+
+           if (!comp || !larg || !kiso) {
+               alert('Por favor, preencha todas as medidas do alicerce!');
+               return;
+           }
+
+           const beirais = {
+               sul: parseInt(document.getElementById('beiralSul').value) || 0,
+               leste: parseInt(document.getElementById('beiralLeste').value) || 0,
+               norte: parseInt(document.getElementById('beiralNorte').value) || 0,
+               oeste: parseInt(document.getElementById('beiralOeste').value) || 0
+           };
+
+           const varandaLado = document.getElementById('varandaLado').value;
+
+           // ─────────────────────────────────────────────────────────────
+           // DETERMINAR PLATAFORMA
+           // W:   780–920mm normal | 921–960mm zona de alerta (evitar)
+           // WS:  970–1090mm (W+S juntos, precisa peça 200mm interna)
+           // WW:  1100–1230mm (dupla W, beiral>900 ou varanda)
+           // ─────────────────────────────────────────────────────────────
+           function determinarPlat(espacoMax, beiral, temVaranda) {
+               if (espacoMax >= 1100 || temVaranda || beiral > 900)
+                   return { plat:'WW',    min:1100, max:1230, meio:1165, aviso:'' };
+               if (espacoMax >= 970)
+                   return { plat:'WS',    min:970,  max:1090, meio:1030, aviso:'⚠️ WS: precisa peça 200mm interna para plataforma S' };
+               if (espacoMax >= 921)
+                   return { plat:'W⚠️',  min:780,  max:960,  meio:870,  aviso:'⚠️ Zona 921–960mm — perto do limite. Prefira WS ou reduza para W padrão' };
+               if (espacoMax >= 780)
+                   return { plat:'W',     min:780,  max:920,  meio:850,  aviso:'' };
+               if (espacoMax >= 580)
+                   return { plat:'S',     min:580,  max:700,  meio:640,  aviso:'' };
+               if (espacoMax >= 550)
+                   return { plat:'Sb',    min:550,  max:580,  meio:565,  aviso:'' };
+               if (espacoMax >= 450)
+                   return { plat:'M',     min:450,  max:550,  meio:500,  aviso:'' };
+               if (espacoMax >= 250)
+                   return { plat:'Centa', min:250,  max:450,  meio:350,  aviso:'' };
+               return { plat:'ERRO', min:0, max:250, meio:125, aviso:'❌ Espaço insuficiente' };
+           }
+
+           // Lista ordenada de plataformas para fallback
+           const PLAT_LIST = [
+               { plat:'WW',    min:1100, max:1230, meio:1165, aviso:'' },
+               { plat:'WS',    min:970,  max:1090, meio:1030, aviso:'⚠️ WS: precisa peça 200mm interna' },
+               { plat:'W⚠️',  min:780,  max:960,  meio:870,  aviso:'⚠️ Zona limite 921–960mm' },
+               { plat:'W',     min:780,  max:920,  meio:850,  aviso:'' },
+               { plat:'S',     min:580,  max:700,  meio:640,  aviso:'' },
+               { plat:'Sb',    min:550,  max:580,  meio:565,  aviso:'' },
+               { plat:'M',     min:450,  max:550,  meio:500,  aviso:'' },
+               { plat:'Centa', min:250,  max:450,  meio:350,  aviso:'' },
+           ];
+
+           // ─────────────────────────────────────────────────────────────
+           // MOTOR PRINCIPAL DE CÁLCULO
+           // Estratégia: testar n×1800 + extra (extra = 0,1200,900,600,400,200)
+           // Para cada combinação, distribuir terrenos equilibradamente no meio da faixa
+           // Escolher a que tiver menor desvio do meio da faixa (sem chegar nos extremos)
+           // ─────────────────────────────────────────────────────────────
+           function calcSpan(medida, kiso, t1_disp, t2_disp, muro, beiral, temVaranda) {
+               const avisos = [];
+               let util1 = t1_disp - 70;
+               let util2 = t2_disp - 70;
+               if (muro) { util1 += muro; util2 += muro; }
+               const baseFixa = medida + kiso;
+
+               // ── Todas as plataformas — W é a preferida ───────────────
+               // Penalidade: W=0 (melhor), WS/WW=300/600 (maior=pior), S/M também penalizados
+               const PLATS = [
+                   { plat:'WW',    min:1100, max:1230, meio:1165, pen:600 },
+                   { plat:'WS',    min:970,  max:1090, meio:1030, pen:300 },
+                   { plat:'W',     min:780,  max:960,  meio:870,  pen:0   }, // ← PREFERIDA
+                   { plat:'S',     min:580,  max:700,  meio:640,  pen:300 },
+                   { plat:'Sb',    min:550,  max:580,  meio:565,  pen:400 },
+                   { plat:'M',     min:450,  max:550,  meio:500,  pen:500 },
+                   { plat:'Centa', min:250,  max:450,  meio:350,  pen:600 },
+               ];
+
+               // ── Combos de peças extras ────────────────────────────────
+               function qualPecas(ps) {
+                   return ps.filter(p => p === 400).length * 100 +
+                          ps.filter(p => p === 200).length * 300;
+               }
+               const extrasMap = new Map();
+               extrasMap.set(0, []);
+               function gerarCombos(pecasDisp, atual, lista, prof) {
+                   if (prof >= 5) return;
+                   for (const p of pecasDisp) {
+                       const soma = atual + p;
+                       if (soma >= 5 * 1800) continue;
+                       const novaLista = [...lista, p];
+                       const existente = extrasMap.get(soma);
+                       const melhor = !existente
+                           || novaLista.length < existente.length
+                           || (novaLista.length === existente.length && qualPecas(novaLista) < qualPecas(existente));
+                       if (melhor) extrasMap.set(soma, novaLista);
+                       gerarCombos(pecasDisp, soma, novaLista, prof + 1);
+                   }
+               }
+               gerarCombos([1200, 900, 600],          0, [], 0);
+               gerarCombos([1200, 900, 600, 400, 200], 0, [], 0);
+
+               const extras = Array.from(extrasMap.keys()).sort((a, b) => {
+                   if (a === 0) return -1; if (b === 0) return 1;
+                   const pa = extrasMap.get(a), pb = extrasMap.get(b);
+                   if (pa.length !== pb.length) return pa.length - pb.length;
+                   return qualPecas(pa) - qualPecas(pb) || b - a;
+               });
+
+               // ── Testar todas as plataformas, preferindo W ─────────────
+               let melhorGlobal = null;
+               let menorDesvio  = Infinity;
+
+               for (const P of PLATS) {
+                   if (Math.max(util1, util2) < P.min) continue;
+
+                   // Segurança do beiral: mínimo = beiral + 50mm (nunca pisar no telhado)
+                   const bMargin = beiral > 0 ? beiral + 50 : 0;
+                   const lo = Math.max(P.min, bMargin);
+                   const r1 = Math.min(util1, P.max);
+                   const r2 = Math.min(util2, P.max);
+
+                   // Ambos os lados devem alcançar lo
+                   if (lo > r1 || lo > r2) continue;
+
+                   const nMin = Math.max(0, Math.floor((baseFixa + lo + lo) / 1800));
+                   const nMax = Math.ceil((baseFixa + r1 + r2) / 1800) + 1;
+
+                   for (let n = nMin; n <= nMax; n++) {
+                       for (const extra of extras) {
+                           const eNec = n * 1800 + extra - baseFixa;
+                           if (eNec < lo + lo) continue;
+                           if (eNec > r1 + r2)  continue;
+
+                           // Distribuir eNec entre a1 e a2 (equilibrar ao meio da plataforma)
+                           let a1, a2;
+                           const meio = eNec / 2;
+                           if (meio >= lo && meio <= r1 && meio >= lo && meio <= r2) {
+                               a1 = Math.round(meio); a2 = eNec - a1;
+                               if (a2 > r2)  { a2 = r2;  a1 = eNec - a2; }
+                               if (a2 < lo)  { a2 = lo;  a1 = eNec - a2; }
+                           } else {
+                               a1 = Math.min(r1, Math.max(lo, eNec - r2));
+                               a2 = eNec - a1;
+                               if (a2 > r2 || a2 < lo) {
+                                   a2 = Math.min(r2, Math.max(lo, eNec - r1));
+                                   a1 = eNec - a2;
+                               }
+                           }
+                           if (a1 < lo || a1 > r1) continue;
+                           if (a2 < lo || a2 > r2) continue;
+
+                           const ps = extrasMap.get(extra);
+                           // Penalidade: plataforma (W=0 melhor) + peças ruins + quantidade
+                           const penalidade = P.pen + ps.length * 8 + qualPecas(ps);
+                           const desvio = Math.abs(a1 - P.meio) + Math.abs(a2 - P.meio) + penalidade;
+
+                           if (desvio < menorDesvio) {
+                               menorDesvio  = desvio;
+                               melhorGlobal = { n18: n, extra, a1, a2, P };
+                           }
+                       }
+                   }
+               }
+
+               if (!melhorGlobal) {
+                   avisos.push(`⚠️ Sem solução. Verifique as medidas.`);
+                   return { spans: [], t1: 0, t2: 0, plat: '?', tot: 0, avisos };
+               }
+
+               const { n18, extra: bestExtra, a1: fa1, a2: fa2, P: bestP } = melhorGlobal;
+               const plat = bestP.plat;
+
+               // ── Avisos ─────────────────────────────────────────────────
+               if (plat === 'WS')  avisos.push('ℹ️ WS: terreno largo — precisa peça 200mm interna na plataforma S');
+               if (plat === 'WW')  avisos.push('ℹ️ WW: terreno muito largo — dupla plataforma W');
+               if (plat === 'W' && (fa1 > 920 || fa2 > 920)) avisos.push('⚠️ Zona 921–960mm — perto do limite máximo de W');
+               if (beiral > 0 && fa1 < beiral + 50) avisos.push(`⚠️ Esq ${fa1}mm — menos de 50mm de folga do beiral (${beiral}mm)`);
+               if (beiral > 0 && fa2 < beiral + 50) avisos.push(`⚠️ Dir ${fa2}mm — menos de 50mm de folga do beiral (${beiral}mm)`);
+               if (util1 < bestP.min) avisos.push(`⚠️ Esquerda (${t1_disp}mm) estreito para ${plat}`);
+               if (util2 < bestP.min) avisos.push(`⚠️ Direita (${t2_disp}mm) estreito para ${plat}`);
+               if (fa1 < 460) avisos.push(`⚠️ Esquerda ${fa1}mm — menor que mínimo 460mm`);
+               if (fa2 < 460) avisos.push(`⚠️ Direita ${fa2}mm — menor que mínimo 460mm`);
+
+               // ── Montar spans ───────────────────────────────────────────
+               const spans = [];
+               for (let i = 0; i < n18; i++) spans.push(1800);
+               const pecasExtra = extrasMap.get(bestExtra).slice().sort((a, b) => b - a);
+               pecasExtra.forEach(p => spans.push(p));
+
+               if (pecasExtra.length > 0) {
+                   const temRuim = pecasExtra.some(p => p <= 400);
+                   avisos.push(`${temRuim ? '⚠️' : 'ℹ️'} Extra: ${pecasExtra.join('+')}mm`);
+               }
+
+               return { spans, t1: fa1, t2: fa2, plat, tot: baseFixa + fa1 + fa2, avisos };
+           }
+
+           // ─────────────────────────────────────────────────────────────
+           // VERIFICAÇÃO DE ESQUINAS (dois lados com peça pequena na mesma esquina)
+           // ─────────────────────────────────────────────────────────────
+
+           // MAPEAMENTO DOS PONTOS:
+           //     [5]────[6]  NORTE
+           //      │      │
+           // [7]  │  🏠  │  [3]
+           //      │      │
+           // [8]  │      │  [4]
+           //      │      │
+           //     [1]────[2]  SUL
+           //
+           // p1,p2 = espaço que sai para SUL  → usado por LESTE e OESTE
+           // p3,p4 = espaço que sai para LESTE → usado por SUL e NORTE
+           // p5,p6 = espaço que sai para NORTE → usado por LESTE e OESTE
+           // p7,p8 = espaço que sai para OESTE → usado por SUL e NORTE
+           //
+           // SUL  (comp): t1=p8(SW-oeste), t2=p4(SE-leste)
+           // NORTE(comp): t1=p7(NW-oeste), t2=p3(NE-leste)
+           // LESTE(larg): t1=p6(NE-norte), t2=p2(SE-sul)
+           // OESTE(larg): t1=p5(NW-norte), t2=p1(SW-sul)
+
+           const avisosFunilamento = [];
+           const t = dados.pontos;
+
+           if (t[7].terreno !== t[8].terreno)
+               avisosFunilamento.push(`ℹ️ Lado OESTE afunila: p7=${t[7].terreno}mm (Norte) ≠ p8=${t[8].terreno}mm (Sul) — SUL usa p8, NORTE usa p7`);
+           if (t[3].terreno !== t[4].terreno)
+               avisosFunilamento.push(`ℹ️ Lado LESTE afunila: p3=${t[3].terreno}mm (Norte) ≠ p4=${t[4].terreno}mm (Sul) — SUL usa p4, NORTE usa p3`);
+           if (t[5].terreno !== t[6].terreno)
+               avisosFunilamento.push(`ℹ️ Lado NORTE afunila: p5=${t[5].terreno}mm (Oeste) ≠ p6=${t[6].terreno}mm (Leste) — LESTE usa p6, OESTE usa p5`);
+           if (t[1].terreno !== t[2].terreno)
+               avisosFunilamento.push(`ℹ️ Lado SUL afunila: p1=${t[1].terreno}mm (Oeste) ≠ p2=${t[2].terreno}mm (Leste) — LESTE usa p2, OESTE usa p1`);
+
+           const sul   = calcSpan(comp, kiso, t[8].terreno, t[4].terreno, dados.muros['sul']   || 0, beirais.sul,   varandaLado === 'sul');
+           const norte = calcSpan(comp, kiso, t[7].terreno, t[3].terreno, dados.muros['norte'] || 0, beirais.norte, varandaLado === 'norte');
+           const leste = calcSpan(larg, kiso, t[6].terreno, t[2].terreno, dados.muros['leste'] || 0, beirais.leste, varandaLado === 'leste');
+           const oeste = calcSpan(larg, kiso, t[5].terreno, t[1].terreno, dados.muros['oeste'] || 0, beirais.oeste, varandaLado === 'oeste');
+
+           // Verificar esquinas: onde dois lados se encontram fisicamente
+           // SW(p8): SUL-inicio + OESTE-inicio | SE(p4): SUL-fim + LESTE-fim
+           // NE(p3): NORTE-fim + LESTE-inicio  | NW(p7): NORTE-inicio + OESTE-fim
+           const avisoEsquinas = [];
+           const LIMITE_ESQUINA = 400;
+
+           function ultimasPecas(spans) {
+               if (!spans || spans.length === 0) return 9999; // sem spans = sem problema de esquina
+               return spans[spans.length - 1];
+           }
+           function primeirasPecas(spans) {
+               if (!spans || spans.length === 0) return 9999;
+               return spans[0];
+           }
+
+           function verificarEsquina(nome, pecaA, pecaB) {
+               if (pecaA <= LIMITE_ESQUINA && pecaB <= LIMITE_ESQUINA) {
+                   avisoEsquinas.push(`⚠️ ESQUINA ${nome}: dois lados terminam com peça pequena (${pecaA}mm + ${pecaB}mm) — não encaixam!`);
+               }
+           }
+
+           verificarEsquina('SW (p8)', primeirasPecas(sul.spans),  primeirasPecas(oeste.spans));
+           verificarEsquina('SE (p4)', ultimasPecas(sul.spans),    ultimasPecas(leste.spans));
+           verificarEsquina('NE (p3)', primeirasPecas(norte.spans), primeirasPecas(leste.spans));
+           verificarEsquina('NW (p7)', ultimasPecas(norte.spans),   ultimasPecas(oeste.spans));
+
+           // ─────────────────────────────────────────────────────────────
+           // MONTAR HTML DE RESULTADO
+           // ─────────────────────────────────────────────────────────────
+           function fmtSpans(spans) {
+               const grupos = {};
+               spans.forEach(s => { grupos[s] = (grupos[s] || 0) + 1; });
+               return Object.entries(grupos)
+                   .sort((a,b) => b[0]-a[0])
+                   .map(([v, n]) => n > 1 ? `${n}×${(v/1000).toFixed(1)}m` : `${(v/1000).toFixed(1)}m`)
+                   .join(' + ');
+           }
+
+           function blocoLado(res, titulo, cor, infoLinha1, infoLinha2) {
+               let h = `<div style="background:#f8f9fa; padding:20px; border-radius:8px; margin:15px 0; border-left:6px solid ${cor};">`;
+               h += `<h3 style="color:${cor}; margin-bottom:15px;">${titulo}</h3>`;
+               h += `<div style="font-size:14px; line-height:2;">`;
+               h += `<div><strong>Plataforma:</strong> <span style="background:#27ae60; color:white; padding:4px 12px; border-radius:12px; font-weight:700;">${res.plat}</span></div>`;
+               h += `<div><strong>Sequência:</strong> ${fmtSpans(res.spans)}</div>`;
+               h += `<div style="margin-top:10px; padding:10px; background:white; border-radius:6px; font-size:13px;">`;
+               h += `<div>${infoLinha1} → <strong>T1=${res.t1}mm | T2=${res.t2}mm</strong></div>`;
+               h += `<div style="color:#777; margin-top:4px;">${infoLinha2}</div>`;
+               h += `</div>`;
+               h += `<div style="margin-top:5px;"><strong>Total:</strong> ${res.tot}mm</div>`;
+               if (res.avisos.length) {
+                   h += `<div style="margin-top:10px; background:#fff3cd; padding:10px; border-radius:6px;">`;
+                   res.avisos.forEach(a => { h += `<div>${a}</div>`; });
+                   h += `</div>`;
+               }
+               h += `</div></div>`;
+               return h;
+           }
+
+           const nomesPorta = { sul:'南 Minami (SUL)', norte:'北 Kita (NORTE)', leste:'東 Higashi (LESTE)', oeste:'西 Nishi (OESTE)' };
+
+           let html = '<div style="background:white; padding:25px; border-radius:12px; border:3px solid #27ae60; margin-top:30px;">';
+           html += '<h2 style="color:#27ae60; margin-bottom:10px;">RESULTADO DOS CALCULOS</h2>';
+           html += `<div style="background:#f0f0f0; padding:10px; border-radius:6px; margin-bottom:15px; font-size:14px;">🚪 Porta: <strong>${nomesPorta[ladoPorta]}</strong></div>`;
+
+           // SUL usa p8(SW-oeste) e p4(SE-leste) | NORTE usa p7(NW-oeste) e p3(NE-leste)
+           html += blocoLado(sul, `SUL / NORTE — Comprimento ${comp}mm`, '#e74c3c',
+               `SUL: Oeste(p8=${t[8].terreno}mm) ← | → Leste(p4=${t[4].terreno}mm)`,
+               `NORTE: Oeste(p7=${t[7].terreno}mm) ← | → Leste(p3=${t[3].terreno}mm)`);
+
+           // LESTE usa p6(NE-norte) e p2(SE-sul) | OESTE usa p5(NW-norte) e p1(SW-sul)
+           html += blocoLado(leste, `LESTE / OESTE — Largura ${larg}mm`, '#f39c12',
+               `LESTE: Norte(p6=${t[6].terreno}mm) ← | → Sul(p2=${t[2].terreno}mm)`,
+               `OESTE: Norte(p5=${t[5].terreno}mm) ← | → Sul(p1=${t[1].terreno}mm)`);
+
+           // Avisos de esquina
+           if (avisoEsquinas.length) {
+               html += '<div style="background:#f8d7da; border:2px solid #e74c3c; padding:15px; border-radius:8px; margin-top:15px;">';
+               html += '<strong>⚠️ ESQUINAS COM CONFLITO:</strong>';
+               html += '<div style="font-size:13px; color:#555; margin-top:4px;">Duas peças pequenas na mesma esquina — andaime não encaixa. Ajustar um dos lados.</div>';
+               avisoEsquinas.forEach(a => { html += `<div style="margin-top:8px; font-weight:600;">${a}</div>`; });
+               html += '</div>';
+           } else {
+               html += '<div style="background:#d4edda; border:2px solid #27ae60; padding:12px; border-radius:8px; margin-top:15px;">✅ Todas as esquinas OK</div>';
+           }
+
+           // Aviso de afunilamento — só se existir, em formato simples
+           if (avisosFunilamento.length) {
+               html += '<div style="background:#fff3cd; border:2px solid #ffc107; padding:12px; border-radius:8px; margin-top:10px; font-size:13px;">';
+               html += '<strong>ℹ️ Terreno afunila (valores diferentes — usada média):</strong><br>';
+               avisosFunilamento.forEach(a => { html += `<div style="margin-top:4px;">${a}</div>`; });
+               html += '</div>';
+           }
+
+           html += '<div style="background:#ecf0f1; padding:12px; border-radius:8px; margin-top:15px; font-size:12px; color:#555;">';
+           html += '<strong>Plataformas:</strong> W 780-920mm | S 580-700mm | Sb 550-580mm | M 450-550mm | Centa 250-450mm | WW Dupla W';
+           html += '</div></div>';
+
+           const div = document.createElement('div');
+           div.id = 'resultadoCalculo';
+           div.innerHTML = html;
+
+           const antigo = document.getElementById('resultadoCalculo');
+           if (antigo) antigo.remove();
+
+           document.getElementById('step3').appendChild(div);
+           div.scrollIntoView({behavior:'smooth'});
+
+           // Passar resultados para o passo 4 (fotos)
+           // Norte e Oeste são espelhados: quando se olha de fora, esq/dir inverte
+           mostrarStep4({
+               sul:   { spans: sul.spans,                          t1: sul.t1,   t2: sul.t2,   plat: sul.plat },
+               norte: { spans: [...norte.spans].reverse(),         t1: norte.t2, t2: norte.t1, plat: norte.plat },
+               leste: { spans: leste.spans,                        t1: leste.t1, t2: leste.t2, plat: leste.plat },
+               oeste: { spans: [...oeste.spans].reverse(),         t1: oeste.t2, t2: oeste.t1, plat: oeste.plat }
+           }, { sul: beirais.sul, norte: beirais.norte, leste: beirais.leste, oeste: beirais.oeste },
+              comp, larg);
+       }
+
+       // Enter para salvar
+       document.getElementById('inputTerreno').addEventListener('keypress', (e) => {
+           if (e.key === 'Enter') {
+               salvarPonto();
+           }
+       });
+
+       // Fechar modal tocando fora
+       document.getElementById('modal').addEventListener('click', (e) => {
+           if (e.target.id === 'modal') {
+               fecharModal();
+           }
+       });
+
+       // ─────────────────────────────────────────────────────────────
+       // ─────────────────────────────────────────────────────────────
+       // ─────────────────────────────────────────────────────────────
+       // PASSO 4 — v14
+       // Zoom: resize REAL do canvas → scroll nativo funciona
+       // Calibração: toca → pino aparece → arrasta para ajustar →
+       //             confirma fora do canvas → próximo ponto
+       // 3 pontos: P1(base esq), P2(base dir), GL(chão)
+       // ─────────────────────────────────────────────────────────────
+
+       let ladoAtual       = 'sul';
+       let fotosData       = {};
+       let calibData       = {};
+       let resultadosCalc  = {};
+       let beiraisCalc     = {};
+       let medidasCalc     = { comp: 0, larg: 0 };
+       let alturaCalhaData = {};
+       let beiralLadoData  = {};
+       // zoom como fator de escala do canvas (resize real)
+       let zoomAtual = 1.0;
+       const ZOOM_MIN = 0.5, ZOOM_MAX = 6.0;
+
+       const nomesPt  = { sul:'SUL 南', norte:'NORTE 北', leste:'LESTE 東', oeste:'OESTE 西' };
+       const coresAba = { sul:'#e74c3c', norte:'#3498db', leste:'#f39c12', oeste:'#9b59b6' };
+       const COR_INATIVO = '#bdc3c7', COR_ATIVO = '#e67e22', COR_OK = '#27ae60';
+
+       // ── Zoom REAL: redimensiona canvas → scroll funciona ──────────
+       function ajustarZoom(delta) {
+           zoomAtual = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomAtual + delta));
+           redrawCanvas(ladoAtual);
+           document.getElementById('zoom-label').textContent = zoomAtual.toFixed(1) + '×';
+       }
+       function resetZoom() { zoomAtual = 1.0; redrawCanvas(ladoAtual); document.getElementById('zoom-label').textContent = '1×'; }
+
+       function redrawCanvas(lado) {
+           const canvas = document.getElementById('fotoCanvas');
+           const img    = fotosData[lado];
+           if (!img) return;
+           const baseW = Math.min(750, window.innerWidth - 50);
+           canvas.width  = baseW * zoomAtual;
+           canvas.height = (img.height / img.width) * canvas.width;
+           const ctx = canvas.getContext('2d');
+           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+           // Redesenhar pins e linhas
+           const calib = calibData[lado];
+           if (calib) {
+               if (calib.p1) desenharPin(ctx, calib.p1.x * zoomAtual, calib.p1.y * zoomAtual, 'P1', '#f39c12');
+               if (calib.p2) {
+                   desenharPin(ctx, calib.p2.x * zoomAtual, calib.p2.y * zoomAtual, 'P2', '#f39c12');
+                   ctx.beginPath();
+                   ctx.moveTo(calib.p1.x*zoomAtual, calib.p1.y*zoomAtual);
+                   ctx.lineTo(calib.p2.x*zoomAtual, calib.p2.y*zoomAtual);
+                   ctx.strokeStyle='#f39c12'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+               }
+               if (calib.p3) {
+                   desenharPin(ctx, calib.p3.x * zoomAtual, calib.p3.y * zoomAtual, 'GL', '#27ae60');
+                   ctx.beginPath();
+                   ctx.moveTo(0, calib.p3.y * zoomAtual);
+                   ctx.lineTo(canvas.width, calib.p3.y * zoomAtual);
+                   ctx.strokeStyle='#27ae60'; ctx.lineWidth=1; ctx.setLineDash([8,5]); ctx.stroke(); ctx.setLineDash([]);
+               }
+               if (calib.estado === 'calibrado' && resultadosCalc[lado]) desenharLinhasNoCanvas(lado);
+           }
+       }
+
+       // ── Badges de progresso ───────────────────────────────────────
+       function atualizarBadges(estado) {
+           const b1=document.getElementById('badge-p1'), b2=document.getElementById('badge-p2'), b3=document.getElementById('badge-p3');
+           if (!b1) return;
+           b1.style.background = b2.style.background = b3.style.background = COR_INATIVO;
+           if      (estado==='aguardando_p1')      { b1.style.background=COR_ATIVO; }
+           else if (estado==='confirmando_p1')      { b1.style.background=COR_ATIVO; }
+           else if (estado==='aguardando_p2')       { b1.style.background=COR_OK; b2.style.background=COR_ATIVO; }
+           else if (estado==='confirmando_p2')      { b1.style.background=COR_OK; b2.style.background=COR_ATIVO; }
+           else if (estado==='aguardando_medida')   { b1.style.background=COR_OK; b2.style.background=COR_OK; }
+           else if (estado==='aguardando_p3')       { b1.style.background=COR_OK; b2.style.background=COR_OK; b3.style.background=COR_ATIVO; }
+           else if (estado==='confirmando_p3')      { b1.style.background=COR_OK; b2.style.background=COR_OK; b3.style.background=COR_ATIVO; }
+           else if (estado==='calibrado')           { b1.style.background=b2.style.background=b3.style.background=COR_OK; }
+       }
+
+       // ── Pin marker (ponta = pixel exato) ─────────────────────────
+       function desenharPin(ctx, x, y, label, cor) {
+           const R=12, TH=18;
+           ctx.save(); ctx.translate(x, y);
+           ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-6,-TH); ctx.lineTo(6,-TH); ctx.closePath();
+           ctx.fillStyle=cor; ctx.fill();
+           ctx.beginPath(); ctx.arc(0,-(TH+R),R,0,Math.PI*2);
+           ctx.fillStyle=cor; ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=2.5; ctx.stroke();
+           ctx.fillStyle='white'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+           ctx.fillText(label, 0, -(TH+R));
+           ctx.restore();
+       }
+
+       // ── mostrarStep4 ──────────────────────────────────────────────
+       function mostrarStep4(resultados, beirais, comp, larg) {
+           resultadosCalc = resultados;
+           beiraisCalc    = beirais;
+           medidasCalc    = { comp, larg };
+           document.getElementById('step4').classList.remove('hidden');
+           document.getElementById('step4').scrollIntoView({ behavior:'smooth' });
+           abrirAba('sul');
+       }
+
+       function abrirAba(lado) {
+           ladoAtual = lado; zoomAtual = 1.0;
+           ['sul','norte','leste','oeste'].forEach(l => {
+               const b = document.getElementById('tab-'+l);
+               b.style.background = l===lado ? coresAba[l] : '#ecf0f1';
+               b.style.color      = l===lado ? 'white' : '#333';
+           });
+           document.getElementById('nomeLadoAtual').textContent = nomesPt[lado];
+           const isComp = lado==='sul'||lado==='norte';
+           document.getElementById('label-auto-medidas').textContent = isComp
+               ? `Comp=${medidasCalc.comp}mm → 1:100 = ${(medidasCalc.comp/100).toFixed(0)}mm no papel`
+               : `Larg=${medidasCalc.larg}mm → 1:100 = ${(medidasCalc.larg/100).toFixed(0)}mm no papel`;
+           document.getElementById('beiralLadoAtual').value =
+               beiralLadoData[lado]!==undefined ? beiralLadoData[lado] : (beiraisCalc[lado]||0);
+           document.getElementById('alturaCalha').value = alturaCalhaData[lado]||'';
+
+           if (fotosData[lado]) {
+               document.getElementById('zona-upload').style.display     = 'none';
+               document.getElementById('canvas-container').style.display = 'block';
+               document.getElementById('zoom-controls').style.display   = 'flex';
+               document.getElementById('painel-calib').style.display    = 'block';
+               document.getElementById('painel-altura').style.display   = 'block';
+               redrawCanvas(lado);
+               atualizarStatusEscala(lado);
+               const calib = calibData[lado];
+               document.getElementById('acoes-foto').style.display = (calib&&calib.estado==='calibrado') ? 'grid' : 'none';
+               if (calib) atualizarBadges(calib.estado);
+           } else {
+               document.getElementById('zona-upload').style.display     = 'block';
+               document.getElementById('canvas-container').style.display = 'none';
+               document.getElementById('zoom-controls').style.display   = 'none';
+               document.getElementById('painel-calib').style.display    = 'none';
+               document.getElementById('painel-altura').style.display   = 'none';
+               document.getElementById('acoes-foto').style.display      = 'none';
+               document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+               document.getElementById('status-calib').style.display    = 'none';
+               document.getElementById('input-medida-real').style.display = 'none';
+               document.getElementById('btn-limpar-pontos').style.display = 'none';
+               document.getElementById('status-escala').style.display   = 'none';
+               atualizarBadges('aguardando_p1');
+           }
+       }
+
+       function atualizarStatusEscala(lado) {
+           const calib=calibData[lado], el=document.getElementById('status-escala'), vl=document.getElementById('valor-escala');
+           if (calib&&calib.estado==='calibrado') {
+               el.style.display='block';
+               vl.textContent = `${calib.tipo==='auto'?'⚡ Auto':'🖱 Manual'} — ${calib.escala.toFixed(4)} px/mm | GL ✅`;
+               document.getElementById('btn-limpar-pontos').style.display='inline-block';
+           } else { el.style.display='none'; }
+       }
+
+       // ── Carregar foto ─────────────────────────────────────────────
+       function carregarFotoLado(e) {
+           const file=e.target.files[0]; if(!file) return;
+           const reader=new FileReader();
+           reader.onload=evt=>{
+               const imgObj=new Image();
+               imgObj.onload=()=>{
+                   fotosData[ladoAtual]=imgObj;
+                   calibData[ladoAtual]={estado:'aguardando_p1',p1:null,p2:null,p3:null,escala:null,pinAtivo:null};
+                   zoomAtual=1.0;
+                   // Mostrar elementos ANTES de desenhar
+                   document.getElementById('zona-upload').style.display='none';
+                   document.getElementById('canvas-container').style.display='block';
+                   document.getElementById('zoom-controls').style.display='flex';
+                   document.getElementById('painel-calib').style.display='block';
+                   document.getElementById('painel-altura').style.display='block';
+                   document.getElementById('status-escala').style.display='none';
+                   document.getElementById('acoes-foto').style.display='none';
+                   document.getElementById('btn-confirmar-ponto-wrap').style.display='none';
+                   document.getElementById('input-medida-real').style.display='none';
+                   document.getElementById('status-calib').style.display='none';
+                   document.getElementById('btn-limpar-pontos').style.display='none';
+                   document.getElementById('beiralLadoAtual').value=beiraisCalc[ladoAtual]||0;
+                   atualizarBadges('aguardando_p1');
+                   // Força redraw com requestAnimationFrame para garantir que o canvas já está visível no DOM
+                   requestAnimationFrame(()=>{ redrawCanvas(ladoAtual); });
+               };
+               imgObj.src=evt.target.result;
+           };
+           reader.readAsDataURL(file); e.target.value='';
+       }
+
+       function trocarFoto() {
+           const canvas=document.getElementById('fotoCanvas');
+           removerListenerCalib(canvas);
+           fotosData[ladoAtual]=null; calibData[ladoAtual]=null;
+           document.getElementById('zona-upload').style.display='block';
+           document.getElementById('canvas-container').style.display='none';
+           document.getElementById('zoom-controls').style.display='none';
+           document.getElementById('painel-calib').style.display='none';
+           document.getElementById('painel-altura').style.display='none';
+           document.getElementById('acoes-foto').style.display='none';
+           document.getElementById('btn-confirmar-ponto-wrap').style.display='none';
+       }
+
+       // ── Calibração — reescrita robusta para iPhone Safari ─────────
+       // ── Calibração — iPhone Safari usa touchend, desktop usa click ──
+       function removerListenerCalib(canvas) {
+           if (canvas._calibTouchH) { canvas.removeEventListener('touchend', canvas._calibTouchH); canvas._calibTouchH = null; }
+           if (canvas._calibClickH) { canvas.removeEventListener('click',    canvas._calibClickH); canvas._calibClickH = null; }
+           if (canvas._calibHandler) { // legado
+               canvas.removeEventListener('touchend', canvas._calibHandler);
+               canvas.removeEventListener('click',    canvas._calibHandler);
+               canvas.removeEventListener('pointerup',canvas._calibHandler);
+               canvas._calibHandler = null;
+           }
+           canvas.style.touchAction = 'pan-x pan-y';
+       }
+
+       function iniciarCalibManual() {
+           const canvas = document.getElementById('fotoCanvas');
+           removerListenerCalib(canvas);
+           calibData[ladoAtual] = { estado:'aguardando_p1', p1:null, p2:null, p3:null, escala:null };
+           mostrarStatusCalib('📍 Toque na foto para colocar <strong>P1</strong> — base esquerda da parede');
+           document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+           document.getElementById('input-medida-real').style.display = 'none';
+           document.getElementById('btn-limpar-pontos').style.display = 'inline-block';
+           document.getElementById('status-escala').style.display = 'none';
+           document.getElementById('acoes-foto').style.display = 'none';
+           atualizarBadges('aguardando_p1');
+           ativarCalibCanvas(ladoAtual);
+       }
+
+       function calibAutoEscala(tipo) {
+           const medida = tipo === 'comp' ? medidasCalc.comp : medidasCalc.larg;
+           if (!medida) { alert('Medida não encontrada.'); return; }
+           document.getElementById('medidaReal').value = medida;
+           iniciarCalibManual();
+           mostrarStatusCalib(`📍 1:100 — Toque no <strong>P1</strong><br><span style="font-size:11px;">${(medida/100).toFixed(0)}mm papel = ${medida}mm real</span>`);
+       }
+
+       function mostrarStatusCalib(html) {
+           const el = document.getElementById('status-calib');
+           el.style.display = 'block';
+           el.innerHTML = html;
+       }
+
+       function getPosCanvas(e) {
+           const canvas = document.getElementById('fotoCanvas');
+           const rect   = canvas.getBoundingClientRect();
+           // touchend usa changedTouches; touchstart/move usa touches; mouse usa clientX direto
+           let clientX, clientY;
+           if (e.changedTouches && e.changedTouches.length > 0) {
+               clientX = e.changedTouches[0].clientX;
+               clientY = e.changedTouches[0].clientY;
+           } else if (e.touches && e.touches.length > 0) {
+               clientX = e.touches[0].clientX;
+               clientY = e.touches[0].clientY;
+           } else {
+               clientX = e.clientX;
+               clientY = e.clientY;
+           }
+           const scaleX = canvas.width  / rect.width;
+           const scaleY = canvas.height / rect.height;
+           const px = (clientX - rect.left) * scaleX;
+           const py = (clientY - rect.top)  * scaleY;
+           return { x: px / zoomAtual, y: py / zoomAtual };
+       }
+
+       function ativarCalibCanvas(lado) {
+           const canvas = document.getElementById('fotoCanvas');
+           removerListenerCalib(canvas);
+           // touch-action:none → browser não intercepta toques para scroll
+           canvas.style.touchAction = 'none';
+
+           function handler(e) {
+               e.preventDefault();
+               e.stopPropagation();
+               const calib = calibData[lado];
+               if (!calib) return;
+               const estado = calib.estado;
+               if (estado === 'aguardando_medida' || estado === 'calibrado') return;
+
+               const pos = getPosCanvas(e);
+
+               if (estado === 'aguardando_p1' || estado === 'confirmando_p1') {
+                   calib.p1 = pos;
+                   calib.estado = 'confirmando_p1';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P1';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste P1 tocando na foto → confirme aqui';
+                   document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                   atualizarBadges('confirmando_p1');
+
+               } else if (estado === 'aguardando_p2' || estado === 'confirmando_p2') {
+                   calib.p2 = pos;
+                   calib.estado = 'confirmando_p2';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P2';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste P2 tocando na foto → confirme aqui';
+                   atualizarBadges('confirmando_p2');
+
+               } else if (estado === 'aguardando_p3' || estado === 'confirmando_p3') {
+                   calib.p3 = pos;
+                   calib.estado = 'confirmando_p3';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar GL';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste o GL (chão) tocando na foto → confirme aqui';
+                   atualizarBadges('confirmando_p3');
+               }
+           }
+
+           canvas._calibHandler = handler;
+           // iPhone Safari: touchend. Desktop: click. Evitar duplo disparo.
+           let _skipNextClick = false;
+           const touchHandler = (e) => {
+               if (e.changedTouches.length > 1) return;
+               _skipNextClick = true;
+               setTimeout(() => { _skipNextClick = false; }, 400);
+               handler(e);
+           };
+           const clickHandler = (e) => { if (_skipNextClick) return; handler(e); };
+           canvas._calibTouchH = touchHandler;
+           canvas._calibClickH = clickHandler;
+           canvas.addEventListener('touchend', touchHandler, { passive: false });
+           canvas.addEventListener('click',    clickHandler);
+       }
+
+       // Botão confirmar — avança para o próximo ponto
+       function confirmarPonto() {
+           const calib = calibData[ladoAtual];
+           if (!calib) return;
+
+           if (calib.estado === 'confirmando_p1') {
+               calib.estado = 'aguardando_p2';
+               mostrarStatusCalib('📍 Toque na foto para colocar <strong>P2</strong> — base direita da parede');
+               document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+               atualizarBadges('aguardando_p2');
+
+           } else if (calib.estado === 'confirmando_p2') {
+               calib.estado = 'aguardando_medida';
+               document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+               document.getElementById('status-calib').style.display = 'none';
+               document.getElementById('input-medida-real').style.display = 'block';
+               atualizarBadges('aguardando_medida');
+
+           } else if (calib.estado === 'confirmando_p3') {
+               calib.estado = 'calibrado';
+               const canvas = document.getElementById('fotoCanvas');
+               removerListenerCalib(canvas); // restaura scroll
+               document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+               document.getElementById('status-calib').style.display = 'none';
+               document.getElementById('acoes-foto').style.display = 'grid';
+               atualizarBadges('calibrado');
+               atualizarStatusEscala(ladoAtual);
+               redrawCanvas(ladoAtual);
+               const altura = parseInt(document.getElementById('alturaCalha').value);
+               if (altura > 0) desenharLinhasNoCanvas(ladoAtual);
+           }
+       }
+
+       // Confirmar distância P1→P2 e avançar para GL
+       function confirmarCalib() {
+           const medida = parseInt(document.getElementById('medidaReal').value);
+           if (!medida || medida <= 0) { alert('Digite a medida real em mm!'); return; }
+           const calib = calibData[ladoAtual];
+           if (!calib || !calib.p1 || !calib.p2) { alert('Defina P1 e P2 primeiro!'); return; }
+           const dx = calib.p2.x - calib.p1.x, dy = calib.p2.y - calib.p1.y;
+           calib.escala    = Math.sqrt(dx*dx + dy*dy) / medida;
+           calib.medidaRef = medida;
+           calib.tipo      = 'manual';
+           calib.estado    = 'aguardando_p3';
+           document.getElementById('input-medida-real').style.display = 'none';
+           mostrarStatusCalib('📍 Toque no <strong>GL</strong> — nível do chão (base do kiso/calçada)<br><span style="font-size:11px; color:#27ae60;">Pin verde marcará o nível do chão</span>');
+           document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+           atualizarBadges('aguardando_p3');
+       }
+
+       function limparPontosCalib() {
+           const canvas = document.getElementById('fotoCanvas');
+           removerListenerCalib(canvas);
+           calibData[ladoAtual] = { estado:'aguardando_p1', p1:null, p2:null, p3:null, escala:null };
+           document.getElementById('status-calib').style.display = 'none';
+           document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+           document.getElementById('input-medida-real').style.display = 'none';
+           document.getElementById('btn-limpar-pontos').style.display = 'none';
+           document.getElementById('status-escala').style.display = 'none';
+           document.getElementById('acoes-foto').style.display = 'none';
+           atualizarBadges('aguardando_p1');
+           redrawCanvas(ladoAtual);
+       }
+
+       // ── Desenhar linhas ───────────────────────────────────────────
+       function desenharLinhas() {
+           alturaCalhaData[ladoAtual]=parseInt(document.getElementById('alturaCalha').value)||0;
+           beiralLadoData[ladoAtual] =parseInt(document.getElementById('beiralLadoAtual').value)||0;
+           const calib=calibData[ladoAtual];
+           if (!calib||calib.estado!=='calibrado') { alert('Complete a calibração (P1, P2 e GL) primeiro!'); return; }
+           if (!alturaCalhaData[ladoAtual]) { alert('Digite a altura da calha!'); return; }
+           desenharLinhasNoCanvas(ladoAtual);
+           document.getElementById('acoes-foto').style.display='grid';
+       }
+
+       function desenharLinhasNoCanvas(lado) {
+           const canvas=document.getElementById('fotoCanvas');
+           const ctx=canvas.getContext('2d');
+           const img=fotosData[lado], calib=calibData[lado], res=resultadosCalc[lado];
+           const alturaCalha=alturaCalhaData[lado]||parseInt(document.getElementById('alturaCalha').value)||0;
+           const beiralLado=beiralLadoData[lado]!==undefined?beiralLadoData[lado]:(parseInt(document.getElementById('beiralLadoAtual').value)||0);
+           if (!img||!calib||!calib.escala||!calib.p3||!res||res.spans.length===0) return;
+
+           const z=zoomAtual, esc=calib.escala;
+           // Redesenhar foto
+           ctx.drawImage(img,0,0,canvas.width,canvas.height);
+           // Redesenhar pins
+           if (calib.p1) desenharPin(ctx,calib.p1.x*z,calib.p1.y*z,'P1','#f39c12');
+           if (calib.p2) {
+               desenharPin(ctx,calib.p2.x*z,calib.p2.y*z,'P2','#f39c12');
+               ctx.beginPath(); ctx.moveTo(calib.p1.x*z,calib.p1.y*z); ctx.lineTo(calib.p2.x*z,calib.p2.y*z);
+               ctx.strokeStyle='#f39c12'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+           }
+           if (calib.p3) {
+               desenharPin(ctx,calib.p3.x*z,calib.p3.y*z,'GL','#27ae60');
+               ctx.beginPath(); ctx.moveTo(0,calib.p3.y*z); ctx.lineTo(canvas.width,calib.p3.y*z);
+               ctx.strokeStyle='#27ae60'; ctx.lineWidth=1; ctx.setLineDash([8,5]); ctx.stroke(); ctx.setLineDash([]);
+           }
+
+           // Origens (em pixels do canvas = coordenada_original × zoom)
+           const ox = calib.p1.x * z;
+           const oy = calib.p3.y * z;  // GL = origem Y das horizontais
+           const escZ = esc * z;        // escala ajustada pelo zoom
+
+           const segmentos=[res.t1,...res.spans,res.t2];
+           let acumMm=0; const posicoes=[0];
+           segmentos.forEach(s=>{acumMm+=s; posicoes.push(acumMm);});
+           const totalPxLarg=acumMm*escZ;
+           const altPxTotal =alturaCalha*escZ;
+           const margemCima =Math.min((beiralLado+300)*escZ,200);
+
+           // Verticais
+           posicoes.forEach((mmPos,i)=>{
+               const px=ox+mmPos*escZ, yIni=oy+10, yFim=oy-altPxTotal-margemCima;
+               if (i===0||i===posicoes.length-1) { ctx.strokeStyle='#8e44ad'; ctx.lineWidth=2; ctx.setLineDash([8,4]); }
+               else { ctx.strokeStyle='#e74c3c'; ctx.lineWidth=2.5; ctx.setLineDash([]); }
+               ctx.beginPath(); ctx.moveTo(px,yIni); ctx.lineTo(px,yFim); ctx.stroke(); ctx.setLineDash([]);
+           });
+           // Labels spans
+           for (let i=1;i<segmentos.length-1;i++) {
+               const seg=segmentos[i], midX=ox+(posicoes[i]+seg/2)*escZ, midY=oy-altPxTotal*0.45;
+               const lbl=(seg/1000).toFixed(1)+'m';
+               ctx.save(); ctx.font='bold 13px Arial';
+               const tw=ctx.measureText(lbl).width;
+               ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.fillRect(midX-tw/2-3,midY-9,tw+6,16);
+               ctx.fillStyle='#c0392b'; ctx.textAlign='center'; ctx.textBaseline='middle';
+               ctx.fillText(lbl,midX,midY); ctx.restore();
+           }
+           // Labels t1/t2
+           [{x:ox+(segmentos[0]/2)*escZ,lbl:res.t1+'mm'},{x:ox+(posicoes[posicoes.length-2]+segmentos[segmentos.length-1]/2)*escZ,lbl:res.t2+'mm'}]
+           .forEach(({x,lbl})=>{
+               const y=oy-altPxTotal*0.12;
+               ctx.save(); ctx.font='bold 12px Arial';
+               const tw=ctx.measureText(lbl).width;
+               ctx.fillStyle='rgba(142,68,173,0.92)'; ctx.fillRect(x-tw/2-4,y-9,tw+8,17);
+               ctx.fillStyle='white'; ctx.textAlign='center'; ctx.textBaseline='middle';
+               ctx.fillText(lbl,x,y); ctx.restore();
+           });
+           // Horizontais a cada 1800
+           ctx.strokeStyle='#e74c3c'; ctx.lineWidth=1.5; ctx.setLineDash([10,6]);
+           let hAcum=0;
+           while(hAcum<=alturaCalha+1) {
+               const yH=oy-hAcum*escZ;
+               ctx.beginPath(); ctx.moveTo(ox,yH); ctx.lineTo(ox+totalPxLarg,yH); ctx.stroke();
+               if (hAcum>0) {
+                   const lbl=(hAcum/1000).toFixed(1)+'m';
+                   ctx.save(); ctx.font='bold 12px Arial';
+                   const tw=ctx.measureText(lbl).width;
+                   ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.fillRect(ox-tw-8,yH-8,tw+6,16);
+                   ctx.fillStyle='#c0392b'; ctx.textAlign='right'; ctx.textBaseline='middle';
+                   ctx.fillText(lbl,ox-4,yH); ctx.restore();
+               }
+               hAcum+=1800;
+           }
+           ctx.setLineDash([]);
+           // Linha calha (azul)
+           const yCalha=oy-altPxTotal;
+           ctx.strokeStyle='#2980b9'; ctx.lineWidth=3;
+           ctx.beginPath(); ctx.moveTo(ox,yCalha); ctx.lineTo(ox+totalPxLarg,yCalha); ctx.stroke();
+           ctx.save(); const lblC=`CALHA ${alturaCalha}mm`; ctx.font='bold 12px Arial';
+           const twC=ctx.measureText(lblC).width;
+           ctx.fillStyle='#2980b9'; ctx.fillRect(ox+4,yCalha-18,twC+8,17);
+           ctx.fillStyle='white'; ctx.textAlign='left'; ctx.textBaseline='middle';
+           ctx.fillText(lblC,ox+8,yCalha-10); ctx.restore();
+           // Beiral (verde)
+           if (beiralLado>0) {
+               const yB=oy-(alturaCalha+beiralLado)*escZ;
+               ctx.strokeStyle='#27ae60'; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+               ctx.beginPath(); ctx.moveTo(ox,yB); ctx.lineTo(ox+totalPxLarg,yB); ctx.stroke();
+               ctx.setLineDash([]);
+               ctx.save(); const lblB=`BEIRAL +${beiralLado}mm`; ctx.font='bold 11px Arial';
+               const twB=ctx.measureText(lblB).width;
+               ctx.fillStyle='#27ae60'; ctx.fillRect(ox+4,yB-16,twB+8,15);
+               ctx.fillStyle='white'; ctx.textAlign='left'; ctx.textBaseline='middle';
+               ctx.fillText(lblB,ox+8,yB-9); ctx.restore();
+           }
+       }
+
+       function baixarFoto() {
+           const canvas=document.getElementById('fotoCanvas');
+           const link=document.createElement('a');
+           link.download='andaime-'+ladoAtual+'.png';
+           link.href=canvas.toDataURL('image/png');
+           link.click();
+       }
+
+   </script>
 </body>
 </html>
