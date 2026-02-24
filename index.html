@@ -1567,9 +1567,13 @@
            const canvas = document.getElementById('fotoCanvas');
            const img    = fotosData[lado];
            if (!img) return;
-           const baseW = Math.min(750, window.innerWidth - 50);
-           canvas.width  = baseW * zoomAtual;
-           canvas.height = (img.height / img.width) * canvas.width;
+           // CRÍTICO: usar largura real do container, NÃO window.innerWidth
+           // window.innerWidth retorna 0 dentro de iframe antes do layout
+           const container = document.getElementById('canvas-container');
+           const contW = container.clientWidth || container.offsetWidth || 0;
+           const baseW = Math.min(750, contW > 10 ? contW - 4 : (window.innerWidth - 50) || 320);
+           canvas.width  = Math.round(baseW * zoomAtual);
+           canvas.height = Math.round((img.height / img.width) * canvas.width);
            const ctx = canvas.getContext('2d');
            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
            // Redesenhar pins e linhas
@@ -1708,8 +1712,16 @@
                    document.getElementById('btn-limpar-pontos').style.display='none';
                    document.getElementById('beiralLadoAtual').value=beiraisCalc[ladoAtual]||0;
                    atualizarBadges('aguardando_p1');
-                   // Força redraw com requestAnimationFrame para garantir que o canvas já está visível no DOM
-                   requestAnimationFrame(()=>{ redrawCanvas(ladoAtual); });
+                   // Força redraw — com retry se o container ainda não teve layout
+                   requestAnimationFrame(()=>{
+                       const c = document.getElementById('canvas-container');
+                       if ((c.clientWidth || c.offsetWidth || 0) > 10) {
+                           redrawCanvas(ladoAtual);
+                       } else {
+                           // Iframe ainda não fez layout — tentar novamente
+                           setTimeout(()=>redrawCanvas(ladoAtual), 80);
+                       }
+                   });
                };
                imgObj.src=evt.target.result;
            };
@@ -1732,13 +1744,21 @@
        // ── Calibração — reescrita robusta para iPhone Safari ─────────
        // ── Calibração — iPhone Safari usa touchend, desktop usa click ──
        function removerListenerCalib(canvas) {
-           if (canvas._calibTouchH) { canvas.removeEventListener('touchend', canvas._calibTouchH); canvas._calibTouchH = null; }
-           if (canvas._calibClickH) { canvas.removeEventListener('click',    canvas._calibClickH); canvas._calibClickH = null; }
+           if (canvas._calibTouchH) { canvas.removeEventListener('touchstart', canvas._calibTouchH); canvas._calibTouchH = null; }
+           if (canvas._calibClickH) { canvas.removeEventListener('click',      canvas._calibClickH); canvas._calibClickH = null; }
            if (canvas._calibHandler) { // legado
-               canvas.removeEventListener('touchend', canvas._calibHandler);
-               canvas.removeEventListener('click',    canvas._calibHandler);
-               canvas.removeEventListener('pointerup',canvas._calibHandler);
+               canvas.removeEventListener('touchstart', canvas._calibHandler);
+               canvas.removeEventListener('touchend',   canvas._calibHandler);
+               canvas.removeEventListener('click',      canvas._calibHandler);
+               canvas.removeEventListener('pointerup',  canvas._calibHandler);
                canvas._calibHandler = null;
+           }
+           // Restaurar scroll do container
+           const container = document.getElementById('canvas-container');
+           if (container && container._overflowSaved) {
+               container.style.overflow    = 'auto';
+               container.style.touchAction = '';
+               container._overflowSaved    = false;
            }
            canvas.style.touchAction = 'pan-x pan-y';
        }
@@ -1774,14 +1794,16 @@
        function getPosCanvas(e) {
            const canvas = document.getElementById('fotoCanvas');
            const rect   = canvas.getBoundingClientRect();
-           // touchend usa changedTouches; touchstart/move usa touches; mouse usa clientX direto
+           // touchstart/touchmove: usar touches[0]
+           // touchend: usar changedTouches[0]
+           // mouse/click: usar clientX direto
            let clientX, clientY;
-           if (e.changedTouches && e.changedTouches.length > 0) {
-               clientX = e.changedTouches[0].clientX;
-               clientY = e.changedTouches[0].clientY;
-           } else if (e.touches && e.touches.length > 0) {
+           if (e.touches && e.touches.length > 0) {
                clientX = e.touches[0].clientX;
                clientY = e.touches[0].clientY;
+           } else if (e.changedTouches && e.changedTouches.length > 0) {
+               clientX = e.changedTouches[0].clientX;
+               clientY = e.changedTouches[0].clientY;
            } else {
                clientX = e.clientX;
                clientY = e.clientY;
@@ -1794,14 +1816,32 @@
        }
 
        function ativarCalibCanvas(lado) {
-           const canvas = document.getElementById('fotoCanvas');
+           const canvas    = document.getElementById('fotoCanvas');
+           const container = document.getElementById('canvas-container');
            removerListenerCalib(canvas);
-           // touch-action:none → browser não intercepta toques para scroll
-           canvas.style.touchAction = 'none';
+
+           // CRÍTICO para iPhone Safari: bloquear TAMBÉM o container de roubar o toque
+           // Se o container tem overflow:auto ele intercepta o touch antes do canvas
+           canvas.style.touchAction    = 'none';
+           container.style.overflow    = 'hidden';
+           container.style.touchAction = 'none';
+           container._overflowSaved    = true; // flag para restaurar depois
+
+           // Evitar duplo disparo touchstart → click
+           let _skipNextClick = false;
 
            function handler(e) {
+               if (e.type === 'touchstart') {
+                   if (e.touches.length > 1) return; // pinch-zoom: ignorar
+                   _skipNextClick = true;
+                   setTimeout(() => { _skipNextClick = false; }, 500);
+               } else if (e.type === 'click') {
+                   if (_skipNextClick) return;
+               }
+
                e.preventDefault();
                e.stopPropagation();
+
                const calib = calibData[lado];
                if (!calib) return;
                const estado = calib.estado;
@@ -1836,20 +1876,12 @@
                }
            }
 
-           canvas._calibHandler = handler;
-           // iPhone Safari: touchend. Desktop: click. Evitar duplo disparo.
-           let _skipNextClick = false;
-           const touchHandler = (e) => {
-               if (e.changedTouches.length > 1) return;
-               _skipNextClick = true;
-               setTimeout(() => { _skipNextClick = false; }, 400);
-               handler(e);
-           };
-           const clickHandler = (e) => { if (_skipNextClick) return; handler(e); };
-           canvas._calibTouchH = touchHandler;
-           canvas._calibClickH = clickHandler;
-           canvas.addEventListener('touchend', touchHandler, { passive: false });
-           canvas.addEventListener('click',    clickHandler);
+           canvas._calibHandler  = handler;
+           canvas._calibTouchH   = handler;
+           canvas._calibClickH   = handler;
+           // touchstart: captura ANTES do scroll — mais confiável no iPhone Safari
+           canvas.addEventListener('touchstart', handler, { passive: false });
+           canvas.addEventListener('click',      handler);
        }
 
        // Botão confirmar — avança para o próximo ponto
