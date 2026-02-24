@@ -745,8 +745,10 @@
                </div>
 
                <!-- Canvas da foto -->
-               <div id="canvas-container" style="display:none; border:2px solid #2c3e50; border-radius:8px; overflow:auto; margin-bottom:10px; max-height:65vh; -webkit-overflow-scrolling:touch;">
-                   <canvas id="fotoCanvas" style="display:block; touch-action:pan-x pan-y;"></canvas>
+               <div id="canvas-container" style="display:none; border:2px solid #2c3e50; border-radius:8px; overflow:auto; margin-bottom:10px; max-height:65vh; position:relative;">
+                   <canvas id="fotoCanvas" style="display:block;"></canvas>
+                   <!-- Overlay transparente para capturar toques durante calibração no iPhone Safari -->
+                   <div id="calib-overlay" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; touch-action:none; cursor:crosshair;"></div>
                </div>
 
                <!-- Painel de calibração -->
@@ -782,6 +784,13 @@
                        <div id="status-calib" style="background:#fff3cd; border:1px solid #ffc107; padding:8px; border-radius:6px; margin-bottom:8px; font-size:13px; text-align:center; display:none;">
                            👆 Clique no <strong>1º ponto</strong> de referência na foto
                        </div>
+
+                       <!-- Botão confirmar ponto — aparece após cada toque na foto -->
+                       <div id="btn-confirmar-ponto-wrap" style="display:none; background:#e8f5e9; border:2px solid #27ae60; padding:12px; border-radius:8px; margin-bottom:8px; text-align:center;">
+                           <div id="hint-confirmar" style="font-size:12px; color:#555; margin-bottom:8px;">Ajuste tocando na foto → confirme aqui</div>
+                           <button id="btn-confirmar-ponto" onclick="confirmarPonto()" style="background:#27ae60; color:white; padding:12px 24px; border:none; border-radius:8px; font-size:15px; font-weight:700; width:100%; min-height:48px;">✓ Confirmar P1</button>
+                       </div>
+
                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
                            <button onclick="iniciarCalibManual()" style="background:#3498db; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">📍 Iniciar calibração</button>
                            <button id="btn-limpar-pontos" onclick="limparPontosCalib()" style="background:#e67e22; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto; display:none;">🗑 Recomeçar</button>
@@ -1560,8 +1569,14 @@
            zoomAtual = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoomAtual + delta));
            redrawCanvas(ladoAtual);
            document.getElementById('zoom-label').textContent = zoomAtual.toFixed(1) + '×';
+           atualizarOverlay();
        }
-       function resetZoom() { zoomAtual = 1.0; redrawCanvas(ladoAtual); document.getElementById('zoom-label').textContent = '1×'; }
+       function resetZoom() {
+           zoomAtual = 1.0;
+           redrawCanvas(ladoAtual);
+           document.getElementById('zoom-label').textContent = '1×';
+           atualizarOverlay();
+       }
 
        function redrawCanvas(lado) {
            const canvas = document.getElementById('fotoCanvas');
@@ -1730,7 +1745,7 @@
 
        function trocarFoto() {
            const canvas=document.getElementById('fotoCanvas');
-           removerListenerCalib(canvas);
+           removerListenerCalib();
            fotosData[ladoAtual]=null; calibData[ladoAtual]=null;
            document.getElementById('zona-upload').style.display='block';
            document.getElementById('canvas-container').style.display='none';
@@ -1742,30 +1757,135 @@
        }
 
        // ── Calibração — reescrita robusta para iPhone Safari ─────────
-       // ── Calibração — iPhone Safari usa touchend, desktop usa click ──
-       function removerListenerCalib(canvas) {
-           if (canvas._calibTouchH) { canvas.removeEventListener('touchstart', canvas._calibTouchH); canvas._calibTouchH = null; }
-           if (canvas._calibClickH) { canvas.removeEventListener('click',      canvas._calibClickH); canvas._calibClickH = null; }
-           if (canvas._calibHandler) { // legado
-               canvas.removeEventListener('touchstart', canvas._calibHandler);
-               canvas.removeEventListener('touchend',   canvas._calibHandler);
-               canvas.removeEventListener('click',      canvas._calibHandler);
-               canvas.removeEventListener('pointerup',  canvas._calibHandler);
-               canvas._calibHandler = null;
+       // ── Calibração ────────────────────────────────────────────────
+       // SOLUÇÃO DEFINITIVA PARA IPHONE SAFARI:
+       // Usar touchstart (não touchend nem pointerup).
+       // touchstart dispara ANTES de qualquer decisão de scroll do iOS.
+       // Com e.preventDefault() o scroll não acontece e o toque é capturado.
+       // O overlay cobre o canvas com position:fixed para sair do fluxo de scroll.
+
+       function removerListenerCalib() {
+           const overlay = document.getElementById('calib-overlay');
+           if (overlay._calibHandler) {
+               overlay.removeEventListener('touchstart', overlay._calibHandler);
+               overlay.removeEventListener('click',      overlay._calibHandler);
+               overlay._calibHandler = null;
            }
-           // Restaurar scroll do container
-           const container = document.getElementById('canvas-container');
-           if (container && container._overflowSaved) {
-               container.style.overflow    = 'auto';
-               container.style.touchAction = '';
-               container._overflowSaved    = false;
+           if (overlay._scrollHandler) {
+               window.removeEventListener('scroll', overlay._scrollHandler, true);
+               window.removeEventListener('resize', overlay._scrollHandler);
+               overlay._scrollHandler = null;
            }
-           canvas.style.touchAction = 'pan-x pan-y';
+           overlay.style.display = 'none';
+       }
+
+       function atualizarOverlay() {
+           // Posiciona o overlay exatamente sobre o canvas usando position:fixed
+           // (sai do contexto de scroll — nunca bloqueado pelo iOS)
+           const canvas  = document.getElementById('fotoCanvas');
+           const overlay = document.getElementById('calib-overlay');
+           if (overlay.style.display === 'none') return;
+           const r = canvas.getBoundingClientRect();
+           overlay.style.position = 'fixed';
+           overlay.style.left     = r.left   + 'px';
+           overlay.style.top      = r.top    + 'px';
+           overlay.style.width    = r.width  + 'px';
+           overlay.style.height   = r.height + 'px';
+           overlay.style.zIndex   = '9999';
+       }
+
+       function ativarCalibCanvas(lado) {
+           const canvas  = document.getElementById('fotoCanvas');
+           const overlay = document.getElementById('calib-overlay');
+
+           removerListenerCalib();
+
+           // Mostrar overlay posicionado com fixed sobre o canvas
+           overlay.style.display      = 'block';
+           overlay.style.touchAction  = 'none';
+           overlay.style.cursor       = 'crosshair';
+           overlay.style.background   = 'transparent';
+           atualizarOverlay();
+
+           // Atualizar posição se a página rolar ou girar
+           overlay._scrollHandler = () => atualizarOverlay();
+           window.addEventListener('scroll', overlay._scrollHandler, true);
+           window.addEventListener('resize', overlay._scrollHandler);
+
+           let _skipClick = false;
+
+           function handler(e) {
+               if (e.type === 'touchstart') {
+                   if (e.touches.length > 1) return; // pinch = zoom, ignorar
+                   e.preventDefault();               // BLOQUEIA scroll do iOS
+                   e.stopPropagation();
+                   _skipClick = true;
+                   setTimeout(() => { _skipClick = false; }, 500);
+               } else {
+                   if (_skipClick) return;           // click gerado pelo toque já tratado
+                   e.preventDefault();
+               }
+
+               const calib = calibData[lado];
+               if (!calib) return;
+               const estado = calib.estado;
+               if (estado === 'aguardando_medida' || estado === 'calibrado') return;
+
+               // Coordenadas do toque relativas ao CANVAS
+               const rect = canvas.getBoundingClientRect();
+               let cX, cY;
+               if (e.touches && e.touches.length > 0) {
+                   cX = e.touches[0].clientX;
+                   cY = e.touches[0].clientY;
+               } else if (e.changedTouches && e.changedTouches.length > 0) {
+                   cX = e.changedTouches[0].clientX;
+                   cY = e.changedTouches[0].clientY;
+               } else {
+                   cX = e.clientX;
+                   cY = e.clientY;
+               }
+
+               // Converter posição de tela → coordenada interna do canvas (sem zoom)
+               const pos = {
+                   x: ((cX - rect.left) / rect.width)  * (canvas.width  / zoomAtual),
+                   y: ((cY - rect.top)  / rect.height) * (canvas.height / zoomAtual)
+               };
+
+               if (estado === 'aguardando_p1' || estado === 'confirmando_p1') {
+                   calib.p1 = pos; calib.estado = 'confirmando_p1';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P1';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste P1 tocando na foto → confirme aqui';
+                   document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                   atualizarBadges('confirmando_p1');
+
+               } else if (estado === 'aguardando_p2' || estado === 'confirmando_p2') {
+                   calib.p2 = pos; calib.estado = 'confirmando_p2';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P2';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste P2 tocando na foto → confirme aqui';
+                   atualizarBadges('confirmando_p2');
+
+               } else if (estado === 'aguardando_p3' || estado === 'confirmando_p3') {
+                   calib.p3 = pos; calib.estado = 'confirmando_p3';
+                   redrawCanvas(lado);
+                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar GL';
+                   document.getElementById('hint-confirmar').textContent = 'Ajuste GL tocando na foto → confirme aqui';
+                   atualizarBadges('confirmando_p3');
+               }
+
+               atualizarOverlay(); // reposicionar caso canvas tenha mudado
+           }
+
+           overlay._calibHandler = handler;
+           // touchstart + { passive:false } → permite preventDefault() no iOS
+           overlay.addEventListener('touchstart', handler, { passive: false });
+           overlay.addEventListener('click',      handler);
        }
 
        function iniciarCalibManual() {
            const canvas = document.getElementById('fotoCanvas');
-           removerListenerCalib(canvas);
+           removerListenerCalib();
            calibData[ladoAtual] = { estado:'aguardando_p1', p1:null, p2:null, p3:null, escala:null };
            mostrarStatusCalib('📍 Toque na foto para colocar <strong>P1</strong> — base esquerda da parede');
            document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
@@ -1789,6 +1909,12 @@
            const el = document.getElementById('status-calib');
            el.style.display = 'block';
            el.innerHTML = html;
+       }
+
+       // Helper null-safe para evitar crash quando elemento não existe
+       function setEl(id, prop, val) {
+           const el = document.getElementById(id);
+           if (el) el[prop] = val;
        }
 
        function getPosCanvas(e) {
@@ -1815,75 +1941,6 @@
            return { x: px / zoomAtual, y: py / zoomAtual };
        }
 
-       function ativarCalibCanvas(lado) {
-           const canvas    = document.getElementById('fotoCanvas');
-           const container = document.getElementById('canvas-container');
-           removerListenerCalib(canvas);
-
-           // CRÍTICO para iPhone Safari: bloquear TAMBÉM o container de roubar o toque
-           // Se o container tem overflow:auto ele intercepta o touch antes do canvas
-           canvas.style.touchAction    = 'none';
-           container.style.overflow    = 'hidden';
-           container.style.touchAction = 'none';
-           container._overflowSaved    = true; // flag para restaurar depois
-
-           // Evitar duplo disparo touchstart → click
-           let _skipNextClick = false;
-
-           function handler(e) {
-               if (e.type === 'touchstart') {
-                   if (e.touches.length > 1) return; // pinch-zoom: ignorar
-                   _skipNextClick = true;
-                   setTimeout(() => { _skipNextClick = false; }, 500);
-               } else if (e.type === 'click') {
-                   if (_skipNextClick) return;
-               }
-
-               e.preventDefault();
-               e.stopPropagation();
-
-               const calib = calibData[lado];
-               if (!calib) return;
-               const estado = calib.estado;
-               if (estado === 'aguardando_medida' || estado === 'calibrado') return;
-
-               const pos = getPosCanvas(e);
-
-               if (estado === 'aguardando_p1' || estado === 'confirmando_p1') {
-                   calib.p1 = pos;
-                   calib.estado = 'confirmando_p1';
-                   redrawCanvas(lado);
-                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P1';
-                   document.getElementById('hint-confirmar').textContent = 'Ajuste P1 tocando na foto → confirme aqui';
-                   document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
-                   atualizarBadges('confirmando_p1');
-
-               } else if (estado === 'aguardando_p2' || estado === 'confirmando_p2') {
-                   calib.p2 = pos;
-                   calib.estado = 'confirmando_p2';
-                   redrawCanvas(lado);
-                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar P2';
-                   document.getElementById('hint-confirmar').textContent = 'Ajuste P2 tocando na foto → confirme aqui';
-                   atualizarBadges('confirmando_p2');
-
-               } else if (estado === 'aguardando_p3' || estado === 'confirmando_p3') {
-                   calib.p3 = pos;
-                   calib.estado = 'confirmando_p3';
-                   redrawCanvas(lado);
-                   document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar GL';
-                   document.getElementById('hint-confirmar').textContent = 'Ajuste o GL (chão) tocando na foto → confirme aqui';
-                   atualizarBadges('confirmando_p3');
-               }
-           }
-
-           canvas._calibHandler  = handler;
-           canvas._calibTouchH   = handler;
-           canvas._calibClickH   = handler;
-           // touchstart: captura ANTES do scroll — mais confiável no iPhone Safari
-           canvas.addEventListener('touchstart', handler, { passive: false });
-           canvas.addEventListener('click',      handler);
-       }
-
        // Botão confirmar — avança para o próximo ponto
        function confirmarPonto() {
            const calib = calibData[ladoAtual];
@@ -1905,7 +1962,7 @@
            } else if (calib.estado === 'confirmando_p3') {
                calib.estado = 'calibrado';
                const canvas = document.getElementById('fotoCanvas');
-               removerListenerCalib(canvas); // restaura scroll
+               removerListenerCalib(); // restaura scroll
                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                document.getElementById('status-calib').style.display = 'none';
                document.getElementById('acoes-foto').style.display = 'grid';
@@ -1936,7 +1993,7 @@
 
        function limparPontosCalib() {
            const canvas = document.getElementById('fotoCanvas');
-           removerListenerCalib(canvas);
+           removerListenerCalib();
            calibData[ladoAtual] = { estado:'aguardando_p1', p1:null, p2:null, p3:null, escala:null };
            document.getElementById('status-calib').style.display = 'none';
            document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
