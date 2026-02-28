@@ -741,6 +741,10 @@
                <button id="tab-oeste" onclick="abrirAba('oeste')" style="padding:12px 4px; font-size:13px; background:#ecf0f1; color:#333; border:none; border-radius:8px;">西 OESTE</button>
            </div>
 
+           <!-- Modo Rapido -->
+           <div style="text-align:right; margin-bottom:8px;"><button onclick="toggleModoRapido()" style="background:#8e44ad; color:white; padding:8px 16px; border:none; border-radius:8px; font-size:13px; font-weight:600;">⚡ Modo Rápido</button></div>
+           <div id="painelModoRapido" style="display:none; background:#f3e5f5; border:2px solid #8e44ad; border-radius:10px; padding:15px; margin-bottom:15px;"><div style="font-weight:700; color:#6c3483; margin-bottom:12px;">⚡ Inserir resultados manualmente</div><div style="font-size:13px; color:#555; margin-bottom:12px;">Para quem já sabe os spans e T de cada lado.</div><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"><div style="background:white; padding:10px; border-radius:8px; border-left:4px solid #8e44ad;"><div style="font-weight:700; font-size:13px; color:#2c3e50; margin-bottom:8px;">南 SUL</div><div style="font-size:12px; margin-bottom:4px;">Spans (ex: 5x1800+1200):</div><input type="text" id="mr-spans-sul" placeholder="5x1800+1200" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; margin-bottom:6px;"><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"><div><div style="font-size:11px; color:#777;">T1 esq (mm):</div><input type="number" id="mr-t1-sul" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div><div><div style="font-size:11px; color:#777;">T2 dir (mm):</div><input type="number" id="mr-t2-sul" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div></div></div><div style="background:white; padding:10px; border-radius:8px; border-left:4px solid #8e44ad;"><div style="font-weight:700; font-size:13px; color:#2c3e50; margin-bottom:8px;">北 NORTE</div><div style="font-size:12px; margin-bottom:4px;">Spans (ex: 5x1800+1200):</div><input type="text" id="mr-spans-norte" placeholder="5x1800+1200" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; margin-bottom:6px;"><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"><div><div style="font-size:11px; color:#777;">T1 esq (mm):</div><input type="number" id="mr-t1-norte" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div><div><div style="font-size:11px; color:#777;">T2 dir (mm):</div><input type="number" id="mr-t2-norte" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div></div></div><div style="background:white; padding:10px; border-radius:8px; border-left:4px solid #8e44ad;"><div style="font-weight:700; font-size:13px; color:#2c3e50; margin-bottom:8px;">東 LESTE</div><div style="font-size:12px; margin-bottom:4px;">Spans (ex: 5x1800+1200):</div><input type="text" id="mr-spans-leste" placeholder="5x1800+1200" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; margin-bottom:6px;"><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"><div><div style="font-size:11px; color:#777;">T1 esq (mm):</div><input type="number" id="mr-t1-leste" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div><div><div style="font-size:11px; color:#777;">T2 dir (mm):</div><input type="number" id="mr-t2-leste" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div></div></div><div style="background:white; padding:10px; border-radius:8px; border-left:4px solid #8e44ad;"><div style="font-weight:700; font-size:13px; color:#2c3e50; margin-bottom:8px;">西 OESTE</div><div style="font-size:12px; margin-bottom:4px;">Spans (ex: 5x1800+1200):</div><input type="text" id="mr-spans-oeste" placeholder="5x1800+1200" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px; margin-bottom:6px;"><div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;"><div><div style="font-size:11px; color:#777;">T1 esq (mm):</div><input type="number" id="mr-t1-oeste" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div><div><div style="font-size:11px; color:#777;">T2 dir (mm):</div><input type="number" id="mr-t2-oeste" placeholder="860" style="width:100%; padding:6px; border:1px solid #ccc; border-radius:4px; font-size:13px;"></div></div></div></div><button onclick="aplicarModoRapido()" style="background:#8e44ad; color:white; padding:12px; border:none; border-radius:8px; font-weight:700; width:100%; margin-top:12px; font-size:15px;">✓ Aplicar e ir para fotos</button></div>
+
            <!-- Painel de cada aba -->
            <div id="painel-foto" style="background:#f8f9fa; padding:15px; border-radius:8px;">
 
@@ -830,16 +834,25 @@
                    <div style="font-weight:700; font-size:14px; color:#2c3e50; margin-bottom:10px;">📐 Altura e cobertura</div>
                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                        <div>
-                           <label style="font-size:13px;">Altura da calha/beiral (mm):</label>
-                           <input type="number" id="alturaCalha" placeholder="Ex: 5200" style="padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px; width:100%; margin-top:4px;">
+                           <label style="font-size:13px;">Altura GL→Calha <span id="labelP1lado" style="font-weight:700;">(P1)</span> mm:</label>
+                           <input type="number" id="alturaCalha" placeholder="Ex: 5200" style="padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px; width:100%; margin-top:4px;" oninput="checarInclinacao()">
                        </div>
+                       <div>
+                           <label style="font-size:13px;">Altura GL→Calha <span id="labelP2lado" style="font-weight:700;">(P2)</span> mm:</label>
+                           <input type="number" id="alturaCalhaP2" placeholder="= P1 se reto" style="padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px; width:100%; margin-top:4px;" oninput="checarInclinacao()">
+                       </div>
+                   </div>
+                   <div id="aviso-inclinacao" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; margin-top:8px; font-size:13px;">
+                       📐 Telhado inclinado detectado — guarda-corpo seguirá a inclinação
+                   </div>
+                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
                        <div>
                            <label style="font-size:13px;">Beiral deste lado (mm):</label>
                            <input type="number" id="beiralLadoAtual" placeholder="0" style="padding:10px; border:2px solid #e0e0e0; border-radius:6px; font-size:15px; width:100%; margin-top:4px;" value="0">
                        </div>
-                   </div>
-                   <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-                       <button onclick="desenharLinhas()" style="background:#e74c3c; color:white; padding:12px 16px; border:none; border-radius:8px; font-size:14px; font-weight:700; flex:1;">🔴 Desenhar linhas</button>
+                       <div style="display:flex; align-items:flex-end;">
+                           <button onclick="desenharLinhas()" style="background:#e74c3c; color:white; padding:12px 16px; border:none; border-radius:8px; font-size:14px; font-weight:700; width:100%;">🔴 Desenhar</button>
+                       </div>
                    </div>
                </div>
 
@@ -899,6 +912,42 @@
        let img = null;
        let pontoAtual = 0;
        let ladoPorta = 'sul'; // padrão
+
+       // Mapeamento de pontos (posição visual) → direção real conforme a porta
+       // O diagrama é fixo: p1/p2=baixo, p3/p4=direita, p5/p6=cima, p7/p8=esquerda
+       // Quando a porta está em SUL: baixo=SUL, dir=LESTE, cima=NORTE, esq=OESTE
+       // Rotação conforme a porta:
+       function getDirecoes(porta) {
+           // posição visual → direção real
+           // Regra: de pé na porta olhando a casa, ombro ESQUERDO aponta para NORTE
+           const rot = {
+               sul:   { baixo:'sul',   dir:'leste',  cima:'norte', esq:'oeste' },
+               norte: { baixo:'norte', dir:'oeste',  cima:'sul',   esq:'leste' },
+               leste: { baixo:'leste', dir:'norte',  cima:'oeste', esq:'sul'   },
+               oeste: { baixo:'oeste', dir:'sul',    cima:'leste', esq:'norte' }
+           };
+           const r = rot[porta] || rot.sul;
+           // Retorna: quais números de ponto pertencem a cada direção real
+           return {
+               [r.baixo]: [1,2],
+               [r.dir]:   [3,4],
+               [r.cima]:  [5,6],
+               [r.esq]:   [7,8],
+               // Nomes de label para os pontos
+               labels: {
+                   1: r.baixo[0].toUpperCase()+r.baixo.slice(1)+' Esq',
+                   2: r.baixo[0].toUpperCase()+r.baixo.slice(1)+' Dir',
+                   3: r.dir[0].toUpperCase()+r.dir.slice(1)+' Sup',
+                   4: r.dir[0].toUpperCase()+r.dir.slice(1)+' Inf',
+                   5: r.cima[0].toUpperCase()+r.cima.slice(1)+' Esq',
+                   6: r.cima[0].toUpperCase()+r.cima.slice(1)+' Dir',
+                   7: r.esq[0].toUpperCase()+r.esq.slice(1)+' Sup',
+                   8: r.esq[0].toUpperCase()+r.esq.slice(1)+' Inf',
+               },
+               // Lado de cada ponto para muro
+               lado: { 1:r.baixo, 2:r.baixo, 3:r.dir, 4:r.dir, 5:r.cima, 6:r.cima, 7:r.esq, 8:r.esq }
+           };
+       }
        let dados = {
            pontos: {},
            muros: {}
@@ -1047,28 +1096,59 @@
        }
 
        function atualizarPortaDiagrama() {
-           // Remover marcação anterior
            document.querySelectorAll('.door-marker').forEach(el => el.remove());
-
            const diagrama = document.getElementById('houseDiagram');
            const porta = document.createElement('div');
            porta.className = 'door-marker';
            porta.textContent = '🚪';
-
-           // Posicionar conforme o lado selecionado
-           const estilos = {
-               sul:   'position:absolute; bottom:-60px; left:50%; transform:translateX(-50%); font-size:32px;',
-               norte: 'position:absolute; top:-60px;    left:50%; transform:translateX(-50%); font-size:32px;',
-               leste: 'position:absolute; right:-60px;  top:50%;  transform:translateY(-50%); font-size:32px;',
-               oeste: 'position:absolute; left:-60px;   top:50%;  transform:translateY(-50%); font-size:32px;'
-           };
-           porta.style.cssText = estilos[ladoPorta];
+           // Porta sempre em baixo (donde o utilizador está)
+           porta.style.cssText = 'position:absolute; bottom:-60px; left:50%; transform:translateX(-50%); font-size:32px;';
            diagrama.appendChild(porta);
+
+           // Rodar as labels dos lados conforme a porta
+           const d = getDirecoes(ladoPorta);
+           const nomes = { sul:'南 SUL', norte:'北 NORTE', leste:'東 LESTE', oeste:'西 OESTE' };
+           const cores  = { sul:'#e74c3c', norte:'#3498db', leste:'#f39c12', oeste:'#9b59b6' };
+           // Posições visuais fixas no diagrama
+           const posVisuais = {
+               baixo: 'label-sul',
+               cima:  'label-norte',
+               dir:   'label-leste',
+               esq:   'label-oeste'
+           };
+           const rot = { sul:{baixo:'sul',dir:'leste',cima:'norte',esq:'oeste'}, norte:{baixo:'norte',dir:'oeste',cima:'sul',esq:'leste'}, leste:{baixo:'leste',dir:'norte',cima:'oeste',esq:'sul'}, oeste:{baixo:'oeste',dir:'sul',cima:'leste',esq:'norte'} };
+           const r = rot[ladoPorta] || rot.sul;
+           // Atualizar o texto de cada label visual
+           const labelEls = {
+               'label-sul':   document.querySelector('.label-sul'),
+               'label-norte': document.querySelector('.label-norte'),
+               'label-leste': document.querySelector('.label-leste'),
+               'label-oeste': document.querySelector('.label-oeste')
+           };
+           if (labelEls['label-sul'])   { labelEls['label-sul'].textContent   = nomes[r.baixo]; labelEls['label-sul'].style.background   = cores[r.baixo]; }
+           if (labelEls['label-norte']) { labelEls['label-norte'].textContent = nomes[r.cima];  labelEls['label-norte'].style.background = cores[r.cima]; }
+           if (labelEls['label-leste']) { labelEls['label-leste'].textContent = nomes[r.dir];   labelEls['label-leste'].style.background = cores[r.dir]; }
+           if (labelEls['label-oeste']) { labelEls['label-oeste'].textContent = nomes[r.esq];   labelEls['label-oeste'].style.background = cores[r.esq]; }
+
+           // Atualizar tooltips dos pontos
+           const pts = { 1:'p1',2:'p2',3:'p3',4:'p4',5:'p5',6:'p6',7:'p7',8:'p8' };
+           for (let i=1;i<=8;i++) {
+               const el = document.querySelector('.'+pts[i]);
+               if (el) el.setAttribute('title', d.labels[i]);
+           }
+
+           // Atualizar legendas de muro
+           const muroNomes = { sul:'SUL 南', norte:'NORTE 北', leste:'LESTE 東', oeste:'OESTE 西' };
+           document.getElementById('wallSulLabel').textContent   = muroNomes[r.baixo] || '';
+           document.getElementById('wallNorteLabel').textContent = muroNomes[r.cima]  || '';
+           document.getElementById('wallLesteLabel').textContent = muroNomes[r.dir]   || '';
+           document.getElementById('wallOesteLabel').textContent = muroNomes[r.esq]   || '';
        }
 
        function abrirModal(ponto, descricao) {
            pontoAtual = ponto;
-           document.getElementById('modalTitle').textContent = `Ponto ${ponto} - ${descricao}`;
+           const descReal = getDirecoes(ladoPorta).labels[ponto] || descricao;
+           document.getElementById('modalTitle').textContent = `Ponto ${ponto} - ${descReal}`;
 
            // Preencher valores existentes
            if (dados.pontos[ponto]) {
@@ -1078,13 +1158,7 @@
            }
 
            // Mostrar opção de muro apenas para pontos do mesmo lado
-           const ladosMuro = {
-               1: 'sul', 2: 'sul',
-               3: 'leste', 4: 'leste',
-               5: 'norte', 6: 'norte',
-               7: 'oeste', 8: 'oeste'
-           };
-
+           const ladosMuro = getDirecoes(ladoPorta).lado;
            const lado = ladosMuro[ponto];
            const primeiroDoLado = (ponto === 1 || ponto === 3 || ponto === 5 || ponto === 7);
 
@@ -1311,13 +1385,27 @@
                        if (eNec < T1_min+T2_min || eNec > T1_max+T2_max) continue;
 
                        // Distribuir eNec entre T1 e T2, proporcional ao espaço disponível
-                       // Capeado em T1_max/T2_max (limite físico do terreno)
                        const fracT1 = T1_max / (T1_max + T2_max);
-                       let T1 = Math.round(eNec * fracT1);
-                       T1 = Math.min(T1_max, Math.max(T1_min, T1));
-                       let T2 = eNec - T1;
-                       if (T2 > T2_max) { T2=T2_max; T1=eNec-T2; }
-                       if (T2 < T2_min) { T2=T2_min; T1=eNec-T2; }
+                       let T1raw = Math.round(eNec * fracT1);
+                       T1raw = Math.min(T1_max, Math.max(T1_min, T1raw));
+                       let T2raw = eNec - T1raw;
+                       if (T2raw > T2_max) { T2raw=T2_max; T1raw=eNec-T2raw; }
+                       if (T2raw < T2_min) { T2raw=T2_min; T1raw=eNec-T2raw; }
+                       if (T1raw<T1_min||T1raw>T1_max||T2raw<T2_min||T2raw>T2_max) continue;
+                       // Arredondar para múltiplo de 10mm (mais fácil na obra)
+                       function snap10(v, lo, hi) {
+                           const r = Math.round(v/10)*10;
+                           if (r >= lo && r <= hi) return r;
+                           // tentar reduzir para 10 abaixo ou acima dentro do range
+                           for (const d of [0,-10,10,-20,20,-30,30]) {
+                               const c = Math.round(v/10)*10 + d;
+                               if (c >= lo && c <= hi) return c;
+                           }
+                           return v; // fallback sem arredondar
+                       }
+                       const T1 = snap10(T1raw, T1_min, T1_max);
+                       const T2 = snap10(T2raw, T2_min, T2_max);
+                       // Verificar que T1+T2 ainda é válido (pode diferir de eNec por até ±20)
                        if (T1<T1_min||T1>T1_max||T2<T2_min||T2>T2_max) continue;
 
                        const ps = extrasMap.get(extra);
@@ -1396,11 +1484,21 @@
 
            const t = dados.pontos;
 
-           // Limite mais restrito de cada lado perpendicular (segurança para afunilamento)
-           const lesteT = Math.min(t[3].terreno, t[4].terreno);
-           const oesteT = Math.min(t[7].terreno, t[8].terreno);
-           const norteT = Math.min(t[5].terreno, t[6].terreno);
-           const sulT   = Math.min(t[1].terreno, t[2].terreno);
+           // Limite mais restrito — usa mapeamento rotacional conforme posição da porta
+           const dirs = getDirecoes(ladoPorta);
+           function terrenoDir(dir) {
+               const [a,b] = dirs[dir];
+               if (!t[a] || !t[b]) return 9999;
+               return Math.min(t[a].terreno, t[b].terreno);
+           }
+           function muroDir(dir) {
+               const [a] = dirs[dir]; // muro salvo pelo primeiro ponto do lado
+               return dados.muros[dir] || 0;
+           }
+           const lesteT = terrenoDir('leste');
+           const oesteT = terrenoDir('oeste');
+           const norteT = terrenoDir('norte');
+           const sulT   = terrenoDir('sul');
 
            // ── COMPRIMENTO: SUL e NORTE usam os mesmos spans ────────────
            // Perpendiculares: LESTE e OESTE
@@ -1432,10 +1530,11 @@
 
            // ── Avisos de afunilamento ───────────────────────────────────
            const avisosFunilamento = [];
-           if (t[3].terreno !== t[4].terreno) avisosFunilamento.push(`ℹ️ LESTE afunila: p3(Norte)=${t[3].terreno}mm ≠ p4(Sul)=${t[4].terreno}mm — usando limite ${lesteT}mm`);
-           if (t[7].terreno !== t[8].terreno) avisosFunilamento.push(`ℹ️ OESTE afunila: p7(Norte)=${t[7].terreno}mm ≠ p8(Sul)=${t[8].terreno}mm — usando limite ${oesteT}mm`);
-           if (t[5].terreno !== t[6].terreno) avisosFunilamento.push(`ℹ️ NORTE afunila: p5(Oeste)=${t[5].terreno}mm ≠ p6(Leste)=${t[6].terreno}mm — usando limite ${norteT}mm`);
-           if (t[1].terreno !== t[2].terreno) avisosFunilamento.push(`ℹ️ SUL afunila: p1(Oeste)=${t[1].terreno}mm ≠ p2(Leste)=${t[2].terreno}mm — usando limite ${sulT}mm`);
+           ['leste','oeste','norte','sul'].forEach(dir => {
+               const [a,b] = dirs[dir];
+               if (t[a] && t[b] && t[a].terreno !== t[b].terreno)
+                   avisosFunilamento.push(`ℹ️ ${dir.toUpperCase()} afunila: p${a}=${t[a].terreno}mm ≠ p${b}=${t[b].terreno}mm — usando limite ${terrenoDir(dir)}mm`);
+           });
 
            // ── Verificar conflito de esquinas ───────────────────────────
            const avisoEsquinas = [];
@@ -1559,13 +1658,13 @@
            // ── Passar para passo 4 (fotos) ──────────────────────────────
            // SUL: visto de fora (sul→norte): esq=OESTE, dir=LESTE
            // NORTE: visto de fora (norte→sul): esq=LESTE, dir=OESTE (espelhado)
-           // LESTE: visto de fora (leste→oeste): esq=NORTE, dir=SUL
-           // OESTE: visto de fora (oeste→leste): esq=SUL, dir=NORTE (espelhado)
+           // LESTE: visto de fora (leste→oeste, facing OESTE): esq=SUL, dir=NORTE
+           // OESTE: visto de fora (oeste→leste, facing LESTE): esq=NORTE, dir=SUL
            mostrarStep4({
                sul:   { spans: compRes.spans,                        t1: compRes.T2, t2: compRes.T1, plat: pSul.plat },
                norte: { spans: [...compRes.spans].reverse(),         t1: compRes.T1, t2: compRes.T2, plat: pNorte.plat },
-               leste: { spans: largRes.spans,                        t1: largRes.T1, t2: largRes.T2, plat: pLeste.plat },
-               oeste: { spans: [...largRes.spans].reverse(),         t1: largRes.T2, t2: largRes.T1, plat: pOeste.plat }
+               leste: { spans: [...largRes.spans].reverse(),         t1: largRes.T2, t2: largRes.T1, plat: pLeste.plat },
+               oeste: { spans: largRes.spans,                        t1: largRes.T1, t2: largRes.T2, plat: pOeste.plat }
            }, { sul: beirais.sul, norte: beirais.norte, leste: beirais.leste, oeste: beirais.oeste },
               comp, larg);
        }
@@ -1601,13 +1700,26 @@
        let resultadosCalc  = {};
        let beiraisCalc     = {};
        let medidasCalc     = { comp: 0, larg: 0 };
-       let alturaCalhaData = {};
-       let beiralLadoData  = {};
+       let alturaCalhaData  = {};
+       let alturaCalhaP2Data = {}; // altura do lado P2 — se diferente = telhado inclinado
+       let beiralLadoData   = {};
        // zoom como fator de escala do canvas (resize real)
        let zoomAtual = 1.0;
        const ZOOM_MIN = 0.5, ZOOM_MAX = 6.0;
        // Renderização em alta resolução (retina/HiDPI)
        const CANVAS_DPR = Math.min(3, Math.round(window.devicePixelRatio || 1));
+       // Função global para derivar plataforma (usada no canvas de foto)
+       function getPlatformInfo(T) {
+           if (T >= 1100) return { plat:'WW', cor:'#8e44ad' };
+           if (T >= 970)  return { plat:'WS', cor:'#8e44ad' };
+           if (T >= 921)  return { plat:'W',  cor:'#e67e22' };
+           if (T >= 780)  return { plat:'W',  cor:'#27ae60' };
+           if (T >= 580)  return { plat:'S',  cor:'#3498db' };
+           if (T >= 550)  return { plat:'Sb', cor:'#3498db' };
+           if (T >= 450)  return { plat:'M',  cor:'#f39c12' };
+           if (T >= 250)  return { plat:'Centa', cor:'#e74c3c' };
+           return               { plat:'?',  cor:'#bdc3c7' };
+       }
 
        const nomesPt  = { sul:'SUL 南', norte:'NORTE 北', leste:'LESTE 東', oeste:'OESTE 西' };
        const coresAba = { sul:'#e74c3c', norte:'#3498db', leste:'#f39c12', oeste:'#9b59b6' };
@@ -1736,6 +1848,13 @@
            document.getElementById('beiralLadoAtual').value =
                beiralLadoData[lado]!==undefined ? beiralLadoData[lado] : (beiraisCalc[lado]||0);
            document.getElementById('alturaCalha').value = alturaCalhaData[lado]||'';
+           document.getElementById('alturaCalhaP2').value = alturaCalhaP2Data[lado]||'';
+           checarInclinacao();
+           // Labels P1/P2 com direção do lado
+           const labDir = { sul:{p1:'OESTE',p2:'LESTE'}, norte:{p1:'LESTE',p2:'OESTE'}, leste:{p1:'SUL',p2:'NORTE'}, oeste:{p1:'NORTE',p2:'SUL'} };
+           const ld = labDir[lado]||{p1:'P1',p2:'P2'};
+           const elP1 = document.getElementById('labelP1lado'); if(elP1) elP1.textContent='('+ld.p1+')';
+           const elP2 = document.getElementById('labelP2lado'); if(elP2) elP2.textContent='('+ld.p2+')';
 
            if (fotosData[lado]) {
                document.getElementById('zona-upload').style.display     = 'none';
@@ -2055,12 +2174,58 @@
        }
 
        // ── Desenhar linhas ───────────────────────────────────────────
+       function toggleModoRapido() {
+           var p = document.getElementById('painelModoRapido');
+           p.style.display = p.style.display === 'none' ? 'block' : 'none';
+       }
+       function parseMrSpans(str) {
+           var spans = [];
+           var parts = str.replace(/[xX]/g,'x').split('+');
+           for (var i=0; i<parts.length; i++) {
+               var p = parts[i].trim();
+               var m = p.match(/^(\d+)[xX×](\d+)$/);
+               if (m) { var n=parseInt(m[1]),v=parseInt(m[2]); for(var j=0;j<n;j++) spans.push(v); }
+               else if (/^\d+$/.test(p)) spans.push(parseInt(p));
+           }
+           return spans;
+       }
+       function aplicarModoRapido() {
+           var ls = ['sul','norte','leste','oeste'];
+           var filled = 0;
+           for (var i=0; i<ls.length; i++) {
+               var l = ls[i];
+               var spStr = document.getElementById('mr-spans-'+l).value.trim();
+               var t1 = parseInt(document.getElementById('mr-t1-'+l).value)||0;
+               var t2 = parseInt(document.getElementById('mr-t2-'+l).value)||0;
+               if (!spStr || !t1 || !t2) continue;
+               var spans = parseMrSpans(spStr);
+               if (spans.length === 0) continue;
+               resultadosCalc[l] = { spans: spans, t1: t1, t2: t2, plat: getPlatformInfo(t1).plat };
+               filled++;
+           }
+           if (filled === 0) { alert('Preencha pelo menos um lado.'); return; }
+           document.getElementById('painelModoRapido').style.display = 'none';
+           if (document.getElementById('step4').classList.contains('hidden')) {
+               document.getElementById('step4').classList.remove('hidden');
+               if (!beiraisCalc) beiraisCalc = {sul:0,norte:0,leste:0,oeste:0};
+               if (!medidasCalc) medidasCalc = {comp:0,larg:0};
+           }
+           abrirAba('sul');
+           document.getElementById('step4').scrollIntoView({behavior:'smooth'});
+       }
+       function checarInclinacao() {
+           const h1 = parseInt(document.getElementById('alturaCalha').value)||0;
+           const h2 = parseInt(document.getElementById('alturaCalhaP2').value)||0;
+           const av = document.getElementById('aviso-inclinacao');
+           if (av) av.style.display = (h1>0 && h2>0 && h1!==h2) ? 'block' : 'none';
+       }
        function desenharLinhas() {
-           alturaCalhaData[ladoAtual]=parseInt(document.getElementById('alturaCalha').value)||0;
-           beiralLadoData[ladoAtual] =parseInt(document.getElementById('beiralLadoAtual').value)||0;
+           alturaCalhaData[ladoAtual]  = parseInt(document.getElementById('alturaCalha').value)||0;
+           alturaCalhaP2Data[ladoAtual]= parseInt(document.getElementById('alturaCalhaP2').value)||0;
+           beiralLadoData[ladoAtual]   = parseInt(document.getElementById('beiralLadoAtual').value)||0;
            const calib=calibData[ladoAtual];
            if (!calib||calib.estado!=='calibrado') { alert('Complete a calibração (P1, P2 e GL) primeiro!'); return; }
-           if (!alturaCalhaData[ladoAtual]) { alert('Digite a altura da calha!'); return; }
+           if (!alturaCalhaData[ladoAtual]) { alert('Digite a altura P1 da calha!'); return; }
            desenharLinhasNoCanvas(ladoAtual);
            document.getElementById('acoes-foto').style.display='grid';
        }
@@ -2134,58 +2299,98 @@
            let acum = xPrim;
            spans.forEach(s => { acum += s * escZ; colPx.push(acum); });
 
-           const altPx   = alturaCalha * escZ;
-           const margemY = Math.min((beiralLado + 300) * escZ, logH * 0.22);
-           const yTopo   = oy - altPx - margemY;
+           // Altura da calha: P1 (esq) e P2 (dir), se iguais = telhado reto
+           const alturaCalhaP2 = alturaCalhaP2Data[lado] || alturaCalha; // fallback = P1
+           const inclinado = (alturaCalhaP2 > 0 && alturaCalhaP2 !== alturaCalha);
 
-           // ── Linhas VERTICAIS (colunas) ────────────────────────────────
+           const altP1px = alturaCalha   * escZ;  // altura P1 em px
+           const altP2px = alturaCalhaP2 * escZ;  // altura P2 em px
+
+           // Para verticais: usar a maior altura + GC + margem como topo
+           const maxAltPx = Math.max(altP1px, altP2px);
+           const gcMax    = maxAltPx + 1100 * escZ;
+           const margemY  = Math.min(80 * escZ, logH * 0.08);
+           const yTopo    = oy - gcMax - margemY;
+
+           // ── Linhas VERTICAIS (colunas) — chegam até topo do GC ────────
            colPx.forEach(px => {
-               ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+               ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
                ctx.beginPath(); ctx.moveTo(px, oy + 10); ctx.lineTo(px, yTopo); ctx.stroke();
            });
 
-           // ── Linhas HORIZONTAIS a cada 1800mm ─────────────────────────
-           ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.5; ctx.setLineDash([8, 5]);
+           // ── Letras de plataforma nas áreas T1 e T2 ───────────────────
+           function drawPlatLtr(text, cx, bg) {
+               if (!text || text === '?') return;
+               const yMid = oy - altP1px * 0.5;
+               ctx.save();
+               ctx.font = 'bold 18px Arial';
+               const tw = ctx.measureText(text).width;
+               const pw = tw + 14, ph = 28;
+               ctx.fillStyle = bg + 'cc';
+               ctx.beginPath(); ctx.roundRect(cx - pw/2, yMid - ph/2, pw, ph, 7); ctx.fill();
+               ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+               ctx.fillText(text, cx, yMid);
+               ctx.restore();
+           }
+           const plat1 = getPlatformInfo(T1), plat2 = getPlatformInfo(T2);
+           const xWallEsq = ox;
+           const xWallDir = ox + (T1 + sumSpans + T2) * escZ;
+           const cxT1 = (xWallEsq + xPrim) / 2;
+           const cxT2 = (xUlt + xWallDir) / 2;
+           if (T1 * escZ > 25) drawPlatLtr(plat1.plat, cxT1, plat1.cor);
+           if (T2 * escZ > 25) drawPlatLtr(plat2.plat, cxT2, plat2.cor);
+
+           // ── Linhas HORIZONTAIS a cada 1800mm (sem texto) ─────────────
+           // Para telhado inclinado, interpola a altura em cada coluna
+           ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.0; ctx.setLineDash([7, 5]);
+           const totalPxWidth = xUlt - xPrim; // largura total entre colunas extremas
+           function yCalhaEmX(px) {
+               // Interpolação linear entre altP1px (em xPrim) e altP2px (em xUlt)
+               if (!inclinado || totalPxWidth <= 0) return oy - altP1px;
+               const frac = (px - xPrim) / totalPxWidth;
+               return oy - (altP1px + (altP2px - altP1px) * frac);
+           }
            let hAcum = 0;
-           while (hAcum <= alturaCalha + 1) {
-               const yH = oy - hAcum * escZ;
-               ctx.beginPath(); ctx.moveTo(xPrim, yH); ctx.lineTo(xUlt, yH); ctx.stroke();
-               if (hAcum > 0) {
-                   const lbl = (hAcum / 1000).toFixed(1) + 'm';
-                   ctx.save(); ctx.font = 'bold 12px Arial';
-                   const tw = ctx.measureText(lbl).width;
-                   ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(xPrim - tw - 10, yH - 8, tw + 6, 16);
-                   ctx.fillStyle = '#c0392b'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-                   ctx.fillText(lbl, xPrim - 5, yH); ctx.restore();
-               }
+           while (hAcum <= Math.max(alturaCalha, alturaCalhaP2) + 1) {
+               // Linha horizontal que toca a calha inclinada em cada coluna
+               ctx.beginPath();
+               ctx.moveTo(xPrim, yCalhaEmX(xPrim) - hAcum * escZ);
+               ctx.lineTo(xUlt,  yCalhaEmX(xUlt)  - hAcum * escZ);
+               ctx.stroke();
                hAcum += 1800;
            }
            ctx.setLineDash([]);
 
-           // ── Linha CALHA (azul) ────────────────────────────────────────
-           const yCalha = oy - altPx;
-           ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3;
-           ctx.beginPath(); ctx.moveTo(xPrim, yCalha); ctx.lineTo(xUlt, yCalha); ctx.stroke();
+           // ── Linha da CALHA (azul) — inclinada se P1≠P2 ───────────────
+           const yCalhaP1 = yCalhaEmX(xPrim);
+           const yCalhaP2 = yCalhaEmX(xUlt);
+           ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2.5;
+           ctx.beginPath(); ctx.moveTo(xPrim, yCalhaP1); ctx.lineTo(xUlt, yCalhaP2); ctx.stroke();
 
-           // ── Linha BEIRAL (verde) — apenas linha, sem label ────────────
+           // ── Linha BEIRAL (verde) — paralela à calha ───────────────────
            if (beiralLado > 0) {
-               const yB = oy - (alturaCalha + beiralLado) * escZ;
-               ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-               ctx.beginPath(); ctx.moveTo(xPrim, yB); ctx.lineTo(xUlt, yB); ctx.stroke();
-               ctx.setLineDash([]);
+               const bPx = beiralLado * escZ;
+               ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+               ctx.beginPath();
+               ctx.moveTo(xPrim, yCalhaP1 - bPx);
+               ctx.lineTo(xUlt,  yCalhaP2 - bPx);
+               ctx.stroke(); ctx.setLineDash([]);
            }
 
-           // ── Linha GUARDA-CORPO (laranja) — apenas linha, sem label ────
-           const yGC = oy - (alturaCalha + 1100) * escZ;
-           ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
-           ctx.beginPath(); ctx.moveTo(xPrim, yGC); ctx.lineTo(xUlt, yGC); ctx.stroke();
+           // ── Linha GUARDA-CORPO (laranja) — 900mm acima da calha, paralela ──
+           const gcPx = 1100 * escZ;
+           ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.0;
+           ctx.beginPath();
+           ctx.moveTo(xPrim, yCalhaP1 - gcPx);
+           ctx.lineTo(xUlt,  yCalhaP2 - gcPx);
+           ctx.stroke();
 
            // ── Labels T1/T2 nos cantos SUPERIORES ───────────────────────
            const labNomes = {
                sul:   { esq: 'OESTE', dir: 'LESTE' },
                norte: { esq: 'LESTE', dir: 'OESTE' },
-               leste: { esq: 'NORTE', dir: 'SUL'   },
-               oeste: { esq: 'SUL',   dir: 'NORTE' },
+               leste: { esq: 'SUL',   dir: 'NORTE' },
+               oeste: { esq: 'NORTE', dir: 'SUL'   },
            };
            const lN    = labNomes[lado] || { esq: 'ESQ', dir: 'DIR' };
            const yLT   = Math.max(16, yTopo - 4);
@@ -2361,7 +2566,7 @@
                ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.5;
                ctx.beginPath(); ctx.moveTo(xPrimeira, yGC); ctx.lineTo(xUltima, yGC); ctx.stroke();
                // Labels T1/T2 topo
-               const labNm = { sul:{esq:'OESTE',dir:'LESTE'}, norte:{esq:'LESTE',dir:'OESTE'}, leste:{esq:'NORTE',dir:'SUL'}, oeste:{esq:'SUL',dir:'NORTE'} };
+               const labNm = { sul:{esq:'OESTE',dir:'LESTE'}, norte:{esq:'LESTE',dir:'OESTE'}, leste:{esq:'SUL',dir:'NORTE'}, oeste:{esq:'NORTE',dir:'SUL'} };
                const lN = labNm[ladoAtual] || { esq: 'ESQ', dir: 'DIR' };
                const yLT = Math.max(14, yTopo - 6);
                ctx.save(); ctx.font = 'bold 15px Arial';
