@@ -437,8 +437,105 @@
                <input type="file" id="fileInput" accept="image/*">
            </div>
 
+           <div style="display:flex; align-items:center; gap:10px; margin:4px 0;">
+               <div style="flex:1; height:1px; background:#ddd;"></div>
+               <span style="font-size:12px; color:#999; font-weight:600;">OU</span>
+               <div style="flex:1; height:1px; background:#ddd;"></div>
+           </div>
+
+           <button onclick="abrirModoRapido()" style="background:#8e44ad; color:white; padding:14px; border:none; border-radius:8px; font-size:15px; font-weight:700; width:100%;">⚡ Modo Rápido — sem planta</button>
+
            <div id="msgArea"></div>
        </div>
+
+       <!-- Painel Modo Rápido -->
+       <div id="painelModoRapido" style="display:none; background:#f3e5f5; border:2px solid #8e44ad; border-radius:12px; padding:16px; margin-bottom:15px;">
+
+           <!-- Header -->
+           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+               <div style="font-weight:700; color:#6c3483; font-size:16px;">⚡ Modo Rápido</div>
+               <button onclick="fecharModoRapido()" style="background:#bdc3c7; border:none; border-radius:6px; padding:6px 12px; font-size:13px; color:#2c3e50; width:auto;">✕ Fechar</button>
+           </div>
+
+           <!-- Seleção da porta -->
+           <div style="background:white; border-radius:8px; padding:10px; margin-bottom:12px;">
+               <div style="font-size:12px; font-weight:700; color:#6c3483; margin-bottom:8px;">🚪 Qual lado está a porta?</div>
+               <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px;">
+                   <button id="mrPortaSul"   onclick="setMrPorta('sul')"   style="padding:10px 4px; font-size:12px; background:#8e44ad; color:white; border:2px solid #8e44ad; border-radius:6px; font-weight:700; width:auto;">SUL<br>南</button>
+                   <button id="mrPortaNorte" onclick="setMrPorta('norte')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; color:#2c3e50; border:2px solid #bdc3c7; border-radius:6px; font-weight:700; width:auto;">NORTE<br>北</button>
+                   <button id="mrPortaLeste" onclick="setMrPorta('leste')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; color:#2c3e50; border:2px solid #bdc3c7; border-radius:6px; font-weight:700; width:auto;">LESTE<br>東</button>
+                   <button id="mrPortaOeste" onclick="setMrPorta('oeste')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; color:#2c3e50; border:2px solid #bdc3c7; border-radius:6px; font-weight:700; width:auto;">OESTE<br>西</button>
+               </div>
+           </div>
+
+           <!-- Diagrama de entrada -->
+           <div style="background:white; border-radius:8px; padding:12px; margin-bottom:12px;">
+               <div style="font-size:12px; font-weight:700; color:#555; margin-bottom:10px;">📐 Spans e distâncias das colunas:</div>
+
+               <!-- LINHA 1: Norte = Sul -->
+               <div style="border:2px solid #2c3e50; border-radius:8px; padding:10px; margin-bottom:8px;">
+                   <div style="text-align:center; margin-bottom:8px;">
+                       <span style="background:#e74c3c; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px;">NORTE = SUL</span>
+                   </div>
+                   <div style="text-align:center; margin-bottom:8px;">
+                       <div style="font-size:10px; color:#e74c3c; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
+                       <input type="text" id="mr-spans-ns" placeholder="Ex: 8x1800+1200" oninput="mrValidar()"
+                           style="width:160px; padding:8px; border:2px solid #e74c3c; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                       <div style="font-size:10px; color:#999; margin-top:3px;">NxMM ou NxMM+MM+...</div>
+                   </div>
+                   <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
+                       <div style="text-align:center;">
+                           <div style="font-size:10px; font-weight:700; color:#9b59b6; margin-bottom:3px;">OESTE (mm)</div>
+                           <input type="number" id="mr-t-oeste" placeholder="950" oninput="mrValidar()"
+                               style="width:100%; padding:8px; border:2px solid #9b59b6; border-radius:6px; font-size:14px; font-weight:700; text-align:center; margin:0;">
+                       </div>
+                       <div style="border:2px solid #bdc3c7; border-radius:4px; padding:8px 6px; text-align:center; background:#f8f9fa;">
+                           <div style="font-size:9px; color:#888; white-space:nowrap;">🏠 CASA</div>
+                       </div>
+                       <div style="text-align:center;">
+                           <div style="font-size:10px; font-weight:700; color:#f39c12; margin-bottom:3px;">LESTE (mm)</div>
+                           <input type="number" id="mr-t-leste" placeholder="1150" oninput="mrValidar()"
+                               style="width:100%; padding:8px; border:2px solid #f39c12; border-radius:6px; font-size:14px; font-weight:700; text-align:center; margin:0;">
+                       </div>
+                   </div>
+               </div>
+
+               <!-- LINHA 2: Leste = Oeste -->
+               <div style="border:2px solid #2c3e50; border-radius:8px; padding:10px;">
+                   <div style="text-align:center; margin-bottom:8px;">
+                       <span style="background:#f39c12; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px;">LESTE = OESTE</span>
+                   </div>
+                   <div style="text-align:center; margin-bottom:8px;">
+                       <div style="font-size:10px; color:#f39c12; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
+                       <input type="text" id="mr-spans-lo" placeholder="Ex: 6x1800+600" oninput="mrValidar()"
+                           style="width:160px; padding:8px; border:2px solid #f39c12; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                       <div style="font-size:10px; color:#999; margin-top:3px;">NxMM ou NxMM+MM+...</div>
+                   </div>
+                   <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
+                       <div style="text-align:center;">
+                           <div style="font-size:10px; font-weight:700; color:#3498db; margin-bottom:3px;">NORTE (mm)</div>
+                           <input type="number" id="mr-t-norte" placeholder="1070" oninput="mrValidar()"
+                               style="width:100%; padding:8px; border:2px solid #3498db; border-radius:6px; font-size:14px; font-weight:700; text-align:center; margin:0;">
+                       </div>
+                       <div style="border:2px solid #bdc3c7; border-radius:4px; padding:8px 6px; text-align:center; background:#f8f9fa;">
+                           <div style="font-size:9px; color:#888; white-space:nowrap;">🏠 CASA</div>
+                       </div>
+                       <div style="text-align:center;">
+                           <div style="font-size:10px; font-weight:700; color:#e74c3c; margin-bottom:3px;">SUL (mm)</div>
+                           <input type="number" id="mr-t-sul" placeholder="1080" oninput="mrValidar()"
+                               style="width:100%; padding:8px; border:2px solid #e74c3c; border-radius:6px; font-size:14px; font-weight:700; text-align:center; margin:0;">
+                       </div>
+                   </div>
+               </div>
+
+               <!-- Aviso / erro -->
+               <div id="mrAvisoBox" style="display:none; margin-top:10px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;"></div>
+           </div>
+
+           <!-- Botão aplicar -->
+           <button onclick="aplicarModoRapido()" style="background:#8e44ad; color:white; padding:15px; border:none; border-radius:8px; font-weight:700; width:100%; font-size:15px;">✓ Ir para fotos →</button>
+       </div>
+
 
        <!-- Passo 2: Selecionar lado da porta -->
        <div id="step2" class="hidden">
@@ -487,74 +584,68 @@
            </div>
        </div>
 
-       <!-- Passo 2C: Modo Rápido — pular marcação de pontos -->
+       <!-- Passo 2C: Medidas da casa (aparece após formato) -->
        <div id="step2c" class="hidden">
-           <div class="reference" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-               <div><strong>🏠 Clique nos 8 pontos para medir terrenos</strong><br>Ou use o modo rápido se já tiver os resultados</div>
-               <button onclick="mostrarModoRapido()" style="background:#8e44ad; color:white; padding:10px 18px; border:none; border-radius:8px; font-size:14px; font-weight:700; flex-shrink:0;">⚡ Modo Rápido</button>
-           </div>
-       </div>
+           <div style="background:#eaf4fb; border:2px solid #3498db; border-radius:10px; padding:15px; margin-bottom:10px;">
+               <div style="font-weight:700; color:#1a5276; font-size:15px; margin-bottom:12px;">📐 Medidas da casa</div>
 
-       <!-- Painel Modo Rápido (overlay) -->
-       <div id="painelModoRapido" style="display:none; background:#f3e5f5; border:2px solid #8e44ad; border-radius:10px; padding:15px; margin-bottom:15px;">
-           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-               <div style="font-weight:700; color:#6c3483; font-size:15px;">⚡ Modo Rápido — já tenho os resultados</div>
-               <button onclick="fecharModoRapido()" style="background:#bdc3c7; border:none; border-radius:6px; padding:6px 12px; font-size:13px; cursor:pointer;">✕ Fechar</button>
-           </div>
-           <div style="font-size:13px; color:#555; margin-bottom:12px;">Digite os spans e distâncias T de cada lado. Norte/Sul espelham automaticamente, Leste/Oeste também.</div>
-
-           <!-- Porta -->
-           <div style="background:white; border-radius:8px; padding:12px; margin-bottom:12px;">
-               <div style="font-weight:600; font-size:13px; margin-bottom:8px;">🚪 Lado da porta:</div>
-               <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-                   <button id="mrPortaSul"   onclick="setMrPorta('sul')"   style="padding:10px 4px; font-size:12px; background:#ecf0f1; border:2px solid #bdc3c7; border-radius:6px; font-weight:600;">SUL 南</button>
-                   <button id="mrPortaNorte" onclick="setMrPorta('norte')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; border:2px solid #bdc3c7; border-radius:6px; font-weight:600;">NORTE 北</button>
-                   <button id="mrPortaLeste" onclick="setMrPorta('leste')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; border:2px solid #bdc3c7; border-radius:6px; font-weight:600;">LESTE 東</button>
-                   <button id="mrPortaOeste" onclick="setMrPorta('oeste')" style="padding:10px 4px; font-size:12px; background:#ecf0f1; border:2px solid #bdc3c7; border-radius:6px; font-weight:600;">OESTE 西</button>
-               </div>
-           </div>
-
-           <!-- SUL/NORTE (espelham) -->
-           <div style="background:white; border-radius:8px; padding:12px; margin-bottom:10px;">
-               <div style="font-weight:600; font-size:13px; color:#e74c3c; margin-bottom:8px;">📐 SUL / NORTE (espelham automaticamente)</div>
-               <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                   <div>
-                       <div id="mrSulEsqLabel" style="font-size:11px; color:#777; margin-bottom:3px;">T esq (mm):</div>
-                       <input type="number" id="mr-sn-t1" placeholder="860" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharSN()">
+               <!-- Diagrama compacto -->
+               <div style="display:flex; flex-direction:column; align-items:center; gap:5px; margin-bottom:12px;">
+                   <!-- Norte = Sul (amarelo) -->
+                   <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                       <label style="font-size:11px; font-weight:700; color:#856404;">↕ Norte = Sul (mm)</label>
+                       <input type="number" id="comprimento" placeholder="Ex: 9100" value="9100"
+                           style="width:130px; padding:9px; border:2px solid #f6c90e; border-radius:7px; font-size:15px; font-weight:700; text-align:center; background:#fffde7;">
                    </div>
-                   <div>
-                       <div style="font-size:11px; color:#777; margin-bottom:3px;">Spans:</div>
-                       <input type="text" id="mr-sn-spans" placeholder="5x1800+1200" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharSN()">
+                   <!-- Linha do meio: Leste = Oeste (azul) -->
+                   <div style="display:flex; align-items:center; gap:8px;">
+                       <span style="font-size:18px; color:#bdc3c7;">↔</span>
+                       <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                           <label style="font-size:11px; font-weight:700; color:#0d47a1;">Leste = Oeste (mm)</label>
+                           <input type="number" id="largura" placeholder="Ex: 8190" value="8190"
+                               style="width:130px; padding:9px; border:2px solid #5b9bd5; border-radius:7px; font-size:15px; font-weight:700; text-align:center; background:#e3f2fd;">
+                       </div>
                    </div>
-                   <div>
-                       <div id="mrSulDirLabel" style="font-size:11px; color:#777; margin-bottom:3px;">T dir (mm):</div>
-                       <input type="number" id="mr-sn-t2" placeholder="860" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharSN()">
+                   <!-- Kiso -->
+                   <div style="display:flex; flex-direction:column; align-items:center; gap:3px;">
+                       <label style="font-size:11px; color:#555; font-weight:600;">Kiso (mm)</label>
+                       <input type="number" id="kiso" placeholder="Ex: 150" value="150"
+                           style="width:130px; padding:9px; border:1px solid #bdc3c7; border-radius:7px; font-size:15px; text-align:center;">
                    </div>
                </div>
-               <div style="margin-top:8px; font-size:12px; color:#888; background:#f8f8f8; padding:6px; border-radius:5px;" id="mrPreviewSN">Norte espelhará automaticamente</div>
-           </div>
 
-           <!-- LESTE/OESTE (espelham) -->
-           <div style="background:white; border-radius:8px; padding:12px; margin-bottom:12px;">
-               <div style="font-weight:600; font-size:13px; color:#f39c12; margin-bottom:8px;">📐 LESTE / OESTE (espelham automaticamente)</div>
-               <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;">
-                   <div>
-                       <div id="mrLesteEsqLabel" style="font-size:11px; color:#777; margin-bottom:3px;">T esq (mm):</div>
-                       <input type="number" id="mr-lo-t1" placeholder="860" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharLO()">
-                   </div>
-                   <div>
-                       <div style="font-size:11px; color:#777; margin-bottom:3px;">Spans:</div>
-                       <input type="text" id="mr-lo-spans" placeholder="4x1800+900" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharLO()">
-                   </div>
-                   <div>
-                       <div id="mrLesteDirLabel" style="font-size:11px; color:#777; margin-bottom:3px;">T dir (mm):</div>
-                       <input type="number" id="mr-lo-t2" placeholder="860" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px; font-size:14px;" oninput="espelharLO()">
+               <!-- Beirais em grid 2x2 -->
+               <div style="border-top:1px solid #d6eaf8; padding-top:10px; margin-bottom:12px;">
+                   <div style="font-size:12px; font-weight:700; color:#1a5276; margin-bottom:8px;">🏠 Beiral de cada lado (mm):</div>
+                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                       <div style="text-align:center;">
+                           <label style="font-size:11px; color:#555; display:block; margin-bottom:3px;">Norte 北</label>
+                           <input type="number" id="beiralNorte" placeholder="0" value="0"
+                               style="width:100%; padding:7px; border:1px solid #bdc3c7; border-radius:6px; font-size:14px; text-align:center;">
+                       </div>
+                       <div style="text-align:center;">
+                           <label style="font-size:11px; color:#555; display:block; margin-bottom:3px;">Sul 南</label>
+                           <input type="number" id="beiralSul" placeholder="0" value="0"
+                               style="width:100%; padding:7px; border:1px solid #bdc3c7; border-radius:6px; font-size:14px; text-align:center;">
+                       </div>
+                       <div style="text-align:center;">
+                           <label style="font-size:11px; color:#555; display:block; margin-bottom:3px;">Leste 東</label>
+                           <input type="number" id="beiralLeste" placeholder="0" value="0"
+                               style="width:100%; padding:7px; border:1px solid #bdc3c7; border-radius:6px; font-size:14px; text-align:center;">
+                       </div>
+                       <div style="text-align:center;">
+                           <label style="font-size:11px; color:#555; display:block; margin-bottom:3px;">Oeste 西</label>
+                           <input type="number" id="beiralOeste" placeholder="0" value="0"
+                               style="width:100%; padding:7px; border:1px solid #bdc3c7; border-radius:6px; font-size:14px; text-align:center;">
+                       </div>
                    </div>
                </div>
-               <div style="margin-top:8px; font-size:12px; color:#888; background:#f8f8f8; padding:6px; border-radius:5px;" id="mrPreviewLO">Oeste espelhará automaticamente</div>
-           </div>
 
-           <button onclick="aplicarModoRapido()" style="background:#8e44ad; color:white; padding:14px; border:none; border-radius:8px; font-weight:700; width:100%; font-size:15px;">✓ Aplicar → ir para fotos</button>
+               <!-- Botão Continuar -->
+               <div>
+                   <button onclick="confirmarMedidas()" style="background:#27ae60; color:white; padding:12px; border:none; border-radius:8px; font-weight:700; font-size:14px; width:100%;">✓ Continuar →</button>
+               </div>
+           </div>
        </div>
 
        <!-- Passo 3: Interface Visual -->
@@ -638,47 +729,22 @@
            <div id="camposExtras" class="hidden" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
                <h3 style="margin-bottom: 15px; color: #2c3e50;">📐 Medidas e Configurações</h3>
 
-               <!-- Medidas do Alicerce -->
-               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                   <h4 style="margin-bottom: 10px; font-size: 14px;">Medidas do Alicerce:</h4>
-                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
-                       <div>
-                           <label>Comprimento (mm):</label>
-                           <input type="number" id="comprimento" placeholder="Ex: 9100" value="9100">
-                       </div>
-                       <div>
-                           <label>Largura (mm):</label>
-                           <input type="number" id="largura" placeholder="Ex: 8190" value="8190">
-                       </div>
-                       <div>
-                           <label>Kiso (mm):</label>
-                           <input type="number" id="kiso" placeholder="Ex: 150" value="150">
-                       </div>
+               <!-- Medidas já definidas no passo 2C — aqui só mostrar resumo editável -->
+               <div style="background:#f0f8ff; border:1px solid #5b9bd5; padding:12px; border-radius:8px; margin-bottom:12px;">
+                   <div style="font-size:12px; font-weight:700; color:#1a5276; margin-bottom:8px;">📐 Medidas (editável):</div>
+                   <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+                       <div><label style="font-size:10px;color:#856404;font-weight:700;">Norte = Sul</label>
+                           <input type="number" id="c2-comprimento" placeholder="9100" oninput="document.getElementById('comprimento').value=this.value"
+                               style="width:100%;padding:6px;border:2px solid #f6c90e;border-radius:5px;font-size:13px;text-align:center;background:#fffde7;"></div>
+                       <div><label style="font-size:10px;color:#0d47a1;font-weight:700;">Leste = Oeste</label>
+                           <input type="number" id="c2-largura" placeholder="8190" oninput="document.getElementById('largura').value=this.value"
+                               style="width:100%;padding:6px;border:2px solid #5b9bd5;border-radius:5px;font-size:13px;text-align:center;background:#e3f2fd;"></div>
+                       <div><label style="font-size:10px;color:#555;">Kiso</label>
+                           <input type="number" id="c2-kiso" placeholder="150" oninput="document.getElementById('kiso').value=this.value"
+                               style="width:100%;padding:6px;border:1px solid #bdc3c7;border-radius:5px;font-size:13px;text-align:center;"></div>
                    </div>
                </div>
-
-               <!-- Beirais -->
-               <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                   <h4 style="margin-bottom: 10px; font-size: 14px;">Beirais (quanto o telhado sai em mm):</h4>
-                   <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                       <div>
-                           <label>Sul (南):</label>
-                           <input type="number" id="beiralSul" placeholder="Ex: 300" value="0">
-                       </div>
-                       <div>
-                           <label>Leste (東):</label>
-                           <input type="number" id="beiralLeste" placeholder="Ex: 250" value="0">
-                       </div>
-                       <div>
-                           <label>Norte (北):</label>
-                           <input type="number" id="beiralNorte" placeholder="Ex: 300" value="0">
-                       </div>
-                       <div>
-                           <label>Oeste (西):</label>
-                           <input type="number" id="beiralOeste" placeholder="Ex: 250" value="0">
-                       </div>
-                   </div>
-               </div>
+               <!-- Beirais já digitados no passo 2C -->
 
                <!-- Varanda -->
                <div style="background: white; padding: 15px; border-radius: 8px;">
@@ -713,8 +779,8 @@
 
        <!-- Botão flutuante de recalcular (aparece após 1º cálculo) -->
        <div id="btnRecalcFloat" style="display:none; position:fixed; bottom:20px; right:20px; z-index:500;">
-           <button onclick="calcularAndaimes()" style="background:#e74c3c; color:white; padding:14px 20px; border:none; border-radius:50px; font-size:15px; font-weight:700; box-shadow:0 4px 15px rgba(0,0,0,0.3); width:auto;">
-               🔄 Recalcular
+           <button onclick="resetarTudo()" style="background:#e74c3c; color:white; padding:14px 20px; border:none; border-radius:50px; font-size:15px; font-weight:700; box-shadow:0 4px 15px rgba(0,0,0,0.3); width:auto;">
+               🔄 Recomeçar
            </button>
        </div>
 
@@ -853,8 +919,8 @@
                        <div style="font-size:13px; font-weight:600; color:#2c3e50; margin-bottom:8px;">⚡ Auto (escala 1:100 da planta):</div>
                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                            <span style="font-size:13px;">Usar medida:</span>
-                           <button id="btn-auto-comp" onclick="calibAutoEscala('comp')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Comprimento</button>
-                           <button id="btn-auto-larg" onclick="calibAutoEscala('larg')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Largura</button>
+                           <button id="btn-auto-comp" onclick="calibAutoEscala('comp')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Norte = Sul</button>
+                           <button id="btn-auto-larg" onclick="calibAutoEscala('larg')" style="background:#27ae60; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Leste = Oeste</button>
                            <span id="label-auto-medidas" style="font-size:12px; color:#555;"></span>
                        </div>
                    </div>
@@ -938,12 +1004,12 @@
                </div>
 
                <!-- Modal Tela Cheia -->
-               <div id="modalTelaCheia" style="display:none; position:fixed; inset:0; background:#000; z-index:9999; flex-direction:column;">
+               <div id="modalTelaCheia" style="display:none; position:fixed; inset:0; background:#2c3e50; z-index:9999; flex-direction:column;">
                    <div style="position:absolute; top:10px; left:10px; z-index:10000; display:flex; gap:10px;">
                        <button onclick="fecharTelaCheia()" style="background:rgba(231,76,60,0.9); color:white; border:none; border-radius:8px; padding:10px 18px; font-size:16px; font-weight:700;">✕ Voltar</button>
                    </div>
                    <div id="tcContainer" style="width:100%; height:100%; overflow:auto; -webkit-overflow-scrolling:touch;">
-                       <canvas id="tcCanvas" style="display:block;"></canvas>
+                       <canvas id="tcCanvas" style="display:block; background:#f5f5f5;"></canvas>
                    </div>
                </div>
            </div>
@@ -1073,8 +1139,171 @@
        }
 
        let formatoAlicerce = 'retangulo';
-       function mostrarModoRapido() { document.getElementById('painelModoRapido').style.display='block'; document.getElementById('painelModoRapido').scrollIntoView({behavior:'smooth'}); }
-       function fecharModoRapido() { document.getElementById('painelModoRapido').style.display='none'; }
+
+       var mrPorta = 'sul';
+
+       function abrirModoRapido() {
+           document.getElementById('painelModoRapido').style.display = 'block';
+           document.getElementById('painelModoRapido').scrollIntoView({ behavior: 'smooth' });
+       }
+
+       function fecharModoRapido() {
+           document.getElementById('painelModoRapido').style.display = 'none';
+       }
+
+       function setMrPorta(lado) {
+           mrPorta = lado;
+           ['sul','norte','leste','oeste'].forEach(function(l) {
+               var btn = document.getElementById('mrPorta' + l.charAt(0).toUpperCase() + l.slice(1));
+               if (!btn) return;
+               var ativo = l === lado;
+               btn.style.background  = ativo ? '#8e44ad' : '#ecf0f1';
+               btn.style.color       = ativo ? 'white'   : '#2c3e50';
+               btn.style.borderColor = ativo ? '#8e44ad' : '#bdc3c7';
+           });
+       }
+
+       function parseMrSpans(str) {
+           var spans = [];
+           if (!str) return spans;
+           var parts = str.replace(/\s/g,'').split('+');
+           for (var i = 0; i < parts.length; i++) {
+               var p = parts[i].trim();
+               var m = p.match(/^(\d+)[xX×](\d+)$/);
+               if (m) {
+                   var n = parseInt(m[1]), v = parseInt(m[2]);
+                   for (var j = 0; j < n; j++) spans.push(v);
+               } else if (/^\d+$/.test(p)) {
+                   spans.push(parseInt(p));
+               }
+           }
+           return spans;
+       }
+
+       function mrValidar() {
+           var avisoEl = document.getElementById('mrAvisoBox');
+           var avisos = [];
+           var nsStr = (document.getElementById('mr-spans-ns').value || '').trim();
+           var loStr = (document.getElementById('mr-spans-lo').value || '').trim();
+           if (nsStr && parseMrSpans(nsStr).length === 0)
+               avisos.push('⚠️ N/S: formato inválido. Use ex: 8x1800+1200');
+           if (loStr && parseMrSpans(loStr).length === 0)
+               avisos.push('⚠️ L/O: formato inválido. Use ex: 6x1800+600');
+           if (avisos.length) {
+               avisoEl.style.display = 'block';
+               avisoEl.innerHTML = avisos.join('<br>');
+           } else {
+               avisoEl.style.display = 'none';
+           }
+       }
+
+       function aplicarModoRapido() {
+           var nsStr  = (document.getElementById('mr-spans-ns').value || '').trim();
+           var loStr  = (document.getElementById('mr-spans-lo').value || '').trim();
+           var tLeste = parseInt(document.getElementById('mr-t-leste').value) || 0;
+           var tOeste = parseInt(document.getElementById('mr-t-oeste').value) || 0;
+           var tNorte = parseInt(document.getElementById('mr-t-norte').value) || 0;
+           var tSul   = parseInt(document.getElementById('mr-t-sul').value)   || 0;
+
+           if (!nsStr || !loStr) { alert('Preencha a sequência de spans dos dois lados.'); return; }
+           if (!tLeste || !tOeste || !tNorte || !tSul) { alert('Preencha as 4 distâncias de coluna.'); return; }
+
+           var spansNS = parseMrSpans(nsStr);
+           var spansLO = parseMrSpans(loStr);
+           if (spansNS.length === 0) { alert('Formato inválido em Norte=Sul. Ex: 8x1800+1200'); return; }
+           if (spansLO.length === 0) { alert('Formato inválido em Leste=Oeste. Ex: 6x1800+600'); return; }
+
+           // Soma total dos spans — usada para calibração auto 1:100
+           var sumNS = spansNS.reduce(function(a,b){return a+b;}, 0);
+           var sumLO = spansLO.reduce(function(a,b){return a+b;}, 0);
+
+           // Valores diretos — sem nenhum cálculo adicional
+           // plat = plataforma do PRÓPRIO lado (definida pelo T daquele lado)
+           resultadosCalc['sul']   = { spans: spansNS.slice(),           t1: tOeste, t2: tLeste, plat: getPlatform(tSul).plat,   avisos: [] };
+           resultadosCalc['norte'] = { spans: spansNS.slice().reverse(), t1: tLeste, t2: tOeste, plat: getPlatform(tNorte).plat, avisos: [] };
+           resultadosCalc['leste'] = { spans: spansLO.slice().reverse(), t1: tSul,   t2: tNorte, plat: getPlatform(tLeste).plat, avisos: [] };
+           resultadosCalc['oeste'] = { spans: spansLO.slice(),           t1: tNorte, t2: tSul,   plat: getPlatform(tOeste).plat, avisos: [] };
+
+           beiraisCalc = { norte: 0, sul: 0, leste: 0, oeste: 0 };
+           // comp/larg = soma dos spans — referência para calibração 1:100
+           medidasCalc = { comp: sumNS, larg: sumLO };
+           ladoPorta   = mrPorta;
+
+           // kiso = 0 no modo rápido (não há kiso separado)
+           document.getElementById('kiso').value = 0;
+
+           document.getElementById('painelModoRapido').style.display = 'none';
+           document.getElementById('step4').classList.remove('hidden');
+           document.getElementById('stepIndicator').textContent = 'Passo 4: Marcar spans nas fotos';
+           abrirAba('sul');
+           document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+       }
+
+       function resetarTudo() {
+           if (!confirm('Apagar tudo e recomeçar do início?')) return;
+
+           // Reset all data structures
+           dados = { pontos:{}, muros:{norte:0,sul:0,leste:0,oeste:0} };
+           dadosL = { pontos:{} };
+           resultadosCalc = {};
+           fotosData = {};
+           calibData = {};
+           alturaCalhaData = {};
+           alturaCalhaP2Data = {};
+           beiralLadoData = {};
+           beiraisCalc = null;
+           medidasCalc = null;
+           formatoAlicerce = null;
+           zoomAtual = 1.0;
+
+           // Reset all input fields
+           ['comprimento','largura','kiso'].forEach(function(id){
+               var el = document.getElementById(id);
+               if(el) el.value = id==='kiso' ? '150' : '';
+           });
+           ['beiralNorte','beiralSul','beiralLeste','beiralOeste'].forEach(function(id){
+               var el = document.getElementById(id);
+               if(el) el.value = '0';
+           });
+           // Reset photo canvas
+           var canvas = document.getElementById('fotoCanvas');
+           if(canvas){ var ctx=canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); }
+
+           // Hide all steps except step1
+           ['step2','step2b','step2c','step3','step3L','step4','camposExtras','btnFinalizar'].forEach(function(id){
+               var el = document.getElementById(id);
+               if(el) el.classList.add('hidden');
+           });
+           document.getElementById('btnRecalcFloat').style.display = 'none';
+
+           // Show step1
+           document.getElementById('step1').classList.remove('hidden');
+           document.getElementById('stepIndicator').textContent = 'Passo 1: Carregar Planta';
+
+           // Reset step3 corner points visual
+           for(var i=1;i<=8;i++){
+               var pt = document.querySelector('.p'+i);
+               if(pt) pt.classList.remove('filled');
+               var vl = document.getElementById('value'+i);
+               if(vl){ vl.textContent=''; vl.style.display='none'; }
+           }
+           // Reset wall labels
+           ['Norte','Sul','Leste','Oeste'].forEach(function(d){
+               var w=document.getElementById('wall'+d); if(w) w.classList.remove('show');
+           });
+           // Reset door buttons
+           ['Sul','Norte','Leste','Oeste'].forEach(function(d){
+               var b=document.getElementById('btnPorta'+d);
+               if(b){ b.style.background='#ecf0f1'; b.style.color='#2c3e50'; b.style.borderColor='#bdc3c7'; }
+           });
+           // Reset formato buttons
+           ['Retangulo','L','Escada'].forEach(function(f){
+               var b=document.getElementById('btnFormato'+f);
+               if(b){ b.style.background='#ecf0f1'; b.style.color='#2c3e50'; b.style.borderColor='#bdc3c7'; }
+           });
+           // Scroll to top
+           window.scrollTo({top:0,behavior:'smooth'});
+       }
        function selecionarFormato(formato) {
            if (formato === 'escada') { alert('Formato Escada em breve!'); return; }
            formatoAlicerce = formato;
@@ -1084,16 +1313,27 @@
            });
            setTimeout(() => {
                document.getElementById('step2b').classList.add('hidden');
-               if (formato === 'retangulo') {
-                   document.getElementById('step3').classList.remove('hidden');
-                   document.getElementById('painelModoRapido').style.display = 'block';
-                   document.getElementById('stepIndicator').textContent = 'Passo 3: Definir Terrenos ou Modo Rápido';
-                   atualizarPortaDiagrama();
-               } else if (formato === 'L') {
-                   document.getElementById('step3L').classList.remove('hidden');
-                   document.getElementById('stepIndicator').textContent = 'Passo 3: Formato L — 12 Pontos';
-               }
+               document.getElementById('step2c').classList.remove('hidden');
+               document.getElementById('stepIndicator').textContent = 'Passo 2C: Medidas da Casa';
+               document.getElementById('step2c').scrollIntoView({behavior:'smooth'});
            }, 300);
+       }
+
+       function confirmarMedidas() {
+           const comp = parseInt(document.getElementById('comprimento').value);
+           const larg = parseInt(document.getElementById('largura').value);
+           const kiso = parseInt(document.getElementById('kiso').value);
+           if (!comp || !larg || !kiso) { alert('Preencha Norte = Sul, Leste = Oeste e Kiso!'); return; }
+           document.getElementById('step2c').classList.add('hidden');
+           if (formatoAlicerce === 'retangulo') {
+               document.getElementById('step3').classList.remove('hidden');
+               document.getElementById('stepIndicator').textContent = 'Passo 3: Definir Terrenos';
+               atualizarPortaDiagrama();
+           } else if (formatoAlicerce === 'L') {
+               document.getElementById('step3L').classList.remove('hidden');
+               document.getElementById('stepIndicator').textContent = 'Passo 3: Formato L — 12 Pontos';
+           }
+           document.getElementById('step3').scrollIntoView && document.getElementById('step3').scrollIntoView({behavior:'smooth'});
        }
 
        function irParaPasso3() {
@@ -1141,7 +1381,7 @@
            const resInner  = calcSpan(inner,  kiso, tOu('L9',800), tOu('L10',800),0, beirais.inner, false);
            const resNesq   = calcSpan(nesq,   kiso, tOu('L11',800),tOu('L12',800),0, beirais.norte, false);
 
-           function fmtSpans(spans) {
+           function fmtSpansL(spans) {
                const g = {}; spans.forEach(s => { g[s]=(g[s]||0)+1; });
                return Object.entries(g).sort((a,b)=>b[0]-a[0]).map(([v,n])=>n>1?`${n}×${(v/1000).toFixed(1)}m`:`${(v/1000).toFixed(1)}m`).join(' + ');
            }
@@ -1149,7 +1389,7 @@
                if (!res || res.spans.length === 0) return `<div style="background:#f8d7da;padding:15px;border-radius:8px;margin:10px 0;border-left:6px solid ${cor}"><strong>${titulo}</strong><br>❌ Sem solução</div>`;
                let h = `<div style="background:#f8f9fa;padding:15px;border-radius:8px;margin:10px 0;border-left:6px solid ${cor};">`;
                h += `<strong style="color:${cor}">${titulo}</strong><br>`;
-               h += `Plataforma: <strong>${res.plat}</strong> | Sequência: ${fmtSpans(res.spans)}<br>`;
+               h += `Plataforma: <strong>${res.plat}</strong> | Sequência: ${fmtSpansL(res.spans)}<br>`;
                h += `T1=${res.t1}mm | T2=${res.t2}mm | Total=${res.tot}mm`;
                if (res.avisos.length) h += `<div style="background:#fff3cd;padding:8px;border-radius:4px;margin-top:8px;">${res.avisos.join('<br>')}</div>`;
                h += '</div>'; return h;
@@ -1321,6 +1561,11 @@
            if (Object.keys(dados.pontos).length === 8) {
                document.getElementById('camposExtras').classList.remove('hidden');
                document.getElementById('btnFinalizar').style.display = 'block';
+               // Sync c2 fields from primary
+               ['comprimento','largura','kiso','beiralNorte','beiralSul','beiralLeste','beiralOeste'].forEach(function(id){
+                   var src=document.getElementById(id), dst=document.getElementById('c2-'+id);
+                   if(src && dst) dst.value=src.value;
+               });
            }
        }
 
@@ -1350,6 +1595,163 @@
                }
            });
        }
+
+
+       function getPlatform(T) {
+           if (T >= 1100) return { plat:'WW',   cor:'#8e44ad', aviso:'ℹ️ WW: dupla plataforma W (terreno muito largo)' };
+           if (T >= 970)  return { plat:'WS',   cor:'#8e44ad', aviso:'ℹ️ WS: precisa peça 200mm interna na plataforma S' };
+           if (T >= 921)  return { plat:'W⚠️',  cor:'#e67e22', aviso:'⚠️ Zona 921–960mm — perto do limite máximo de W' };
+           if (T >= 780)  return { plat:'W',    cor:'#27ae60', aviso:'' };
+           if (T >= 580)  return { plat:'S',    cor:'#3498db', aviso:'' };
+           if (T >= 550)  return { plat:'Sb',   cor:'#3498db', aviso:'' };
+           if (T >= 450)  return { plat:'M',    cor:'#f39c12', aviso:'' };
+           if (T >= 250)  return { plat:'C',    cor:'#e74c3c', aviso:'' };
+           return           { plat:'ERRO',  cor:'#e74c3c', aviso:'❌ T abaixo de 250mm mínimo' };
+       }
+
+       // Calcula spans para um sentido (comp ou larg)
+       // t1/t2: terreno disponível nos lados PERPENDICULARES (limite mais restrito já aplicado)
+       // muro1/muro2: largura de muro em cada perpendicular (aumenta útil)
+       // beiral1/beiral2: projeção do beiral nos lados perpendiculares
+       // label1/label2: nomes para mensagens de erro
+       function calcSpans(medida, kiso, t1_terreno, t2_terreno, muro1, muro2, beiral1, beiral2, label1, label2) {
+           const avisos = [];
+           const CLR = 70; // folga fixa parede → coluna
+
+           const T1_max = t1_terreno - CLR + (muro1 || 0);
+           const T2_max = t2_terreno - CLR + (muro2 || 0);
+           const T1_min = Math.max(250, beiral1 > 0 ? beiral1 + 50 : 0);
+           const T2_min = Math.max(250, beiral2 > 0 ? beiral2 + 50 : 0);
+
+           // Extensão 200mm: permite colocar a coluna mais longe da parede
+           // A peça de extensão alcança 200mm ALÉM da coluna em direção à parede
+           // Efeito: reduz T_min em 200mm (plataforma ainda cobre o beiral)
+           // Extensão: coluna fica mais perto da parede, extensão cobre a diferença
+           // Sem ext: coluna em T ≤ T_max = terreno-CLR, cobertura = T
+           // Com ext 200: coluna em T, extensão alcança +200mm → cobertura = T+200
+           //   Para caber: T + 200 ≤ terreno → T ≤ terreno - 200
+           //   Para cobrir beiral: T + 200 ≥ T_min → T ≥ T_min - 200
+           const EXT = 200;
+           const T1_maxExt = t1_terreno - EXT; // coluna + ext deve caber no terreno
+           const T2_maxExt = t2_terreno - EXT;
+           const T1_minExt = Math.max(50, T1_min - EXT);
+           const T2_minExt = Math.max(50, T2_min - EXT);
+           // Ext necessária: T_max normal insuficiente mas T_maxExt >= T_minExt
+           const t1UsaExt = T1_max < T1_min && T1_maxExt >= T1_minExt;
+           const t2UsaExt = T2_max < T2_min && T2_maxExt >= T2_minExt;
+           if (t1UsaExt) avisos.push(`⚠️ ${label1}: terreno apertado (${t1_terreno}mm) — requer extensão 200mm`);
+           if (t2UsaExt) avisos.push(`⚠️ ${label2}: terreno apertado (${t2_terreno}mm) — requer extensão 200mm`);
+           const T1_minFinal = t1UsaExt ? T1_minExt : T1_min;
+           const T2_minFinal = t2UsaExt ? T2_minExt : T2_min;
+           const T1_maxFinal = t1UsaExt ? T1_maxExt : T1_max;
+           const T2_maxFinal = t2UsaExt ? T2_maxExt : T2_max;
+           if (T1_maxFinal < T1_minFinal) avisos.push(`❌ ${label1}: terreno ${t1_terreno}mm insuficiente mesmo com extensão 200mm`);
+           if (T2_maxFinal < T2_minFinal) avisos.push(`❌ ${label2}: terreno ${t2_terreno}mm insuficiente mesmo com extensão 200mm`);
+           if (T1_maxFinal < T1_minFinal || T2_maxFinal < T2_minFinal)
+               return { spans:[], T1:0, T2:0, tot:0, avisos };
+
+           const baseFixa = medida + kiso;
+
+           // Gerar combos de peças extras
+           function qualPecas(ps) {
+               return ps.filter(p=>p===400).length*100 + ps.filter(p=>p===200).length*300;
+           }
+           const extrasMap = new Map();
+           extrasMap.set(0, []);
+           function gerarCombos(pecasDisp, atual, lista, prof) {
+               if (prof >= 5) return;
+               for (const p of pecasDisp) {
+                   const soma = atual + p;
+                   if (soma >= 5*1800) continue;
+                   const novaLista = [...lista, p];
+                   const exist = extrasMap.get(soma);
+                   const melhor = !exist || novaLista.length < exist.length
+                       || (novaLista.length === exist.length && qualPecas(novaLista) < qualPecas(exist));
+                   if (melhor) extrasMap.set(soma, novaLista);
+                   gerarCombos(pecasDisp, soma, novaLista, prof+1);
+               }
+           }
+           gerarCombos([1200,900,600],          0, [], 0);
+           gerarCombos([1200,900,600,400,200], 0, [], 0);
+
+           const extras = Array.from(extrasMap.keys()).sort((a,b) => {
+               if (a===0) return -1; if (b===0) return 1;
+               const pa=extrasMap.get(a), pb=extrasMap.get(b);
+               if (pa.length!==pb.length) return pa.length-pb.length;
+               return qualPecas(pa)-qualPecas(pb) || b-a;
+           });
+
+           let best = null, bestScore = Infinity;
+           const nMin = Math.max(0, Math.floor((baseFixa+T1_min+T2_min)/1800));
+           const nMax = Math.ceil((baseFixa+T1_maxFinal+T2_maxFinal)/1800) + 1;
+
+           for (let n=nMin; n<=nMax; n++) {
+               for (const extra of extras) {
+                   const total = n*1800 + extra;
+                   const eNec  = total - baseFixa; // = T1 + T2
+
+                   if (eNec < T1_minFinal+T2_minFinal || eNec > T1_maxFinal+T2_maxFinal) continue;
+
+                   // Distribuir eNec entre T1 e T2, proporcional ao espaço disponível
+                   const fracT1 = T1_maxFinal / (T1_maxFinal + T2_maxFinal);
+                   let T1raw = Math.round(eNec * fracT1);
+                   T1raw = Math.min(T1_maxFinal, Math.max(T1_minFinal, T1raw));
+                   let T2raw = eNec - T1raw;
+                   if (T2raw > T2_maxFinal) { T2raw=T2_maxFinal; T1raw=eNec-T2raw; }
+                   if (T2raw < T2_minFinal) { T2raw=T2_minFinal; T1raw=eNec-T2raw; }
+                   if (T1raw<T1_minFinal||T1raw>T1_maxFinal||T2raw<T2_minFinal||T2raw>T2_maxFinal) continue;
+                   // Arredondar para múltiplo de 10mm (mais fácil na obra)
+                   function snap10(v, lo, hi) {
+                       const r = Math.round(v/10)*10;
+                       if (r >= lo && r <= hi) return r;
+                       // tentar reduzir para 10 abaixo ou acima dentro do range
+                       for (const d of [0,-10,10,-20,20,-30,30]) {
+                           const c = Math.round(v/10)*10 + d;
+                           if (c >= lo && c <= hi) return c;
+                       }
+                       return v; // fallback sem arredondar
+                   }
+                   // snap10 usa T_minFinal (que já considera extensão se necessária)
+                   const T1 = snap10(T1raw, T1_minFinal, T1_maxFinal);
+                   const T2 = snap10(T2raw, T2_minFinal, T2_maxFinal);
+                   if (T1<T1_minFinal||T1>T1_maxFinal||T2<T2_minFinal||T2>T2_maxFinal) continue;
+
+                   const ps = extrasMap.get(extra);
+                   // PRIORIDADE 1: plataforma mais alta em AMBOS os lados (penalizar cada lado individualmente)
+                   // Assim T1=WS+T2=W é penalizado (100), mas T1=W+T2=W não (0).
+                   // PRIORIDADE 2: peças extras de boa qualidade
+                   // PRIORIDADE 3: menos peças extras
+                   // PRIORIDADE 4: maximizar T1+T2
+                   const PLAT_PEN = { WW:200, WS:100, 'W⚠️':50, W:0, S:300, Sb:400, M:500, Centa:600, ERRO:9999 };
+                   const pen1 = PLAT_PEN[getPlatform(T1).plat] !== undefined ? PLAT_PEN[getPlatform(T1).plat] : 400;
+                   const pen2 = PLAT_PEN[getPlatform(T2).plat] !== undefined ? PLAT_PEN[getPlatform(T2).plat] : 400;
+                   const platPen = (pen1 + pen2) * 50000; // soma das penalidades individuais
+                   const score = platPen + qualPecas(ps)*1000 + ps.length*100 - (T1+T2);
+                   if (score < bestScore) { bestScore=score; best={n, extra, T1, T2, ps}; }
+               }
+           }
+
+           if (!best) {
+               avisos.push(`⚠️ Sem combinação de spans possível. Verifique terrenos e medidas.`);
+               return { spans:[], T1:0, T2:0, tot:0, avisos };
+           }
+
+           const spans = [];
+           for (let i=0; i<best.n; i++) spans.push(1800);
+           best.ps.slice().sort((a,b)=>b-a).forEach(p=>spans.push(p));
+
+           if (best.ps.length>0)
+               avisos.push(`${best.ps.some(p=>p<=400)?'⚠️':'ℹ️'} Extra: ${best.ps.join('+')}mm`);
+           if (beiral1>0 && best.T1<beiral1+50)
+               avisos.push(`⚠️ ${label1}: coluna a ${best.T1}mm — folga de apenas ${best.T1-beiral1}mm do beiral (${beiral1}mm)`);
+           if (beiral2>0 && best.T2<beiral2+50)
+               avisos.push(`⚠️ ${label2}: coluna a ${best.T2}mm — folga de apenas ${best.T2-beiral2}mm do beiral (${beiral2}mm)`);
+
+           if (t1UsaExt) avisos.push(`📌 ${label1}: usa extensão 200mm — coluna a ${best.T1}mm da parede + 200mm extensão = ${best.T1+200}mm cobertura (terreno ${t1_terreno}mm)`);
+           if (t2UsaExt) avisos.push(`📌 ${label2}: usa extensão 200mm — coluna a ${best.T2}mm da parede + 200mm extensão = ${best.T2+200}mm cobertura (terreno ${t2_terreno}mm)`);
+           return { spans, T1:best.T1, T2:best.T2, tot:baseFixa+best.T1+best.T2, avisos, t1Ext:t1UsaExt, t2Ext:t2UsaExt };
+       }
+
 
        function calcularAndaimes() {
            console.log('Iniciando calculo v2...');
@@ -1388,161 +1790,6 @@
            // ═══════════════════════════════════════════════════════════
 
            // Deriva plataforma a partir de T (distância coluna→alicerce, já sem 70mm)
-           function getPlatform(T) {
-               if (T >= 1100) return { plat:'WW',   cor:'#8e44ad', aviso:'ℹ️ WW: dupla plataforma W (terreno muito largo)' };
-               if (T >= 970)  return { plat:'WS',   cor:'#8e44ad', aviso:'ℹ️ WS: precisa peça 200mm interna na plataforma S' };
-               if (T >= 921)  return { plat:'W⚠️',  cor:'#e67e22', aviso:'⚠️ Zona 921–960mm — perto do limite máximo de W' };
-               if (T >= 780)  return { plat:'W',    cor:'#27ae60', aviso:'' };
-               if (T >= 580)  return { plat:'S',    cor:'#3498db', aviso:'' };
-               if (T >= 550)  return { plat:'Sb',   cor:'#3498db', aviso:'' };
-               if (T >= 450)  return { plat:'M',    cor:'#f39c12', aviso:'' };
-               if (T >= 250)  return { plat:'Centa',cor:'#e74c3c', aviso:'' };
-               return           { plat:'ERRO',  cor:'#e74c3c', aviso:'❌ T abaixo de 250mm mínimo' };
-           }
-
-           // Calcula spans para um sentido (comp ou larg)
-           // t1/t2: terreno disponível nos lados PERPENDICULARES (limite mais restrito já aplicado)
-           // muro1/muro2: largura de muro em cada perpendicular (aumenta útil)
-           // beiral1/beiral2: projeção do beiral nos lados perpendiculares
-           // label1/label2: nomes para mensagens de erro
-           function calcSpans(medida, kiso, t1_terreno, t2_terreno, muro1, muro2, beiral1, beiral2, label1, label2) {
-               const avisos = [];
-               const CLR = 70; // folga fixa parede → coluna
-
-               const T1_max = t1_terreno - CLR + (muro1 || 0);
-               const T2_max = t2_terreno - CLR + (muro2 || 0);
-               const T1_min = Math.max(250, beiral1 > 0 ? beiral1 + 50 : 0);
-               const T2_min = Math.max(250, beiral2 > 0 ? beiral2 + 50 : 0);
-
-               // Extensão 200mm: permite colocar a coluna mais longe da parede
-               // A peça de extensão alcança 200mm ALÉM da coluna em direção à parede
-               // Efeito: reduz T_min em 200mm (plataforma ainda cobre o beiral)
-               // Extensão: coluna fica mais perto da parede, extensão cobre a diferença
-               // Sem ext: coluna em T ≤ T_max = terreno-CLR, cobertura = T
-               // Com ext 200: coluna em T, extensão alcança +200mm → cobertura = T+200
-               //   Para caber: T + 200 ≤ terreno → T ≤ terreno - 200
-               //   Para cobrir beiral: T + 200 ≥ T_min → T ≥ T_min - 200
-               const EXT = 200;
-               const T1_maxExt = t1_terreno - EXT; // coluna + ext deve caber no terreno
-               const T2_maxExt = t2_terreno - EXT;
-               const T1_minExt = Math.max(50, T1_min - EXT);
-               const T2_minExt = Math.max(50, T2_min - EXT);
-               // Ext necessária: T_max normal insuficiente mas T_maxExt >= T_minExt
-               const t1UsaExt = T1_max < T1_min && T1_maxExt >= T1_minExt;
-               const t2UsaExt = T2_max < T2_min && T2_maxExt >= T2_minExt;
-               if (t1UsaExt) avisos.push(`⚠️ ${label1}: terreno apertado (${t1_terreno}mm) — requer extensão 200mm`);
-               if (t2UsaExt) avisos.push(`⚠️ ${label2}: terreno apertado (${t2_terreno}mm) — requer extensão 200mm`);
-               const T1_minFinal = t1UsaExt ? T1_minExt : T1_min;
-               const T2_minFinal = t2UsaExt ? T2_minExt : T2_min;
-               const T1_maxFinal = t1UsaExt ? T1_maxExt : T1_max;
-               const T2_maxFinal = t2UsaExt ? T2_maxExt : T2_max;
-               if (T1_maxFinal < T1_minFinal) avisos.push(`❌ ${label1}: terreno ${t1_terreno}mm insuficiente mesmo com extensão 200mm`);
-               if (T2_maxFinal < T2_minFinal) avisos.push(`❌ ${label2}: terreno ${t2_terreno}mm insuficiente mesmo com extensão 200mm`);
-               if (T1_maxFinal < T1_minFinal || T2_maxFinal < T2_minFinal)
-                   return { spans:[], T1:0, T2:0, tot:0, avisos };
-
-               const baseFixa = medida + kiso;
-
-               // Gerar combos de peças extras
-               function qualPecas(ps) {
-                   return ps.filter(p=>p===400).length*100 + ps.filter(p=>p===200).length*300;
-               }
-               const extrasMap = new Map();
-               extrasMap.set(0, []);
-               function gerarCombos(pecasDisp, atual, lista, prof) {
-                   if (prof >= 5) return;
-                   for (const p of pecasDisp) {
-                       const soma = atual + p;
-                       if (soma >= 5*1800) continue;
-                       const novaLista = [...lista, p];
-                       const exist = extrasMap.get(soma);
-                       const melhor = !exist || novaLista.length < exist.length
-                           || (novaLista.length === exist.length && qualPecas(novaLista) < qualPecas(exist));
-                       if (melhor) extrasMap.set(soma, novaLista);
-                       gerarCombos(pecasDisp, soma, novaLista, prof+1);
-                   }
-               }
-               gerarCombos([1200,900,600],          0, [], 0);
-               gerarCombos([1200,900,600,400,200], 0, [], 0);
-
-               const extras = Array.from(extrasMap.keys()).sort((a,b) => {
-                   if (a===0) return -1; if (b===0) return 1;
-                   const pa=extrasMap.get(a), pb=extrasMap.get(b);
-                   if (pa.length!==pb.length) return pa.length-pb.length;
-                   return qualPecas(pa)-qualPecas(pb) || b-a;
-               });
-
-               let best = null, bestScore = Infinity;
-               const nMin = Math.max(0, Math.floor((baseFixa+T1_min+T2_min)/1800));
-               const nMax = Math.ceil((baseFixa+T1_maxFinal+T2_maxFinal)/1800) + 1;
-
-               for (let n=nMin; n<=nMax; n++) {
-                   for (const extra of extras) {
-                       const total = n*1800 + extra;
-                       const eNec  = total - baseFixa; // = T1 + T2
-
-                       if (eNec < T1_minFinal+T2_minFinal || eNec > T1_maxFinal+T2_maxFinal) continue;
-
-                       // Distribuir eNec entre T1 e T2, proporcional ao espaço disponível
-                       const fracT1 = T1_maxFinal / (T1_maxFinal + T2_maxFinal);
-                       let T1raw = Math.round(eNec * fracT1);
-                       T1raw = Math.min(T1_maxFinal, Math.max(T1_minFinal, T1raw));
-                       let T2raw = eNec - T1raw;
-                       if (T2raw > T2_maxFinal) { T2raw=T2_maxFinal; T1raw=eNec-T2raw; }
-                       if (T2raw < T2_minFinal) { T2raw=T2_minFinal; T1raw=eNec-T2raw; }
-                       if (T1raw<T1_minFinal||T1raw>T1_maxFinal||T2raw<T2_minFinal||T2raw>T2_maxFinal) continue;
-                       // Arredondar para múltiplo de 10mm (mais fácil na obra)
-                       function snap10(v, lo, hi) {
-                           const r = Math.round(v/10)*10;
-                           if (r >= lo && r <= hi) return r;
-                           // tentar reduzir para 10 abaixo ou acima dentro do range
-                           for (const d of [0,-10,10,-20,20,-30,30]) {
-                               const c = Math.round(v/10)*10 + d;
-                               if (c >= lo && c <= hi) return c;
-                           }
-                           return v; // fallback sem arredondar
-                       }
-                       // snap10 usa T_minFinal (que já considera extensão se necessária)
-                       const T1 = snap10(T1raw, T1_minFinal, T1_maxFinal);
-                       const T2 = snap10(T2raw, T2_minFinal, T2_maxFinal);
-                       if (T1<T1_minFinal||T1>T1_maxFinal||T2<T2_minFinal||T2>T2_maxFinal) continue;
-
-                       const ps = extrasMap.get(extra);
-                       // PRIORIDADE 1: plataforma mais alta em AMBOS os lados (penalizar cada lado individualmente)
-                       // Assim T1=WS+T2=W é penalizado (100), mas T1=W+T2=W não (0).
-                       // PRIORIDADE 2: peças extras de boa qualidade
-                       // PRIORIDADE 3: menos peças extras
-                       // PRIORIDADE 4: maximizar T1+T2
-                       const PLAT_PEN = { WW:200, WS:100, 'W⚠️':50, W:0, S:300, Sb:400, M:500, Centa:600, ERRO:9999 };
-                       const pen1 = PLAT_PEN[getPlatform(T1).plat] ?? 400;
-                       const pen2 = PLAT_PEN[getPlatform(T2).plat] ?? 400;
-                       const platPen = (pen1 + pen2) * 50000; // soma das penalidades individuais
-                       const score = platPen + qualPecas(ps)*1000 + ps.length*100 - (T1+T2);
-                       if (score < bestScore) { bestScore=score; best={n, extra, T1, T2, ps}; }
-                   }
-               }
-
-               if (!best) {
-                   avisos.push(`⚠️ Sem combinação de spans possível. Verifique terrenos e medidas.`);
-                   return { spans:[], T1:0, T2:0, tot:0, avisos };
-               }
-
-               const spans = [];
-               for (let i=0; i<best.n; i++) spans.push(1800);
-               best.ps.slice().sort((a,b)=>b-a).forEach(p=>spans.push(p));
-
-               if (best.ps.length>0)
-                   avisos.push(`${best.ps.some(p=>p<=400)?'⚠️':'ℹ️'} Extra: ${best.ps.join('+')}mm`);
-               if (beiral1>0 && best.T1<beiral1+50)
-                   avisos.push(`⚠️ ${label1}: coluna a ${best.T1}mm — folga de apenas ${best.T1-beiral1}mm do beiral (${beiral1}mm)`);
-               if (beiral2>0 && best.T2<beiral2+50)
-                   avisos.push(`⚠️ ${label2}: coluna a ${best.T2}mm — folga de apenas ${best.T2-beiral2}mm do beiral (${beiral2}mm)`);
-
-               if (t1UsaExt) avisos.push(`📌 ${label1}: usa extensão 200mm — coluna a ${best.T1}mm da parede + 200mm extensão = ${best.T1+200}mm cobertura (terreno ${t1_terreno}mm)`);
-               if (t2UsaExt) avisos.push(`📌 ${label2}: usa extensão 200mm — coluna a ${best.T2}mm da parede + 200mm extensão = ${best.T2+200}mm cobertura (terreno ${t2_terreno}mm)`);
-               return { spans, T1:best.T1, T2:best.T2, tot:baseFixa+best.T1+best.T2, avisos, t1Ext:t1UsaExt, t2Ext:t2UsaExt };
-           }
-
            // Lista ordenada de plataformas para fallback
            // ── calcSpan legado — usado pelo formato-L ────────────────────
            function calcSpan(medida, kiso, t1_disp, t2_disp, muro, beiral) {
@@ -1884,7 +2131,7 @@
            if (T >= 580)  return { plat:'S',  cor:'#3498db' };
            if (T >= 550)  return { plat:'Sb', cor:'#3498db' };
            if (T >= 450)  return { plat:'M',  cor:'#f39c12' };
-           if (T >= 250)  return { plat:'Centa', cor:'#e74c3c' };
+           if (T >= 250)  return { plat:'C', cor:'#e74c3c' };
            return               { plat:'?',  cor:'#bdc3c7' };
        }
 
@@ -2001,7 +2248,13 @@
        }
 
        function abrirAba(lado) {
-           ladoAtual = lado; zoomAtual = 1.0;
+           ladoAtual = lado;
+           // Highlight the correct auto-calib button for this side
+           const isNS = lado === 'norte' || lado === 'sul';
+           const btnC = document.getElementById('btn-auto-comp');
+           const btnL = document.getElementById('btn-auto-larg');
+           if (btnC) btnC.style.opacity = isNS ? '1' : '0.4';
+           if (btnL) btnL.style.opacity = isNS ? '0.4' : '1'; zoomAtual = 1.0;
            ['sul','norte','leste','oeste'].forEach(l => {
                const b = document.getElementById('tab-'+l);
                b.style.background = l===lado ? coresAba[l] : '#ecf0f1';
@@ -2152,11 +2405,13 @@
        }
 
        function calibAutoEscala(tipo) {
-           const medida = tipo === 'comp' ? medidasCalc.comp : medidasCalc.larg;
-           if (!medida) { alert('Medida não encontrada.'); return; }
+           const kiso = parseInt(document.getElementById('kiso').value) || 0;
+           const medidaBase = tipo === 'comp' ? medidasCalc.comp : medidasCalc.larg;
+           if (!medidaBase) { alert('Medida não encontrada. Preencha a planta primeiro.'); return; }
+           const medida = medidaBase + kiso; // P1→P2 real = medida da casa + kiso dos dois lados
            document.getElementById('medidaReal').value = medida;
            iniciarCalibManual();
-           mostrarStatusCalib(`📍 1:100 — Toque no <strong>P1</strong><br><span style="font-size:11px;">${(medida/100).toFixed(0)}mm papel = ${medida}mm real</span>`);
+           mostrarStatusCalib(`📍 1:100 — Toque no <strong>P1</strong> (base esq do kiso)<br><span style="font-size:11px;">${(medida/100).toFixed(0)}mm papel = ${medidaBase}+${kiso}=${medida}mm real</span>`);
        }
 
        function mostrarStatusCalib(html) {
@@ -2350,45 +2605,7 @@
        }
 
        // ── Desenhar linhas ───────────────────────────────────────────
-       function toggleModoRapido() {
-           var p = document.getElementById('painelModoRapido');
-           p.style.display = p.style.display === 'none' ? 'block' : 'none';
-       }
-       function parseMrSpans(str) {
-           var spans = [];
-           var parts = str.replace(/[xX]/g,'x').split('+');
-           for (var i=0; i<parts.length; i++) {
-               var p = parts[i].trim();
-               var m = p.match(/^(\d+)[xX×](\d+)$/);
-               if (m) { var n=parseInt(m[1]),v=parseInt(m[2]); for(var j=0;j<n;j++) spans.push(v); }
-               else if (/^\d+$/.test(p)) spans.push(parseInt(p));
-           }
-           return spans;
-       }
-       function aplicarModoRapido() {
-           var ls = ['sul','norte','leste','oeste'];
-           var filled = 0;
-           for (var i=0; i<ls.length; i++) {
-               var l = ls[i];
-               var spStr = document.getElementById('mr-spans-'+l).value.trim();
-               var t1 = parseInt(document.getElementById('mr-t1-'+l).value)||0;
-               var t2 = parseInt(document.getElementById('mr-t2-'+l).value)||0;
-               if (!spStr || !t1 || !t2) continue;
-               var spans = parseMrSpans(spStr);
-               if (spans.length === 0) continue;
-               resultadosCalc[l] = { spans: spans, t1: t1, t2: t2, plat: getPlatformInfo(t1).plat };
-               filled++;
-           }
-           if (filled === 0) { alert('Preencha pelo menos um lado.'); return; }
-           document.getElementById('painelModoRapido').style.display = 'none';
-           if (document.getElementById('step4').classList.contains('hidden')) {
-               document.getElementById('step4').classList.remove('hidden');
-               if (!beiraisCalc) beiraisCalc = {sul:0,norte:0,leste:0,oeste:0};
-               if (!medidasCalc) medidasCalc = {comp:0,larg:0};
-           }
-           abrirAba('sul');
-           document.getElementById('step4').scrollIntoView({behavior:'smooth'});
-       }
+
        function checarInclinacao() {
            const h1 = parseInt(document.getElementById('alturaCalha').value)||0;
            const h2 = parseInt(document.getElementById('alturaCalhaP2').value)||0;
@@ -2495,19 +2712,22 @@
                ctx.beginPath(); ctx.moveTo(px, oy + 10); ctx.lineTo(px, yTopo); ctx.stroke();
            });
 
-           // ── Plataforma deste lado (P1=T1 esq) ────────────────────────
-           const platLado = getPlatformInfo(T1); // plataforma principal deste lado
+           // ── Plataforma deste lado — usa res.plat (plataforma do próprio lado) ──
+           const platColors = { WW:'#8e44ad', WS:'#8e44ad', 'W⚠️':'#e67e22', W:'#27ae60', S:'#3498db', Sb:'#3498db', M:'#f39c12', C:'#e74c3c', ERRO:'#e74c3c' };
+           const platLado = { plat: res.plat || '?', cor: platColors[res.plat] || '#2c3e50' };
 
            // ── Letras de plataforma nas áreas T1/T2 (lados perpendiculares) ─
            function drawPlatBadge(text, cx, yy, bg) {
                if (!text || text === '?') return;
                ctx.save();
-               ctx.font = 'bold 14px Arial';
+               ctx.font = 'bold 11px Arial';
                const tw = ctx.measureText(text).width;
-               const pw = tw + 10, ph = 22;
-               ctx.fillStyle = bg + 'cc';
-               ctx.beginPath(); ctx.roundRect(cx - pw/2, yy - ph/2, pw, ph, 5); ctx.fill();
-               ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+               const pw = tw + 8, ph = 14;
+               ctx.fillStyle = bg + 'cc'; // 80% opacity — bem visível
+               const bx=cx-pw/2, by=yy-ph/2, br=3;
+               ctx.beginPath(); ctx.moveTo(bx+br,by); ctx.lineTo(bx+pw-br,by); ctx.quadraticCurveTo(bx+pw,by,bx+pw,by+br); ctx.lineTo(bx+pw,by+ph-br); ctx.quadraticCurveTo(bx+pw,by+ph,bx+pw-br,by+ph); ctx.lineTo(bx+br,by+ph); ctx.quadraticCurveTo(bx,by+ph,bx,by+ph-br); ctx.lineTo(bx,by+br); ctx.quadraticCurveTo(bx,by,bx+br,by); ctx.closePath(); ctx.fill();
+               ctx.fillStyle = 'white';
+               ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                ctx.fillText(text, cx, yy);
                ctx.restore();
            }
@@ -2516,9 +2736,7 @@
            const xWallDir = ox + (T1 + sumSpans + T2) * escZ;
            const cxT1 = (xWallEsq + xPrim) / 2;
            const cxT2 = (xUlt + xWallDir) / 2;
-           // Mostrar plataforma lateral uma vez no meio da altura
-           if (T1 * escZ > 20) drawPlatBadge(plat1.plat, cxT1, oy - altP1px * 0.5, plat1.cor);
-           if (T2 * escZ > 20) drawPlatBadge(plat2.plat, cxT2, oy - altP2px * 0.5, plat2.cor);
+           // Badges T1/T2 removidos — plataforma identificada pelas células entre linhas
 
            // ── Linhas HORIZONTAIS a cada 1800mm (sem texto) ─────────────
            // Para telhado inclinado, interpola a altura em cada coluna
@@ -2559,12 +2777,12 @@
            }
 
            ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.0; ctx.setLineDash([7, 5]);
-           let hAcum = 0;
+           let hAcum = 1800; // começa 1800mm abaixo da calha (ou acima do GL), nunca na própria calha/GL
            while (true) {
                const yLinha = desenharLinhaH(hAcum);
-               // Parar quando sair dos limites: acima do topo ou abaixo do GL
+               // Parar quando sair dos limites: acima do topo ou chegou ao GL
                if (yLinha < yTopo - 10) break;
-               if (yLinha > oy + 5) break;
+               if (yLinha >= oy) break;
                ctx.beginPath();
                ctx.moveTo(xPrim, yLinha);
                ctx.lineTo(xUlt,  yLinha);
@@ -2573,31 +2791,26 @@
                if (hAcum > 20000) break;
            }
 
-           // ── Marcadores de plataforma em cada linha ────────────────────
-           // Zona S: dentro dos 900mm abaixo da calha (área do guarda-corpo)
-           hAcum = 1800;
-           while (true) {
-               const yLinha = desenharLinhaH(hAcum);
-               if (yLinha < yTopo - 10 || yLinha > oy + 5) break;
-               if (yLinha < 4) { hAcum += 1800; if(hAcum>20000) break; continue; }
-               // Distância desta linha até a calha em mm
-               let distCalha;
-               if (parteDaCalha) {
-                   distCalha = hAcum; // distância direto (partindo da calha)
-               } else {
-                   distCalha = maxCalha - hAcum; // distância da calha = maxCalha - posição GL
+           // ── Badges de plataforma NA linha horizontal a cada 1800mm ──
+           // Regra: beiral>300 → conta da CALHA para baixo; caso contrário → do GL para cima
+           // Badge começa em 1800mm (pula a linha de referência em 0)
+           // Mesma plataforma em todas as linhas deste lado
+           {
+               let hh = 1800; // começa no primeiro 1800mm, não no 0
+               while (true) {
+                   const yLinha = desenharLinhaH(hh);
+                   if (yLinha < yTopo) break;          // acima da área visível
+                   if (yLinha >= oy) break;            // chegou ao GL — para
+                   for (let si = 0; si < spans.length; si++) {
+                       const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
+                       if (xMid < 0 || xMid > logW) continue;
+                       drawPlatBadge(platLado.plat, xMid, yLinha, platLado.cor);
+                   }
+                   hh += 1800;
+                   if (hh > 20000) break;
                }
-               const naZonaGC = distCalha <= 900; // dentro de 900mm abaixo da calha → S
-               const pLbl = naZonaGC ? 'S' : platLado.plat;
-               const pCor = naZonaGC ? '#3498db' : platLado.cor;
-               for (var si = 0; si < spans.length; si++) {
-                   const xSpanMid = (spanCols[si] + spanCols[si+1]) / 2;
-                   if (xSpanMid < 0 || xSpanMid > logW) continue;
-                   drawPlatBadge(pLbl, xSpanMid, yLinha - 10, pCor);
-               }
-               hAcum += 1800;
-               if (hAcum > 20000) break;
            }
+
            ctx.setLineDash([]);
 
            // ── Linha da CALHA (azul) — inclinada se P1≠P2 ───────────────
@@ -2616,12 +2829,16 @@
                ctx.stroke(); ctx.setLineDash([]);
            }
 
-           // ── Linha GUARDA-CORPO (laranja) — 900mm acima da calha, paralela ──
-           const gcPx = 1100 * escZ;
-           ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.0;
+           // ── Linha GUARDA-CORPO (laranja) — 900mm acima calha, DEGRAUS por span ──
+           ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.0; ctx.setLineDash([]);
            ctx.beginPath();
-           ctx.moveTo(xPrim, yCalhaP1 - gcPx);
-           ctx.lineTo(xUlt,  yCalhaP2 - gcPx);
+           for (var gcSi = 0; gcSi < spans.length; gcSi++) {
+               var gcXa = spanCols[gcSi], gcXb = spanCols[gcSi+1];
+               var gcY = yCalhaEmX(gcXa) - 900 * escZ;
+               if (gcSi === 0) { ctx.moveTo(gcXa, gcY); }
+               else { ctx.lineTo(gcXa, gcY); }  // vertical degrau
+               ctx.lineTo(gcXb, gcY);             // horizontal deste span
+           }
            ctx.stroke();
 
            // ── Labels T1/T2 nos cantos SUPERIORES ───────────────────────
@@ -2634,19 +2851,19 @@
            const lN    = labNomes[lado] || { esq: 'ESQ', dir: 'DIR' };
            const yLT   = Math.max(16, yTopo - 4);
 
-           ctx.save(); ctx.font = 'bold 13px Arial';
-           const lT1 = `${lN.esq} ${T1}mm`, wT1 = ctx.measureText(lT1).width;
-           ctx.fillStyle = '#8e44ad';
-           ctx.fillRect(xPrim + 4, yLT - 15, wT1 + 10, 19);
-           ctx.fillStyle = 'white'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-           ctx.fillText(lT1, xPrim + 9, yLT - 5); ctx.restore();
-
-           ctx.save(); ctx.font = 'bold 13px Arial';
-           const lT2 = `${lN.dir} ${T2}mm`, wT2 = ctx.measureText(lT2).width;
-           ctx.fillStyle = '#8e44ad';
-           ctx.fillRect(xUlt - wT2 - 14, yLT - 15, wT2 + 10, 19);
-           ctx.fillStyle = 'white'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-           ctx.fillText(lT2, xUlt - 9, yLT - 5); ctx.restore();
+           // Labels T1/T2 — só o número em pequeno, sem caixa
+           ctx.save();
+           ctx.font = 'bold 10px Arial';
+           ctx.fillStyle = 'rgba(44,44,44,0.9)';
+           ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+           ctx.fillText(T1 + 'mm', xPrim + 4, yLT - 5);
+           ctx.restore();
+           ctx.save();
+           ctx.font = 'bold 10px Arial';
+           ctx.fillStyle = 'rgba(44,44,44,0.9)';
+           ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+           ctx.fillText(T2 + 'mm', xUlt - 4, yLT - 5);
+           ctx.restore();
 
            // ── Resumo de spans ABAIXO do GL ─────────────────────────────
            // Formato: círculo vermelho com nº de 1800mm × 1.8m [+extras]
@@ -2683,7 +2900,7 @@
            ctx.restore();
        } // fim desenharLinhasNoCanvas
 
-       function roundRect(ctx, x, y, w, h, r) {
+       function roundRect(ctx, x, y, w, h, r) { // iOS-safe rounded rect
            ctx.beginPath();
            ctx.moveTo(x + r, y);
            ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
@@ -2706,143 +2923,53 @@
            const calib = calibData[ladoAtual];
            const res   = resultadosCalc[ladoAtual];
            if (!img) return;
+
            const modal = document.getElementById('modalTelaCheia');
-           const tc    = document.getElementById('tcCanvas');
            modal.style.display = 'flex';
            document.body.style.overflow = 'hidden';
 
-           // Usar a largura total da tela em DPR × como base
-           const screenW  = window.screen.width;
-           const screenH  = window.screen.height;
-           const dpr      = Math.min(3, window.devicePixelRatio || 1);
-           // Dimensão lógica que cabe a imagem inteira
+           // Calcular zoom que preenche a tela sem cortar
+           // Usar window.innerWidth/innerHeight (área visível real)
+           const screenW  = window.innerWidth  || window.screen.width;
+           const screenH  = window.innerHeight || window.screen.height;
            const imgRatio = img.height / img.width;
-           let logW, logH;
-           if (imgRatio <= screenH / screenW) {
-               // imagem mais larga que alta — limitar pela largura
-               logW = screenW;
-               logH = Math.round(screenW * imgRatio);
-           } else {
-               // imagem mais alta — limitar pela altura
-               logH = screenH;
-               logW = Math.round(screenH / imgRatio);
-           }
+           // Escolher zoom que faz a imagem CABER completamente (fit, sem cortar)
+           const container = document.getElementById('canvas-container');
+           const contW = container.clientWidth || container.offsetWidth || window.innerWidth;
+           const baseW = Math.min(750, contW > 10 ? contW - 4 : (window.innerWidth - 50) || 320);
+           // zoom para que a imagem na largura = screenW
+           const zoomByW = screenW / baseW;
+           // zoom para que a imagem na altura = screenH
+           const imgHeightAtZoomW = (baseW * zoomByW) * imgRatio;
+           // Se imagem ficaria mais alta que a tela, limitar pelo height
+           const tcZoom = imgHeightAtZoomW <= screenH * 1.2 ? zoomByW : (screenH * 1.2) / (baseW * imgRatio);
 
-           // Canvas buffer em resolução DPR
-           tc.width  = logW * dpr;
-           tc.height = logH * dpr;
-           tc.style.width  = logW + 'px';
-           tc.style.height = logH + 'px';
+           // Salvar zoom atual, aplicar zoom de tela cheia, desenhar, restaurar
+           const zoomSalvo = zoomAtual;
+           zoomAtual = tcZoom;
 
-           const ctx = tc.getContext('2d');
-           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-           ctx.drawImage(img, 0, 0, logW, logH);
+           // Redirecionar desenho para tcCanvas em vez de fotoCanvas
+           const fotoCanvas = document.getElementById('fotoCanvas');
+           const tcCanvas   = document.getElementById('tcCanvas');
 
-           // Se calibrado + resultado, redesenhar linhas na escala de tela cheia
-           if (calib && calib.escala && calib.p3 && res && res.spans.length > 0) {
-               const container = document.getElementById('canvas-container');
-               const contW = container.clientWidth || container.offsetWidth || window.innerWidth;
-               const baseW = Math.min(750, contW > 10 ? contW - 4 : (window.innerWidth - 50) || 320);
-               const normalLogW = Math.round(baseW * zoomAtual);
-               const tcZoom = logW / normalLogW;
+           // Fazer swap temporário — desenharLinhasNoCanvas usa getElementById('fotoCanvas')
+           // Hack: renomear IDs temporariamente
+           fotoCanvas.id = 'fotoCanvas_TEMP';
+           tcCanvas.id   = 'fotoCanvas';
 
-               const alturaCalha = alturaCalhaData[ladoAtual] || 0;
-               const beiralLado  = beiralLadoData[ladoAtual] || 0;
-               const escZ = calib.escala * zoomAtual * tcZoom;
-               const ox   = calib.p1.x * zoomAtual * tcZoom;
-               const oy   = calib.p3.y * zoomAtual * tcZoom;
+           desenharLinhasNoCanvas(ladoAtual);
 
-               const spans = res.spans;
-               const T1 = res.t1, T2 = res.t2;
-               const sumSpans = spans.reduce((a, b) => a + b, 0);
+           // Restaurar IDs e zoom
+           tcCanvas.id   = 'tcCanvas';
+           fotoCanvas.id = 'fotoCanvas';
+           zoomAtual = zoomSalvo;
 
-               // Posições corretas: primeira coluna à ESQUERDA de ox (P1=parede esq)
-               const xPrimeira = ox - T1 * escZ;
-               const colPxTC = [xPrimeira];
-               let acumTC = xPrimeira;
-               spans.forEach(s => { acumTC += s * escZ; colPxTC.push(acumTC); });
-               const xUltima = colPxTC[colPxTC.length - 1];
-
-               const altPx   = alturaCalha * escZ;
-               const margemY = Math.min((beiralLado + 400) * escZ, logH * 0.25);
-               const yTopo   = oy - altPx - margemY;
-
-               // Verticais
-               colPxTC.forEach(px => {
-                   ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
-                   ctx.beginPath(); ctx.moveTo(px, oy + 10); ctx.lineTo(px, yTopo); ctx.stroke();
-               });
-               // Horizontais
-               ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.5; ctx.setLineDash([10, 6]);
-               let hA = 0;
-               while (hA <= alturaCalha + 1) {
-                   const yH = oy - hA * escZ;
-                   ctx.beginPath(); ctx.moveTo(xPrimeira, yH); ctx.lineTo(xUltima, yH); ctx.stroke();
-                   if (hA > 0) {
-                       const l = (hA / 1000).toFixed(1) + 'm';
-                       ctx.save(); ctx.font = 'bold 14px Arial';
-                       const tw = ctx.measureText(l).width;
-                       ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(xPrimeira - tw - 12, yH - 8, tw + 6, 16);
-                       ctx.fillStyle = '#c0392b'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-                       ctx.fillText(l, xPrimeira - 6, yH); ctx.restore();
-                   }
-                   hA += 1800;
-               }
-               ctx.setLineDash([]);
-               // Calha (azul, sem label)
-               const yC = oy - altPx;
-               ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3;
-               ctx.beginPath(); ctx.moveTo(xPrimeira, yC); ctx.lineTo(xUltima, yC); ctx.stroke();
-               // Beiral (sem label)
-               if (beiralLado > 0) {
-                   const yB = oy - (alturaCalha + beiralLado) * escZ;
-                   ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-                   ctx.beginPath(); ctx.moveTo(xPrimeira, yB); ctx.lineTo(xUltima, yB); ctx.stroke();
-                   ctx.setLineDash([]);
-               }
-               // Guarda-corpo (sem label)
-               const yGC = oy - (alturaCalha + 1100) * escZ;
-               ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.5;
-               ctx.beginPath(); ctx.moveTo(xPrimeira, yGC); ctx.lineTo(xUltima, yGC); ctx.stroke();
-               // Labels T1/T2 topo
-               const labNm = { sul:{esq:'OESTE',dir:'LESTE'}, norte:{esq:'LESTE',dir:'OESTE'}, leste:{esq:'SUL',dir:'NORTE'}, oeste:{esq:'NORTE',dir:'SUL'} };
-               const lN = labNm[ladoAtual] || { esq: 'ESQ', dir: 'DIR' };
-               const yLT = Math.max(14, yTopo - 6);
-               ctx.save(); ctx.font = 'bold 15px Arial';
-               const lT1 = lN.esq + ' ' + T1 + 'mm', lT2 = lN.dir + ' ' + T2 + 'mm';
-               const wT1 = ctx.measureText(lT1).width, wT2 = ctx.measureText(lT2).width;
-               ctx.fillStyle = '#8e44ad';
-               ctx.fillRect(xPrimeira + 4, yLT - 15, wT1 + 10, 20);
-               ctx.fillRect(xUltima - wT2 - 14, yLT - 15, wT2 + 10, 20);
-               ctx.fillStyle = 'white'; ctx.textBaseline = 'middle';
-               ctx.textAlign = 'left'; ctx.fillText(lT1, xPrimeira + 9, yLT - 5);
-               ctx.textAlign = 'right'; ctx.fillText(lT2, xUltima - 9, yLT - 5); ctx.restore();
-               // Resumo spans abaixo GL
-               const n18 = spans.filter(s => s === 1800).length;
-               const extr = spans.filter(s => s !== 1800).sort((a, b) => b - a);
-               const yInf = oy + 28;
-               const cxMid = (xPrimeira + xUltima) / 2;
-               const extraTxt = extr.length > 0 ? ' + ' + extr.map(e => e + 'mm').join(' + ') : '';
-               const fullTxt = '×1.8m' + extraTxt;
-               ctx.save(); ctx.font = 'bold 15px Arial';
-               const sw = ctx.measureText(fullTxt).width;
-               ctx.fillStyle = 'rgba(44,62,80,0.88)';
-               const rx = cxMid - sw / 2 - 18, ry = yInf - 2, rw = sw + 40, rh = 24;
-               ctx.beginPath(); ctx.roundRect(rx, ry, rw, rh, 12); ctx.fill();
-               const circXTC = rx + 14, circYTC = ry + rh / 2;
-               ctx.fillStyle = '#e74c3c';
-               ctx.beginPath(); ctx.arc(circXTC, circYTC, 11, 0, Math.PI * 2); ctx.fill();
-               ctx.fillStyle = 'white'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-               ctx.font = 'bold 12px Arial'; ctx.fillText(n18, circXTC, circYTC);
-               ctx.font = 'bold 14px Arial'; ctx.textAlign = 'left';
-               ctx.fillText(fullTxt, circXTC + 15, circYTC); ctx.restore();
-           }
-
-           // Reset scroll para ver topo-esquerda primeiro
+           // Reset scroll
            const cont = document.getElementById('tcContainer');
            cont.scrollLeft = 0;
            cont.scrollTop  = 0;
        }
+
 
        function fecharTelaCheia() {
            document.getElementById('modalTelaCheia').style.display = 'none';
