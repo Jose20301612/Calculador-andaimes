@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.4 - Sem linha tracejada após desenhar</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.20 - Formato L: orientação cardinal correta</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1610,13 +1610,24 @@
             var extNorte = parseInt(document.getElementById('mr-ext-norte').value) || 0;
             var extSul   = parseInt(document.getElementById('mr-ext-sul').value)   || 0;
 
-            // plat = plataforma do PRÓPRIO lado (definida pelo T daquele lado)
-            // ext1 = extensão no lado esquerdo ao olhar de fora, ext2 = lado direito
+            // Bug #16 (v4.12): plataforma de cada face = T da PRÓPRIA face
+            //   No exemplo do usuário: cálculo do LESTE/OESTE produz t1=900 (SUL) e t2=910 (NORTE).
+            //   Esses são os T das faces SUL e NORTE → definem plat_SUL e plat_NORTE.
+            //   No modo rápido, T_SUL é exatamente o tSul que o usuário digitou.
+            //   Idem para tNorte, tLeste, tOeste.
+            //   plat_X = getPlatform(T_X) — regra natural (cada face tem seu T).
+            var platSul   = getPlatform(tSul).plat;    // T da face SUL
+            var platNorte = getPlatform(tNorte).plat;  // T da face NORTE
+            var platLeste = getPlatform(tLeste).plat;  // T da face LESTE
+            var platOeste = getPlatform(tOeste).plat;  // T da face OESTE
             // SUL: esq=OESTE, dir=LESTE
-            resultadosCalc['sul']   = { spans: spansNS.slice(),           t1: tOeste, t2: tLeste, plat: getPlatform(tSul).plat,   avisos: [], ext1: extOeste, ext2: extLeste };
-            resultadosCalc['norte'] = { spans: spansNS.slice().reverse(), t1: tLeste, t2: tOeste, plat: getPlatform(tNorte).plat, avisos: [], ext1: extLeste, ext2: extOeste };
-            resultadosCalc['leste'] = { spans: spansLO.slice().reverse(), t1: tSul,   t2: tNorte, plat: getPlatform(tLeste).plat, avisos: [], ext1: extSul,   ext2: extNorte };
-            resultadosCalc['oeste'] = { spans: spansLO.slice(),           t1: tNorte, t2: tSul,   plat: getPlatform(tOeste).plat, avisos: [], ext1: extNorte, ext2: extSul   };
+            // v4.19: tDaFace = o T que DEFINE o plat desta face (≠ t1/t2 que são
+            // as extensões perpendiculares mostradas nas pontas). Exibido no canvas
+            // para o usuário ver de onde vem a plataforma.
+            resultadosCalc['sul']   = { spans: spansNS.slice(),           t1: tOeste, t2: tLeste, plat: platSul,   tDaFace: tSul,   avisos: [], ext1: extOeste, ext2: extLeste };
+            resultadosCalc['norte'] = { spans: spansNS.slice().reverse(), t1: tLeste, t2: tOeste, plat: platNorte, tDaFace: tNorte, avisos: [], ext1: extLeste, ext2: extOeste };
+            resultadosCalc['leste'] = { spans: spansLO.slice().reverse(), t1: tSul,   t2: tNorte, plat: platLeste, tDaFace: tLeste, avisos: [], ext1: extSul,   ext2: extNorte };
+            resultadosCalc['oeste'] = { spans: spansLO.slice(),           t1: tNorte, t2: tSul,   plat: platOeste, tDaFace: tOeste, avisos: [], ext1: extNorte, ext2: extSul   };
 
             beiraisCalc = { norte: 0, sul: 0, leste: 0, oeste: 0 };
             // comp/larg = soma dos spans — referência para calibração 1:100
@@ -2205,7 +2216,7 @@
             // WW/WS sem beiral nunca são gerados (cap1/cap2 limitam)
             const PPEN={WW:0,WS:0,'W⚠️':0,W:0,S:200,Sb:350,M:600,C:1000,ERRO:9999};
 
-            function tentarDist(eNec, _T1, _T2) {
+            function tentarDist(eNec, _T1, _T2, ps_extras) {
                 _T1=Math.min(cap1,Math.max(T1min,_T1)); _T2=eNec-_T1;
                 if(_T2>cap2){_T2=cap2;_T1=eNec-_T2;} if(_T2<T2min){_T2=T2min;_T1=eNec-_T2;}
                 if(_T1<T1min||_T1>cap1||_T2<T2min||_T2>cap2) return null;
@@ -2226,11 +2237,20 @@
                 const pen1=PPEN[getPlatform(T1).plat]??1000;
                 const pen2=PPEN[getPlatform(T2).plat]??1000;
                 // Prioridade 1: melhorar o PIOR lado (o mais apertado para quem trabalha)
-                // Prioridade 2: maximizar a soma (mais espaço total)
-                // Prioridade 3: menos peças extras
+                // Prioridade 2: minimizar peças extras (Bug #12 corrigido — antes era qp([]) fixo)
+                //   Cada peça extra (1200, 900, 600...) custa fragmentar o andaime sem necessidade
+                // Prioridade 3: maximizar a soma (mais espaço total para colunas)
                 const penWorst = Math.max(pen1,pen2) * 100000;
                 const penSum   = (pen1+pen2) * 1000;
-                const score    = penWorst + penSum + qp([]) - (T1+T2);
+                // ps_extras = lista de peças extras desta candidatura (ex: [1200, 900, 600])
+                // Penalidade: 500 por peça extra → 0 peças=0, 1 peça=500, 2=1000, 3=1500
+                const penPecas = (ps_extras ? ps_extras.length : 0) * 500;
+                // Bug #13: peças PEQUENAS (<700: 200, 400, 600) ilham se há mais de 2.
+                // Penalizar fortemente para preferir decomposições que cabem nas pontas.
+                const nPq = (ps_extras||[]).filter(x => x < 700).length;
+                const penIlha = Math.max(0, nPq - 2) * 50000; // 50k por peça ilhada
+                // qp() ainda penaliza peças muito pequenas (400 e 200) — ruins para andaime
+                const score    = penWorst + penSum + penIlha + penPecas + qp(ps_extras||[]) - (T1+T2);
                 return {score,T1,T2};
             }
             // Testar distribuições nas fronteiras de plataforma para achar o ótimo
@@ -2242,7 +2262,8 @@
                 const fr=cap1/(cap1+cap2);
                 const t1cands=[Math.round(eNec*fr),cap1,T1min,...bndsPl,...bndsPl.map(b=>eNec-b)];
                 for(const t1c of t1cands){
-                    const r=tentarDist(eNec,t1c,eNec-t1c);
+                    // Passar ps (peças extras) para tentarDist usar na penalização
+                    const r=tentarDist(eNec,t1c,eNec-t1c,ps);
                     if(r&&r.score<bestScore){bestScore=r.score;best={n,ex,T1:r.T1,T2:r.T2,ps};}
                 }
             }
@@ -2252,7 +2273,9 @@
             if(t1UsaExt) av.push('  → Lado 1: coluna a '+best.T1+'mm + ext200 = '+(best.T1+EXT)+'mm cobertura');
             if(t2UsaExt) av.push('  → Lado 2: coluna a '+best.T2+'mm + ext200 = '+(best.T2+EXT)+'mm cobertura');
             const ordSpans = ordenarEsquinasSpan(spans, P1.plat, P2.plat);
-            return{spans:ordSpans,t1:best.T1,t2:best.T2,plat1:P1.plat,plat2:P2.plat,plat:Pmin.plat,
+            // Bug #13: garantir TODAS as peças <1800 nas pontas
+            const finalSpans = garantirPequenasNasPontas(ordSpans);
+            return{spans:finalSpans,t1:best.T1,t2:best.T2,plat1:P1.plat,plat2:P2.plat,plat:Pmin.plat,
                    tot:baseFixa+best.T1+best.T2,avisos:av,t1Ext:t1UsaExt?EXT:0,t2Ext:t2UsaExt?EXT:0};
         }
 
@@ -2559,12 +2582,53 @@
             r4[cardSeg] = mkResL(spansSegCombined, T_fvs, lastDr?lastDr.T_innerH:T_pvs);
             b4[cardSeg] = beirais.seg1||0;
 
+            // ── v4.20: Normalização cardinal das faces ───────────────────────
+            // Cada face deve ter t1 = canto ESQUERDO na vista de fora:
+            //   norte: esq=LESTE | sul: esq=OESTE | leste: esq=SUL | oeste: esq=NORTE
+            // O cálculo L monta as faces numa orientação "natural" que serve
+            // para SUL e LESTE. Para NORTE e OESTE (e o seg quando aplicável)
+            // é preciso inverter t1↔t2, plat1↔plat2, ext1↔ext2 e reverter spans.
+            // Sem isso, NORTE fica espelhado de SUL (e OESTE de LESTE) e as
+            // medidas das laterais saem trocadas.
+            function flipFaceL(r) {
+                if (!r) return r;
+                return {
+                    spans: (r.spans || []).slice().reverse(),
+                    t1: r.t2, t2: r.t1,
+                    plat: r.plat,
+                    plat1: r.plat2, plat2: r.plat1,
+                    avisos: r.avisos || [],
+                    ext1: r.ext2 || 0, ext2: r.ext1 || 0
+                };
+            }
+            // cardHoriz natural: esq=OESTE → ok p/ SUL, inverter p/ NORTE
+            if (cardHoriz === 'norte' && r4['norte']) {
+                r4['norte'] = flipFaceL(r4['norte']);
+            }
+            // cardFullV / cardPartV natural: esq=SUL → ok p/ LESTE, inverter p/ OESTE
+            if (cardFullV === 'oeste' && r4['oeste']) {
+                r4['oeste'] = flipFaceL(r4['oeste']);
+            }
+            if (cardPartV === 'oeste' && r4['oeste']) {
+                r4['oeste'] = flipFaceL(r4['oeste']);
+            }
+            // cardSeg natural: esq = lado cheio vertical
+            //   (OESTE se isWestFull, senão LESTE)
+            //   SUL quer esq=OESTE; NORTE quer esq=LESTE
+            {
+                const segNaturalLeft = isWestFull ? 'oeste' : 'leste';
+                const segWantLeft    = (cardSeg === 'sul') ? 'oeste' : 'leste';
+                if (segNaturalLeft !== segWantLeft && r4[cardSeg]) {
+                    r4[cardSeg] = flipFaceL(r4[cardSeg]);
+                }
+            }
+
             ['sul','norte','leste','oeste'].forEach(function(l) {
                 if(!r4[l]) r4[l]={spans:[],t1:0,t2:0,plat:'?',plat1:'?',plat2:'?',avisos:['❌ Não calculado'],ext1:0,ext2:0};
                 if(!b4[l]) b4[l]=0;
             });
 
-            mostrarStep4(r4, b4, mSulNorte, mFullVert);
+            mostrarStep4(r4, b4, mSulNorte + kiso, mFullVert + kiso); // Bug #11: incluir kiso
         }
 
 
@@ -2685,6 +2749,56 @@
                 document.getElementById('camposExtrasT').style.display = 'block';
         }
 
+        // ── garantirPequenasNasPontas: distribui spans pequenos nas extremidades ───
+        // Regra fundamental: pe\u00e7as PEQUENAS (200, 400, 600) NUNCA ficam no meio
+        // do andaime, sempre nas pontas (esquinas). Pe\u00e7as M\u00c9DIAS (900, 1200)
+        // PODEM ficar no meio sem problema. Os 1800 s\u00e3o os spans normais.
+        //
+        // Raz\u00e3o f\u00edsica: a continua\u00e7\u00e3o do lado adjacente (T1/T2 do outro lado da
+        // esquina) preenche o v\u00e3o da pe\u00e7a pequena \u2014 o trabalhador tem onde pisar.
+        // Pe\u00e7as 900 e 1200 j\u00e1 t\u00eam plataforma pr\u00f3pria, n\u00e3o precisam de "preenchimento".
+        //
+        // Importante: pe\u00e7as PEQUENAS devem ficar NA BORDA externa. Se houver
+        // m\u00e9dias (900/1200), elas v\u00e3o entre as pequenas e os 1800.
+        function garantirPequenasNasPontas(spans) {
+            if (!spans || spans.length <= 2) return (spans || []).slice();
+            // Separar em 3 grupos: pequenas (<700), m\u00e9dias (700-1799), grandes (>=1800)
+            var pequenas = spans.filter(function(x){ return x < 700; });
+            var medias   = spans.filter(function(x){ return x >= 700 && x < 1800; });
+            var grandes  = spans.filter(function(x){ return x >= 1800; });
+            
+            if (pequenas.length === 0) {
+                // Sem pequenas: m\u00e9dias misturadas com grandes, m\u00e9dias mais pra fora
+                medias.sort(function(a,b){return a-b;}); // menores primeiro
+                return medias.concat(grandes);
+            }
+            
+            // Ordenar pequenas: maior primeiro (vai mais perto do meio)
+            pequenas.sort(function(a,b){ return b - a; });
+            
+            // Distribuir pequenas alternadamente entre as duas pontas
+            // 1\u00aa pe\u00e7a (maior) \u2192 ponta esq mais interna (mais perto do meio)
+            // 2\u00aa pe\u00e7a \u2192 ponta dir mais interna
+            // 3\u00aa pe\u00e7a \u2192 ponta esq mais externa
+            // 4\u00aa pe\u00e7a \u2192 ponta dir mais externa
+            var esqInner = [], esqOuter = [];
+            var dirInner = [], dirOuter = [];
+            for (var i = 0; i < pequenas.length; i++) {
+                if (i % 4 === 0)      esqInner.push(pequenas[i]);
+                else if (i % 4 === 1) dirInner.unshift(pequenas[i]);
+                else if (i % 4 === 2) esqOuter.unshift(pequenas[i]);
+                else                  dirOuter.push(pequenas[i]);
+            }
+            
+            // M\u00e9dias ficam no centro junto com os grandes
+            // (n\u00e3o precisam ir para as pontas, podem misturar)
+            var meio = medias.concat(grandes);
+            
+            // Resultado: [esqOuter (externo), esqInner, meio, dirInner, dirOuter (externo)]
+            // Pequenas est\u00e3o sempre nas BORDAS, n\u00e3o entre m\u00e9dias e 1800s
+            return esqOuter.concat(esqInner).concat(meio).concat(dirInner).concat(dirOuter);
+        }
+
         // ── ordenarEsquinasSpan: distribui peças pequenas nas esquinas ─────
         // Regra: peça maior (600) na esquina com plataforma melhor (W),
         //        peça menor (400) na esquina com plataforma menor (S/M)
@@ -2789,7 +2903,11 @@
             }
 
             result = leftPieces.concat(result).concat(rightPieces);
-            return result;
+            // Bug #13: garantirPequenasNasPontas reorganiza distribuindo TODAS as
+            // pe\u00e7as menores que 1800 (incluindo 900 e 1200) entre as pontas.
+            // O passo anterior j\u00e1 colocou 600/400/etc nas pontas considerando plat,
+            // mas 900/1200 ficavam no meio (porque s\u00e3o > 600).
+            return garantirPequenasNasPontas(result);
         }
 
         // ── calcSpanInterno: paredes internas (sem kiso) ─────────────────
@@ -2843,7 +2961,10 @@
                     if(T_inner < T_min || T_inner > T_max) continue;
                     var pen = PPEN[getPlatform(T_inner).plat];
                     if(pen===undefined) pen=1000;
-                    var score = pen*100000 + qp(ps)*100 + ps.length*10 - T_inner;
+                    // Bug #13: penalizar peças pequenas (<700) ilhadas no meio
+                    var nPq = ps.filter(function(x){ return x < 700; }).length;
+                    var penIlha = Math.max(0, nPq - 2) * 50000;
+                    var score = pen*100000 + penIlha + qp(ps)*100 + ps.length*10 - T_inner;
                     if(score < bestScore){
                         bestScore = score;
                         var spans=[];
@@ -2861,6 +2982,8 @@
             var P = getPlatform(best.T_inner);
             var finalSpans = ordenarEsquinasSpan(best.spans,
                 getPlatform(T_outer_fixo).plat, P.plat);
+            // Bug #13: garantir TODAS as peças <1800 nas pontas
+            finalSpans = garantirPequenasNasPontas(finalSpans);
             return { spans:finalSpans, t1:T_outer_fixo, t2:best.T_inner,
                      plat:P.plat, plat1:getPlatform(T_outer_fixo).plat, plat2:P.plat,
                      tot:total, avisos:av };
@@ -2874,6 +2997,14 @@
             var pieces=[1200,900,600,400,200];
             function qpB(ps){return ps.filter(function(x){return x===400;}).length*100
                                    +ps.filter(function(x){return x===200;}).length*300;}
+            // Bug #13: contar peças pequenas (<700: i.e., 200, 400, 600).
+            // Quando há >2 dessas, alguma fica ilhada no meio dos 1800.
+            // Penalizar fortemente para preferir decomposições "limpas".
+            function nPeqIlhadas(ps) {
+                var nPq = ps.filter(function(x){ return x < 700; }).length;
+                // 0-2 pequenas: cabe nas 2 pontas. >2: alguma vai ficar ilhada.
+                return Math.max(0, nPq - 2);
+            }
             var em=new Map(); em.set(0,[]);
             function gcB(pd,at,li,pr){
                 if(pr>=5)return;
@@ -2894,7 +3025,8 @@
                 var ps=em.get(rem);
                 if(ps===undefined && rem!==0) continue;
                 var psFinal=ps||[];
-                var score=qpB(psFinal)*100+psFinal.length*10;
+                // Score: 1) evitar pequenas ilhadas (peso ALTO), 2) qualidade, 3) menos peças
+                var score=nPeqIlhadas(psFinal)*10000 + qpB(psFinal)*100+psFinal.length*10;
                 if(score<bestScore){
                     bestScore=score;
                     var s=[];
@@ -2913,7 +3045,10 @@
                     else best.push(200);
                 }
             }
-            return best || [];
+            // Bug #13: garantir que peças pequenas (200, 400, 600, 900, 1200) fiquem
+            // nas pontas, nunca no meio dos 1800. Isso é regra física: o T do lado
+            // adjacente "preenche" o vão da peça pequena na esquina.
+            return garantirPequenasNasPontas(best || []);
         }
 
         function calcularAndaimesT() {
@@ -3150,7 +3285,7 @@
                 if(!b4[l]) b4[l]=0;
             });
 
-            mostrarStep4(r4, b4, m[0], m[4]);
+            mostrarStep4(r4, b4, m[0] + kiso, m[4] + kiso); // Bug #11: incluir kiso
         }
         function atualizarPortaDiagrama() {
             document.querySelectorAll('.door-marker').forEach(el => el.remove());
@@ -3536,7 +3671,10 @@
                         // Prioridade 2: maximizar soma (mais espaço total)
                         const penWorst = Math.max(pen1, pen2) * 100000;
                         const penSum   = (pen1 + pen2) * 1000;
-                        const score = penWorst + penSum + qualPecas(ps)*100 + ps.length*10 - (T1+T2);
+                        // Bug #13: penalizar peças pequenas (<700) ilhadas no meio
+                        const nPq = (ps||[]).filter(x => x < 700).length;
+                        const penIlha = Math.max(0, nPq - 2) * 50000;
+                        const score = penWorst + penSum + penIlha + qualPecas(ps)*100 + ps.length*10 - (T1+T2);
                         if (score < bestScore) { bestScore=score; best={n, extra, T1, T2, ps}; }
                     }
                 }
@@ -3562,7 +3700,10 @@
             if (t2UsaExt) avisos.push(`📌 ${label2}: usa extensão 200mm — coluna a ${best.T2}mm da parede + 200mm extensão = ${best.T2+200}mm cobertura (terreno ${t2_terreno}mm)`);
             const spansOrd = ordenarEsquinasSpan(spans,
                 getPlatform(best.T1).plat, getPlatform(best.T2).plat);
-            return { spans:spansOrd, T1:best.T1, T2:best.T2, tot:baseFixa+best.T1+best.T2, avisos, t1Ext:t1UsaExt, t2Ext:t2UsaExt };
+            // Bug #13: garantir TODAS as peças <1800 nas pontas (não só 200/400/600)
+            // ordenarEsquinasSpan trata 600/400/200; isso garante 1200/900 também
+            const spansFinal = garantirPequenasNasPontas(spansOrd);
+            return { spans:spansFinal, T1:best.T1, T2:best.T2, tot:baseFixa+best.T1+best.T2, avisos, t1Ext:t1UsaExt, t2Ext:t2UsaExt };
         }
 
 
@@ -3655,7 +3796,19 @@
                 'NORTE', 'SUL'
             );
 
-            // ── Plataforma de cada face ──────────────────────────────────
+            // ── Plataforma de cada face (REGRA EXPLÍCITA v4.13) ───────────
+            // Cada face tem seu T (profundidade do andaime). plat de cada face
+            // é definida pelo T DAQUELA face:
+            //
+            //   • cálculo LESTE/OESTE (largRes) gera 2 valores T:
+            //       largRes.T1 = T no canto NORTE → define plat_NORTE
+            //       largRes.T2 = T no canto SUL   → define plat_SUL
+            //   • cálculo NORTE/SUL (compRes) gera 2 valores T:
+            //       compRes.T1 = T no canto LESTE → define plat_LESTE
+            //       compRes.T2 = T no canto OESTE → define plat_OESTE
+            //
+            // Exemplo do usuário: cálculo LESTE/OESTE com t1=900 (SUL), t2=910 (NORTE)
+            // → plat_SUL = W (900≥780), plat_NORTE = W (910≥780)
             const pLeste = compRes.T1 > 0 ? getPlatform(compRes.T1) : { plat:'?', cor:'#bdc3c7', aviso:'' };
             const pOeste = compRes.T2 > 0 ? getPlatform(compRes.T2) : { plat:'?', cor:'#bdc3c7', aviso:'' };
             const pNorte = largRes.T1 > 0 ? getPlatform(largRes.T1) : { plat:'?', cor:'#bdc3c7', aviso:'' };
@@ -3868,13 +4021,19 @@
             const cO = compRes.t2Ext ? 200 : 0; // OESTE ext
             const lN = largRes.t1Ext ? 200 : 0; // NORTE ext
             const lS = largRes.t2Ext ? 200 : 0; // SUL ext
+            // v4.19: tDaFace = o T que DEFINE o plat de cada face (mesmo valor
+            // usado em pSul/pNorte/pLeste/pOeste). Exibido no canvas.
+            //   pSul   = getPlatform(largRes.T2) → tDaFace_sul   = largRes.T2
+            //   pNorte = getPlatform(largRes.T1) → tDaFace_norte = largRes.T1
+            //   pLeste = getPlatform(compRes.T1) → tDaFace_leste = compRes.T1
+            //   pOeste = getPlatform(compRes.T2) → tDaFace_oeste = compRes.T2
             mostrarStep4({
-                sul:   { spans: compRes.spans,                t1: compRes.T2, t2: compRes.T1, plat: pSul.plat,   plat1: pOeste.plat, plat2: pLeste.plat, avisos: [], ext1: cO, ext2: cE },
-                norte: { spans: [...compRes.spans].reverse(), t1: compRes.T1, t2: compRes.T2, plat: pNorte.plat, plat1: pLeste.plat, plat2: pOeste.plat, avisos: [], ext1: cE, ext2: cO },
-                leste: { spans: [...largRes.spans].reverse(), t1: largRes.T2, t2: largRes.T1, plat: pLeste.plat, plat1: pSul.plat,   plat2: pNorte.plat, avisos: [], ext1: lS, ext2: lN },
-                oeste: { spans: largRes.spans,                t1: largRes.T1, t2: largRes.T2, plat: pOeste.plat, plat1: pNorte.plat, plat2: pSul.plat,   avisos: [], ext1: lN, ext2: lS }
+                sul:   { spans: compRes.spans,                t1: compRes.T2, t2: compRes.T1, plat: pSul.plat,   plat1: pOeste.plat, plat2: pLeste.plat, tDaFace: largRes.T2, avisos: [], ext1: cO, ext2: cE },
+                norte: { spans: [...compRes.spans].reverse(), t1: compRes.T1, t2: compRes.T2, plat: pNorte.plat, plat1: pLeste.plat, plat2: pOeste.plat, tDaFace: largRes.T1, avisos: [], ext1: cE, ext2: cO },
+                leste: { spans: [...largRes.spans].reverse(), t1: largRes.T2, t2: largRes.T1, plat: pLeste.plat, plat1: pSul.plat,   plat2: pNorte.plat, tDaFace: compRes.T1, avisos: [], ext1: lS, ext2: lN },
+                oeste: { spans: largRes.spans,                t1: largRes.T1, t2: largRes.T2, plat: pOeste.plat, plat1: pNorte.plat, plat2: pSul.plat,   tDaFace: compRes.T2, avisos: [], ext1: lN, ext2: lS }
             }, { sul: beirais.sul, norte: beirais.norte, leste: beirais.leste, oeste: beirais.oeste },
-               comp, larg);
+               comp + kiso, larg + kiso); // Bug #11: incluir kiso (parede + kiso = medida total externa)
         }
 
 
@@ -4067,6 +4226,55 @@
 
         // ── mostrarStep4 ──────────────────────────────────────────────
         function mostrarStep4(resultados, beirais, comp, larg) {
+            // ── REGRA DA PLATAFORMA (v4.13) ──────────────────────────────
+            // plat de cada face = T no canto daquela face (lado da face).
+            //
+            // No layout dos resultados:
+            //   leste.t1 = T no canto SUL (esquerda da foto LESTE)
+            //   leste.t2 = T no canto NORTE (direita da foto LESTE)
+            //   sul.t1   = T no canto OESTE (esquerda da foto SUL)
+            //   sul.t2   = T no canto LESTE (direita da foto SUL)
+            //
+            // Logo: plat_sul = getPlatform(leste.t1), etc.
+            //
+            // Para retângulo, pSul/pNorte/etc. (em calcularAndaimes) já fazem
+            // isso direto via largRes.T1/T2 e compRes.T1/T2.
+            // Para formatos L e T, mkResL/mkResT atribuem plat=min(t1,t2) que
+            // está ERRADO — esta função corrige sobrescrevendo com o valor certo.
+            try {
+                if (typeof getPlatform === 'function' && resultados) {
+                    var sobrescreverPlat = function(lado, valorT) {
+                        if (!resultados[lado] || valorT == null || valorT <= 0) return;
+                        resultados[lado].plat = getPlatform(valorT).plat;
+                    };
+                    var rL = resultados.leste, rO = resultados.oeste;
+                    var rN = resultados.norte, rS = resultados.sul;
+                    // SUL/NORTE: usar T do cálculo LESTE/OESTE
+                    //   leste.t1 (canto SUL) → plat_SUL
+                    //   leste.t2 (canto NORTE) → plat_NORTE
+                    if (rL && rL.t1 != null && rL.t1 > 0) {
+                        sobrescreverPlat('sul', rL.t1);
+                        sobrescreverPlat('norte', rL.t2);
+                    } else if (rO && rO.t1 != null && rO.t1 > 0) {
+                        // Oeste espelhado: t1=NORTE, t2=SUL
+                        sobrescreverPlat('norte', rO.t1);
+                        sobrescreverPlat('sul', rO.t2);
+                    }
+                    // LESTE/OESTE: usar T do cálculo NORTE/SUL
+                    //   sul.t1 (canto OESTE) → plat_OESTE
+                    //   sul.t2 (canto LESTE) → plat_LESTE
+                    if (rS && rS.t1 != null && rS.t1 > 0) {
+                        sobrescreverPlat('oeste', rS.t1);
+                        sobrescreverPlat('leste', rS.t2);
+                    } else if (rN && rN.t1 != null && rN.t1 > 0) {
+                        // Norte espelhado: t1=LESTE, t2=OESTE
+                        sobrescreverPlat('leste', rN.t1);
+                        sobrescreverPlat('oeste', rN.t2);
+                    }
+                }
+            } catch(e) {
+                console.warn('[mostrarStep4] erro ao sobrescrever plats:', e.message);
+            }
             resultadosCalc = resultados;
             beiraisCalc    = beirais;
             medidasCalc    = { comp, larg };
@@ -4287,13 +4495,14 @@
         }
 
         function calibAutoEscala(tipo) {
-            const kiso = parseInt(document.getElementById('kiso').value) || 0;
             const medidaBase = tipo === 'comp' ? medidasCalc.comp : medidasCalc.larg;
             if (!medidaBase) { alert('Medida não encontrada. Preencha a planta primeiro.'); return; }
-            const medida = medidaBase + kiso; // P1→P2 real = medida da casa + kiso dos dois lados
+            // medidaBase JÁ inclui o kiso (somado em mostrarStep4 desde v4.5)
+            // P1→P2 real = medida total externa = medidaBase
+            const medida = medidaBase;
             document.getElementById('medidaReal').value = medida;
             iniciarCalibManual();
-            mostrarStatusCalib(`📍 1:100 — Toque no <strong>P1</strong> (base esq do kiso)<br><span style="font-size:11px;">${(medida/100).toFixed(0)}mm papel = ${medidaBase}+${kiso}=${medida}mm real</span>`);
+            mostrarStatusCalib(`📍 1:100 — Toque no <strong>P1</strong> (base esq do kiso)<br><span style="font-size:11px;">${(medida/100).toFixed(0)}mm papel = ${medida}mm real</span>`);
         }
 
         function mostrarStatusCalib(html) {
@@ -4489,7 +4698,17 @@
                 atualizarStatusEscala(ladoAtual);
                 redrawCanvas(ladoAtual);
                 const altura = parseInt(document.getElementById('alturaCalha').value);
-                if (altura > 0) desenharLinhasNoCanvas(ladoAtual);
+                if (altura > 0) {
+                    // v4.13: salvar em alturaCalhaData para que download funcione mesmo
+                    // sem clicar em "Desenhar linhas". Antes, lines apareciam mas o
+                    // baixarTodosLados não achava o dado.
+                    alturaCalhaData[ladoAtual] = altura;
+                    var altP2 = parseInt(document.getElementById('alturaCalhaP2').value)||0;
+                    if (altP2 > 0) alturaCalhaP2Data[ladoAtual] = altP2;
+                    var beiL = parseInt(document.getElementById('beiralLadoAtual').value)||0;
+                    if (beiL >= 0) beiralLadoData[ladoAtual] = beiL;
+                    desenharLinhasNoCanvas(ladoAtual);
+                }
             
             } else if (calib.estado === 'confirmando_c1') {
                 // C1 confirmado → vai para C2
@@ -4959,6 +5178,19 @@
                     ? 'SS' : finalPlat;
                 return { plat: finalPlat, label };
             }
+            // ── Cap da última linha (parteDaCalha=true) só vale para face W ──
+            // v4.17: Regra esclarecida:
+            //   • Face W + telhado>300: linhas de cima W, ÚLTIMA linha = S
+            //   • Face S + telhado>300: TODAS as linhas S (não aplica cap)
+            //   • Sem telhado>300: nada muda
+            //
+            // O cap da última linha é FIXO em S (não desce para Sb/M/C, mesmo
+            // que altSecao seja muito curta) — esses casos extremos exigem
+            // decisão manual.
+            const _idxPlatLado = platOrder.indexOf(platLado.plat);
+            const _idxW = platOrder.indexOf('W');
+            const aplicarCapUltimaLinha = (_idxPlatLado >= _idxW);
+
             // Badge para spans do MEIO (não usado diretamente, platFinal usado direto)
             function badgeParaSecao(spanSizeMm, altMm) {
                 const pf = platFinal(platLado.plat, spanSizeMm, altMm);
@@ -4969,27 +5201,27 @@
             for (let li = 0; li < todasLinhas.length; li++) {
                 const { offsetMm, yL } = todasLinhas[li];
 
-                // Altura da seção associada a esta linha
-                let altSecao = 1800; // padrão: frame completo
-                if (parteDaCalha) {
-                    if (offsetMm < 0) {
-                        // Linha acima da calha (seção entre cume e calha)
-                        altSecao = 1800;
-                    } else if (li === todasLinhas.length - 1) {
-                        // Última linha (mais baixa) → seção até GL
-                        const altCalhaRef = (oy - yCalhaRef) / escZ;
-                        altSecao = altCalhaRef - offsetMm;
-                        if (altSecao <= 0) altSecao = 1800;
-                    } else {
-                        altSecao = 1800;
-                    }
-                } else {
-                    if (li === 0) {
-                        altSecao = offsetMm; // 1ª linha: seção inferior = offsetMm
-                    } else {
-                        altSecao = 1800;
-                    }
+                // ── v4.19: linha muito perto do GL → sem plataforma ──────────
+                // Se a distância desta linha até o GL for < 300mm, não marca
+                // plataforma nenhuma (frame não cabe tão perto do chão). Só
+                // fica a linha vermelha. Vale para qualquer face.
+                const distLinhaAoGLmm = (oy - yL) / escZ;
+                if (distLinhaAoGLmm < 300) {
+                    continue; // pula badges desta linha — só a linha vermelha
                 }
+
+                // Plataforma desta linha (parte do face plat, com cap em S na
+                // última linha quando aplicarCapUltimaLinha=true)
+                let platDestaLinha = platLado.plat;
+                let altSecao = 1800;
+                if (parteDaCalha && offsetMm >= 0
+                    && li === todasLinhas.length - 1
+                    && aplicarCapUltimaLinha) {
+                    // Face W + última linha → fica S (cap fixo)
+                    platDestaLinha = 'S';
+                }
+                // Para qualquer outro caso, mantém platLado.plat e altSecao=1800
+                // (sem heightCapSection mexer na plataforma)
 
                 const { plat: bpMid, cor: bcMid } = badgeParaSecao(altSecao);
 
@@ -5001,16 +5233,9 @@
                     // 200 e 300: sem badge de plataforma
                     if (spanMm < 400) continue;
 
-                    let pf; // { plat, label }
-                    if (si === 0) {
-                        const p1 = res.plat1 || platLado.plat;
-                        pf = platFinal(p1, spanMm, altSecao);
-                    } else if (si === spans.length - 1) {
-                        const p2 = res.plat2 || platLado.plat;
-                        pf = platFinal(p2, spanMm, altSecao);
-                    } else {
-                        pf = platFinal(platLado.plat, spanMm, altSecao);
-                    }
+                    // v4.17: cada linha usa platDestaLinha (= face plat, exceto
+                    // a última linha de face W em parteDaCalha que vira S)
+                    const pf = platFinal(platDestaLinha, spanMm, altSecao);
                     if (pf) {
                         drawPlatBadge(pf.label, xMid, yL, platCoresMap[pf.plat] || bcMid);
                     }
@@ -5020,15 +5245,13 @@
                 // ext1 = lado T1 (esquerdo), ext2 = lado T2 (direito)
                 if (ext1mm > 0) {
                     const xExtMid = xPrim - ext1mm * escZ / 2;
-                    const p1 = res.plat1 || platLado.plat;
-                    const ep = platFinal(p1, 200, altSecao); // ext=200mm
-                    if (ep) drawPlatBadge(ep + '+ext', xExtMid, yL, platCoresMap[ep] || '#e67e22');
+                    const ep = platFinal(platDestaLinha, 200, altSecao); // ext=200mm
+                    if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
                 }
                 if (ext2mm > 0) {
                     const xExtMid = xUlt + ext2mm * escZ / 2;
-                    const p2 = res.plat2 || platLado.plat;
-                    const ep = platFinal(p2, 200, altSecao);
-                    if (ep) drawPlatBadge(ep + '+ext', xExtMid, yL, platCoresMap[ep] || '#e67e22');
+                    const ep = platFinal(platDestaLinha, 200, altSecao);
+                    if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
                 }
             }
 
@@ -5117,42 +5340,43 @@
 
             // ── Linha GUARDA-CORPO (laranja) — degraus por span ────────────────
             // Calcular GC por span e guardar altura de cada coluna para labels
-            // 
-            // ⚠️ ALGORITMO CORRETO (Bug #3 corrigido em v3.6):
-            // O GC deve subir MONOTONICAMENTE conforme o telhado inclina.
-            // - Nunca DESCE (sempre sobe ou mantém)
-            // - Sobe em incrementos de 450mm quando precisa
-            // - Mínimo: 900mm acima da calha mais baixa do PRIMEIRO span
-            // - A cada span: GC ≥ 800mm acima da calha mais alta DESSE span
             //
-            // Bug #3: antes resetava o GC em cada span, fazendo subir/descer/subir
-            //         causando linha laranja desordenada.
+            // ⚠️ ALGORITMO (v4.18 — corrige bug do GC com 2 inclinações):
+            // O GC fica 900mm acima da calha de cada span, em incrementos
+            // discretos de 450mm acima do baseline (calha mais baixa do 1º span).
+            // Calculado POR SPAN (não acumulativo) — assim sobe na inclinação
+            // esquerda, e DESCE na inclinação direita após o cume.
+            //
+            // - Mínimo (baseline): calhaBaixa0 + 900
+            // - A cada span: GC ≥ calhaAlta_desse_span + 800
+            // - Incrementos: +450 a partir do baseline (snap discreto)
+            //
+            // Para 1 inclinação: GC sobe monotonicamente (mesmo resultado do
+            // algoritmo antigo).
+            // Para 2 inclinações: GC sobe até o cume e DESCE depois.
             var gcPorColuna = []; // yGC e elevacoes para cada coluna
 
             ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.0; ctx.setLineDash([]);
             ctx.beginPath();
 
-            // Calcular calha mais BAIXA do PRIMEIRO span (referência inicial)
+            // Calcular calha mais BAIXA do PRIMEIRO span (referência baseline)
             var gcXa0 = spanCols[0], gcXb0 = spanCols[1];
             var yCalhaEsq0 = yCalhaEmX(gcXa0);
             var yCalhaDir0 = yCalhaEmX(gcXb0);
             var yCalhaBaixo0 = Math.max(yCalhaEsq0, yCalhaDir0);
-
-            // GC inicial: 900mm acima da calha mais baixa do primeiro span
-            // Usamos altura ABSOLUTA em mm (acima do GL), assim é mais fácil garantir monotônico
-            var altCalhaBaixo0Mm = (oy - yCalhaBaixo0) / escZ; // altura da calha baixa em mm
-            var altGCmm = altCalhaBaixo0Mm + 900;  // altura do GC em mm acima do GL
+            var altCalhaBaixo0Mm = (oy - yCalhaBaixo0) / escZ;
+            var altGCBaseMm = altCalhaBaixo0Mm + 900; // baseline (mínimo)
 
             for (var gcSi = 0; gcSi < spans.length; gcSi++) {
                 var gcXa = spanCols[gcSi], gcXb = spanCols[gcSi + 1];
                 var yCalhaEsq = yCalhaEmX(gcXa);
                 var yCalhaDir = yCalhaEmX(gcXb);
-                var yCalhaAlto = Math.min(yCalhaEsq, yCalhaDir);  // ponto MAIS ALTO da calha (menor y)
-                var altCalhaAltoMm = (oy - yCalhaAlto) / escZ;     // altura em mm
+                var yCalhaAlto = Math.min(yCalhaEsq, yCalhaDir);  // ponto MAIS ALTO (menor y)
+                var altCalhaAltoMm = (oy - yCalhaAlto) / escZ;
 
-                // Garantir que GC esteja ≥ 800mm acima da calha mais alta DESSE span
-                // Subir em incrementos de 450mm se necessário (NUNCA DESCER)
-                var _maxIter = 20; // segurança
+                // Per-span: começa do baseline e sobe em 450 até cobrir calhaAlto+800
+                var altGCmm = altGCBaseMm;
+                var _maxIter = 20;
                 while (altGCmm < altCalhaAltoMm + 800 && _maxIter > 0) {
                     altGCmm += 450;
                     _maxIter--;
@@ -5163,7 +5387,7 @@
 
                 // Converter altura mm → posição y no canvas
                 var yGC = oy - altGCmm * escZ;
-                var gcExtra = altGCmm - (altCalhaBaixo0Mm + 900); // quanto subiu além do base
+                var gcExtra = altGCmm - altGCBaseMm; // quanto subiu além do base
 
                 // Guardar GC de cada coluna (esq e dir de cada span)
                 if (gcSi === 0) {
@@ -5264,6 +5488,27 @@
             ctx.fillText(T2 + 'mm', xUlt - 4, yLT - 5);
             ctx.restore();
 
+            // ── v4.19: Label central — T que DEFINE a plataforma desta face ──
+            // T1/T2 nas pontas são as extensões perpendiculares (para desenhar).
+            // tDaFace é o T da PRÓPRIA face — é ele que determina a plataforma.
+            // Mostrar isso explícito evita confusão (T1/T2 ≠ plat marcado).
+            if (res.tDaFace != null && res.tDaFace > 0) {
+                const platDaFace = (typeof getPlatform === 'function')
+                    ? getPlatform(res.tDaFace).plat : (res.plat || '?');
+                const txtCentro = 'T face: ' + res.tDaFace + 'mm \u2192 ' + platDaFace;
+                const xCentro = (xPrim + xUlt) / 2;
+                ctx.save();
+                ctx.font = 'bold 11px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                // fundo branco para legibilidade
+                const tw = ctx.measureText(txtCentro).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                ctx.fillRect(xCentro - tw/2 - 4, yLT - 11, tw + 8, 14);
+                ctx.fillStyle = platCoresMap[platDaFace] || '#2c3e50';
+                ctx.fillText(txtCentro, xCentro, yLT - 4);
+                ctx.restore();
+            }
+
             // ── Labels de span menor na linha do GL ───────────────────────
             // Para cada span ≠ 1800mm: badge laranja com a medida em mm
             {
@@ -5350,19 +5595,33 @@
             // Imagem 1: Norte (cima) + Sul (baixo) lado a lado
             // Imagem 2: Leste (cima) + Oeste (baixo) lado a lado
 
+            // v4.13: rastrear motivos de falha por lado para mensagem clara
+            var motivosFalha = {};
+
             // Renderiza um lado num canvas temporário e retorna ImageData
             async function renderizarLado(lado) {
                 var ladoSalvo = ladoAtual;
                 try {
                     // Verificar se tem dados
-                    if (!fotosData[lado] || !calibData[lado] || calibData[lado].estado !== 'calibrado') {
+                    if (!fotosData[lado]) { motivosFalha[lado] = 'sem foto'; return null; }
+                    if (!calibData[lado] || calibData[lado].estado !== 'calibrado') {
+                        motivosFalha[lado] = 'calibração incompleta';
                         return null;
                     }
                     // Verificar se tem cálculo e altura
                     if (!resultadosCalc[lado] || !resultadosCalc[lado].spans || resultadosCalc[lado].spans.length === 0) {
+                        motivosFalha[lado] = 'sem cálculo de spans';
                         return null;
                     }
+                    // Fallback: se alturaCalhaData não foi salva mas o input tem valor (lado atual aberto), usa
                     if (!alturaCalhaData[lado] || alturaCalhaData[lado] <= 0) {
+                        if (lado === ladoAtual) {
+                            var altInput = parseInt(document.getElementById('alturaCalha').value)||0;
+                            if (altInput > 0) alturaCalhaData[lado] = altInput;
+                        }
+                    }
+                    if (!alturaCalhaData[lado] || alturaCalhaData[lado] <= 0) {
+                        motivosFalha[lado] = 'altura da calha não preenchida';
                         return null;
                     }
                     ladoAtual = lado;
@@ -5400,12 +5659,12 @@
                         loaded++;
                         if (loaded < total) return;
 
-                        // ── DIMENSÕES A4 PAISAGEM (deitado) ─────────────────
-                        // Fotos de andaime são HORIZONTAIS, então usamos A4 deitado:
-                        // 297mm x 210mm = 3508 x 2480 px (300 DPI)
-                        // Margem maior pra impressora não cortar nada
-                        var A4_W = 3508;
-                        var A4_H = 2480;
+                        // ── DIMENSÕES A4 RETRATO (em pé) ────────────────────
+                        // 210mm x 297mm = 2480 x 3508 px (300 DPI)
+                        // Como temos 2 fotos horizontais empilhadas, o A4 em pé
+                        // dá mais espaço vertical para cada foto não ficar muito pequena
+                        var A4_W = 2480;
+                        var A4_H = 3508;
                         var MARGEM = 150;        // margem de segurança (px) — impressoras cortam ~5mm
                         var GAP = 60;            // espaço entre as 2 fotos
                         var LABEL_H = 50;        // altura do texto "NORTE", "SUL", etc
@@ -5495,7 +5754,21 @@
             }
 
             if (!algumBaixado) {
-                alert('Nenhum lado com foto + calibração completa encontrado.');
+                var msg = 'Nenhum lado pronto para download.\n\n';
+                ['norte','sul','leste','oeste'].forEach(function(l) {
+                    if (motivosFalha[l]) msg += '• ' + l.toUpperCase() + ': ' + motivosFalha[l] + '\n';
+                });
+                alert(msg);
+            } else {
+                // v4.13: informar se algum lado dos 4 ficou de fora
+                var falharam = ['norte','sul','leste','oeste'].filter(function(l){ return motivosFalha[l]; });
+                if (falharam.length > 0) {
+                    var msg = 'Download concluído, mas alguns lados ficaram de fora:\n\n';
+                    falharam.forEach(function(l) {
+                        msg += '• ' + l.toUpperCase() + ': ' + motivosFalha[l] + '\n';
+                    });
+                    alert(msg);
+                }
             }
         }
 
@@ -5570,365 +5843,6 @@
         }
         // Fechar tela cheia com tecla ESC (desktop)
         document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharTelaCheia(); });
-
-        // ═════════════════════════════════════════════════════════════════
-        // 🛡️ SISTEMA DE TESTES AUTOMÁTICOS (PROTEÇÃO CONTRA REGRESSÕES)
-        // ═════════════════════════════════════════════════════════════════
-        // Roda toda vez que a página carrega. Se algum teste falhar,
-        // mostra um BANNER VERMELHO no topo avisando que algo quebrou.
-        // 
-        // Cada teste protege contra um bug que JÁ aconteceu e foi corrigido.
-        // NÃO REMOVER ESSES TESTES — eles garantem que correções não voltem.
-        // ═════════════════════════════════════════════════════════════════
-
-        function rodarTestesAutomaticos() {
-            const testes = [];
-            
-            // ─── TESTE 1: Cálculo deve manter soma exata de T1+T2 ────────
-            // Bug: arredondava T1 e T2 separadamente, fazendo soma divergir
-            testes.push({
-                nome: 'Cálculo T1+T2 mantém soma exata',
-                funcao: () => {
-                    const r = calcSpans(16380, 170, 1000, 1000, 0, 0, 0, 0, 'L', 'O');
-                    if (!r || !r.spans) return 'calcSpans retornou inválido';
-                    const sumSpans = r.spans.reduce((a,b)=>a+b,0);
-                    const baseFixa = 16380 + 170;
-                    // T1+T2 deve preencher a diferença entre spans e baseFixa
-                    const eNec = sumSpans - baseFixa;
-                    const somaT = r.T1 + r.T2;
-                    if (somaT !== eNec) return `Soma T1+T2=${somaT} mas deveria ser ${eNec} (spans=${sumSpans}, base=${baseFixa})`;
-                    // T1 e T2 devem ser múltiplos de 10
-                    if (r.T1 % 10 !== 0) return `T1=${r.T1} não é múltiplo de 10`;
-                    if (r.T2 % 10 !== 0) return `T2=${r.T2} não é múltiplo de 10`;
-                    return null; // OK
-                }
-            });
-            
-            // ─── TESTE 2: Loop GC não trava com telhado RETO ─────────────
-            // Bug: while infinito quando yCalhaAlto === yCalhaBaixo
-            testes.push({
-                nome: 'Loop GC não trava (telhado reto)',
-                funcao: () => {
-                    return testeDesenharLinhasNaoTrava(3600, 3600, 'reto');
-                }
-            });
-            
-            // ─── TESTE 3: Loop GC não trava com 1 INCLINAÇÃO ─────────────
-            // Bug: fórmula tinha *-1 errado, valor ficava sempre negativo
-            testes.push({
-                nome: 'Loop GC não trava (1 inclinação)',
-                funcao: () => {
-                    return testeDesenharLinhasNaoTrava(3600, 3800, '1 inclinação leve');
-                }
-            });
-            
-            // ─── TESTE 4: Loop GC não trava com inclinação grande ────────
-            testes.push({
-                nome: 'Loop GC não trava (inclinação 2000mm)',
-                funcao: () => {
-                    return testeDesenharLinhasNaoTrava(3000, 5000, 'inclinação grande');
-                }
-            });
-            
-            // ─── TESTE 5: Funções essenciais existem ─────────────────────
-            testes.push({
-                nome: 'Funções essenciais existem',
-                funcao: () => {
-                    const necessarias = ['abrirAba', 'continuarAbrirAba', 'mostrarModal2Inclinacoes',
-                        'responder2Incl', 'desenharLinhas', 'desenharLinhasNoCanvas',
-                        'calcSpans', 'calcSpan', 'mostrarStep4', 'carregarFotoLado'];
-                    for (const f of necessarias) {
-                        if (typeof window[f] !== 'function') return `função ${f}() não existe`;
-                    }
-                    return null;
-                }
-            });
-            
-            // ─── TESTE 6: Modal 2 inclinações no DOM ─────────────────────
-            testes.push({
-                nome: 'Modal de 2 inclinações existe',
-                funcao: () => {
-                    if (!document.getElementById('modal2Incl')) return 'modal2Incl não encontrado';
-                    if (!document.getElementById('modal2InclLado')) return 'modal2InclLado não encontrado';
-                    return null;
-                }
-            });
-            
-            // ─── TESTE 7: Funções mortas NÃO devem existir ───────────────
-            // Bug: deixar funções "neutralizadas" (return;) causava confusão
-            testes.push({
-                nome: 'Funções mortas foram removidas',
-                funcao: () => {
-                    const mortas = ['iniciarMarcacaoCume', 'cancelarMarcacaoCume', 
-                        'registrarCume', 'toggle2Inclinacoes', 'atualizarAltCume'];
-                    const sobrou = mortas.filter(f => typeof window[f] === 'function');
-                    return sobrou.length > 0 ? 'ainda existem: ' + sobrou.join(', ') : null;
-                }
-            });
-
-            // ─── TESTE 8: Botão Recomeçar usa modal HTML (não confirm nativo) ───
-            // Bug #4: confirm() nativo do iOS Safari pode ser bloqueado
-            //         SOLUÇÃO: substituir por modal HTML customizado
-            testes.push({
-                nome: 'Recomeçar usa modal HTML (não confirm)',
-                funcao: () => {
-                    if (!document.getElementById('modalRecomecar')) return 'modalRecomecar não encontrado';
-                    if (typeof confirmarRecomecar !== 'function') return 'confirmarRecomecar() não existe';
-                    if (typeof cancelarRecomecar !== 'function') return 'cancelarRecomecar() não existe';
-                    if (typeof executarReset !== 'function') return 'executarReset() não existe';
-                    return null;
-                }
-            });
-
-            // ─── TESTE 9: Botões organizados conforme solicitado ─────────
-            // Usuário pediu para remover botões redundantes e manter só 3:
-            // Tela Cheia, Customizar lado, Baixar 2 fotos
-            // O botão Desenhar fica APENAS ao lado do box de medida (não duplicado)
-            testes.push({
-                nome: 'Botões do painel acoes-foto organizados',
-                funcao: () => {
-                    const acoes = document.getElementById('acoes-foto');
-                    if (!acoes) return 'painel acoes-foto não encontrado';
-                    const html = acoes.innerHTML;
-                    // NÃO devem estar:
-                    if (html.includes('Recalcular / Redesenhar')) return 'botão Recalcular/Redesenhar voltou';
-                    if (html.includes('Nova foto')) return 'botão Nova foto voltou';
-                    if (html.includes('🔴 Desenhar') || html.includes('🔴Desenhar')) return 'botão Desenhar duplicado em acoes-foto';
-                    if (html.includes('⬇ Este lado')) return 'botão "Este lado" não foi renomeado para "Customizar lado"';
-                    // DEVEM estar:
-                    if (!html.includes('Tela Cheia')) return 'botão Tela Cheia sumiu';
-                    if (!html.includes('Customizar lado')) return 'botão Customizar lado sumiu';
-                    if (!html.includes('Baixar 2 fotos')) return 'botão Baixar 2 fotos sumiu';
-                    // Botão Customizar deve chamar customizarLado() (não baixarFoto)
-                    if (html.includes('onclick="baixarFoto()"') && html.includes('Customizar lado')) {
-                        return 'Customizar lado ainda chama baixarFoto (deveria chamar customizarLado)';
-                    }
-                    if (typeof customizarLado !== 'function') return 'função customizarLado() não existe';
-                    // Devem ser EXATAMENTE 3 botões
-                    const btns = acoes.querySelectorAll('button');
-                    if (btns.length !== 3) return 'painel deve ter exatamente 3 botões, tem ' + btns.length;
-                    return null;
-                }
-            });
-
-            // ─── TESTE 10: Tela cheia NÃO refaz cálculos com zoom diferente ──
-            // Bug #5: tela cheia mudava zoomAtual e refazia desenho com escala diferente
-            //         causando spans/plataformas diferentes do desenho original
-            //         SOLUÇÃO: copiar canvas existente em vez de redesenhar com zoom novo
-            testes.push({
-                nome: 'Tela cheia não altera zoomAtual',
-                funcao: () => {
-                    const fonte = abrirTelaCheia.toString();
-                    if (/zoomAtual\s*=\s*tcZoom/.test(fonte)) return 'tela cheia ainda altera zoomAtual';
-                    if (fonte.includes("fotoCanvas_TEMP")) return 'tela cheia ainda usa hack de swap de IDs';
-                    return null;
-                }
-            });
-
-            // ─── TESTE 11: Baixar todos os lados desenha linhas, não só pins ──
-            // Bug #6: baixarTodosLados chamava redrawCanvas (só pins) em vez de
-            //         desenharLinhasNoCanvas (com linhas + plataformas)
-            testes.push({
-                nome: 'Baixar todos os lados usa desenharLinhasNoCanvas',
-                funcao: () => {
-                    if (typeof baixarTodosLados !== 'function') return 'baixarTodosLados não existe';
-                    const fonte = baixarTodosLados.toString();
-                    if (!fonte.includes('desenharLinhasNoCanvas')) {
-                        return 'baixarTodosLados não chama desenharLinhasNoCanvas (linhas não vão aparecer)';
-                    }
-                    return null;
-                }
-            });
-
-            // ─── TESTE 12: PNG baixado deve caber em A4 paisagem ─────────
-            // Bug #7: PNG era em A4 retrato cortando topo ao imprimir
-            //         Fotos de andaime são horizontais, então usamos paisagem
-            testes.push({
-                nome: 'PNG baixado em formato A4 paisagem',
-                funcao: () => {
-                    if (typeof baixarTodosLados !== 'function') return 'baixarTodosLados não existe';
-                    const fonte = baixarTodosLados.toString();
-                    // Deve usar 3508 x 2480 (paisagem 300dpi)
-                    if (!fonte.includes('3508') || !fonte.includes('2480')) {
-                        return 'PNG não está em formato A4 (3508 x 2480 px @ 300dpi)';
-                    }
-                    // A4_W deve ser 3508 (paisagem) e não 2480 (retrato)
-                    if (/A4_W\s*=\s*2480/.test(fonte)) {
-                        return 'A4_W ainda é 2480 (retrato) - deveria ser 3508 (paisagem)';
-                    }
-                    // Margem deve ser pelo menos 100px para impressora não cortar
-                    const m = fonte.match(/MARGEM\s*=\s*(\d+)/);
-                    if (m && parseInt(m[1]) < 100) {
-                        return 'MARGEM muito pequena (' + m[1] + 'px) - impressora pode cortar';
-                    }
-                    return null;
-                }
-            });
-
-            // ─── TESTE 13: Posição X do cume usa "ox" (parede P1), não "xPrim" ──
-            // Bug #8: cume aparecia deslocado ~T1mm para esquerda porque
-            //         o cálculo usava xPrim (1ª coluna) em vez de ox (parede P1)
-            //         posCumeMm é distância DE P1 ao cume, então deve somar a ox
-            testes.push({
-                nome: 'Posição X do cume usa parede P1 (ox), não xPrim',
-                funcao: () => {
-                    if (typeof desenharLinhasNoCanvas !== 'function') return 'desenharLinhasNoCanvas não existe';
-                    const fonte = desenharLinhasNoCanvas.toString();
-                    const m = fonte.match(/xCumePx\s*=[^;]+/);
-                    if (!m) return 'cálculo de xCumePx não encontrado';
-                    const linha = m[0];
-                    if (linha.includes('xPrim + posCumeMm')) {
-                        return 'xCumePx ainda usa xPrim como base (cume vai aparecer deslocado)';
-                    }
-                    if (!linha.includes('ox + posCumeMm')) {
-                        return 'xCumePx não usa ox como base';
-                    }
-                    return null;
-                }
-            });
-
-            // ─── TESTE 14: limparPontosCalib zera dados do cume também ──────
-            // Bug #9: ao recomeçar pontos, altCumeData/posCumeData ficavam preenchidos
-            //         do ciclo anterior, fazendo o cume aparecer prematuramente
-            testes.push({
-                nome: 'Limpar pontos zera dados do cume também',
-                funcao: () => {
-                    if (typeof limparPontosCalib !== 'function') return 'limparPontosCalib não existe';
-                    const fonte = limparPontosCalib.toString();
-                    if (!fonte.includes('altCumeData[ladoAtual] = 0')) {
-                        return 'limparPontosCalib não zera altCumeData';
-                    }
-                    if (!fonte.includes('posCumeData[ladoAtual] = 0')) {
-                        return 'limparPontosCalib não zera posCumeData';
-                    }
-                    if (!fonte.includes('pc1:null') && !fonte.includes('pc1: null')) {
-                        return 'limparPontosCalib não limpa pc1/pc2/pc3 (pontos do telhado)';
-                    }
-                    return null;
-                }
-            });
-
-            // ─── TESTE 15: redrawCanvas não desenha cume duplicado após linhas ──
-            // Bug #10: depois de desenhar linhas vermelhas, redesenhava pin do cume
-            //          + linha tracejada POR CIMA, deixando a tela poluída.
-            //          Tela cheia não tinha esse "extra", causando inconsistência.
-            testes.push({
-                nome: 'redrawCanvas não duplica cume após linhas vermelhas',
-                funcao: () => {
-                    if (typeof redrawCanvas !== 'function') return 'redrawCanvas não existe';
-                    const fonte = redrawCanvas.toString();
-                    // Procurar bloco que desenharia cume DEPOIS de desenharLinhasNoCanvas
-                    // O bloco antigo tinha "Sempre mostrar o pin do cume se marcado"
-                    if (fonte.includes('Sempre mostrar o pin do cume')) {
-                        return 'redrawCanvas ainda redesenha pin do cume após linhas vermelhas';
-                    }
-                    // Procurar variável xCume3 (do bloco duplicado)
-                    if (fonte.includes('xCume3') || fonte.includes('yCume3')) {
-                        return 'redrawCanvas tem variáveis xCume3/yCume3 do desenho duplicado';
-                    }
-                    return null;
-                }
-            });
-            
-            // Executar e coletar falhas
-            const falhas = [];
-            const t0 = performance.now();
-            for (const t of testes) {
-                try {
-                    const tStart = performance.now();
-                    const erro = t.funcao();
-                    const tDur = performance.now() - tStart;
-                    if (tDur > 500) {
-                        falhas.push(`⚠️ ${t.nome}: lento (${Math.round(tDur)}ms)`);
-                    }
-                    if (erro) {
-                        falhas.push(`❌ ${t.nome}: ${erro}`);
-                    }
-                } catch (err) {
-                    falhas.push(`💥 ${t.nome}: EXCEPTION ${err.message}`);
-                }
-            }
-            const tTotal = Math.round(performance.now() - t0);
-            
-            // Mostrar resultado
-            console.log(`[TESTES] ${testes.length - falhas.length}/${testes.length} passaram em ${tTotal}ms`);
-            
-            if (falhas.length > 0) {
-                // BANNER VERMELHO de alerta
-                const banner = document.createElement('div');
-                banner.style.cssText = 'position:fixed; top:0; left:0; right:0; background:#c0392b; color:white; padding:12px; z-index:999999; font-size:14px; box-shadow:0 2px 10px rgba(0,0,0,0.5); max-height:40vh; overflow:auto;';
-                banner.innerHTML = '<strong>⚠️ TESTES FALHARAM (' + falhas.length + '/' + testes.length + '):</strong><br>' +
-                    falhas.map(f => '<div style="margin-top:4px; font-family:monospace; font-size:12px;">' + f + '</div>').join('') +
-                    '<button onclick="this.parentElement.remove()" style="margin-top:8px; background:white; color:#c0392b; border:none; padding:6px 14px; border-radius:4px; font-weight:bold;">Fechar</button>';
-                document.body.appendChild(banner);
-                console.error('[TESTES] FALHAS:', falhas);
-            }
-            
-            return falhas.length === 0;
-        }
-
-        // Helper: roda desenharLinhas com timeout para detectar travas
-        function testeDesenharLinhasNaoTrava(altP1, altP2, desc) {
-            // Salvar estado atual
-            const savedState = {
-                resultadosCalc: window.resultadosCalc,
-                fotosData: window.fotosData ? {...window.fotosData} : {},
-                calibData: window.calibData ? {...window.calibData} : {},
-                ladoAtual: window.ladoAtual,
-                tem2InclData_test: tem2InclData['__test__'],
-                fotos_test: fotosData ? fotosData['__test__'] : null
-            };
-            
-            try {
-                // Setup mínimo para o teste
-                const testImg = new Image();
-                testImg.width = 800;
-                testImg.height = 400;
-                
-                window.resultadosCalc = window.resultadosCalc || {};
-                window.resultadosCalc['__test__'] = {
-                    spans:[1800,1800,1800,1800,1800], t1:880, t2:870, plat:'W', avisos:[], ext1:0, ext2:0
-                };
-                fotosData['__test__'] = testImg;
-                calibData['__test__'] = {
-                    estado: 'calibrado',
-                    p1: {x: 50, y: 250}, p2: {x: 450, y: 250}, p3: {x: 50, y: 350},
-                    escala: 0.012, zoomAtCalib: 1.0, pinAtivo: null
-                };
-                tem2InclData['__test__'] = false;
-                alturaCalhaData['__test__'] = altP1;
-                alturaCalhaP2Data['__test__'] = altP2;
-                beiralLadoData['__test__'] = 600;
-                
-                // Medir tempo
-                const t0 = performance.now();
-                desenharLinhasNoCanvas('__test__');
-                const dur = performance.now() - t0;
-                
-                // Limpar dados de teste
-                delete fotosData['__test__'];
-                delete calibData['__test__'];
-                delete tem2InclData['__test__'];
-                delete alturaCalhaData['__test__'];
-                delete alturaCalhaP2Data['__test__'];
-                delete beiralLadoData['__test__'];
-                delete window.resultadosCalc['__test__'];
-                
-                if (dur > 500) {
-                    return `desenharLinhasNoCanvas demorou ${Math.round(dur)}ms (${desc})`;
-                }
-                return null; // OK
-            } catch (err) {
-                return `EXCEPTION em ${desc}: ${err.message}`;
-            }
-        }
-
-        // Rodar testes 1.5s depois do carregamento (para tudo estar pronto)
-        if (document.readyState === 'complete') {
-            setTimeout(rodarTestesAutomaticos, 1500);
-        } else {
-            window.addEventListener('load', () => setTimeout(rodarTestesAutomaticos, 1500));
-        }
 
     </script>
 </body>
