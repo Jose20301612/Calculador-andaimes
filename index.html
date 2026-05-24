@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.20 - Formato L: orientação cardinal correta</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.27 - Download PDF com 2 páginas A4 (imprime sem encolher)</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1378,7 +1378,7 @@
                 <div id="acoes-foto" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
                     <button onclick="abrirTelaCheia()" style="background:#2c3e50; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">⛶ Tela Cheia</button>
                     <button onclick="customizarLado()" style="background:#27ae60; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">✏️ Customizar lado</button>
-                    <button onclick="baixarTodosLados()" style="background:#2980b9; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; grid-column:1/-1;">⬇ Baixar 2 fotos (N+S / L+O)</button>
+                    <button onclick="baixarTodosLados()" style="background:#2980b9; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; grid-column:1/-1;">⬇ Baixar PDF com todos os lados</button>
                 </div>
 
                 <!-- Modal Tela Cheia -->
@@ -2561,25 +2561,63 @@
             b4[cardFullV] = isWestFull ? beirais.oeste : beirais.leste;
 
             // Face partido+innersn combinados (de baixo para cima = degrau1...degrauN...innermost)
+            // v4.22: cardPartV (lado vertical cortado) também marca os degraus.
+            // Cada degrau é um ponto onde o andaime "vira" verticalmente — o
+            // T_innerV vira um círculo vinho na coluna do degrau, igual ao
+            // cardSeg. Sem isso, o usuário vê só os T das pontas e perde a
+            // medida do degrau na lateral cortada.
             let spansPartCombined = [];
-            degrauResults.forEach(function(dr) {
-                // Strip (inner strip entre este degrau e o anterior)
-                if(dr.spansStrip>0) spansPartCombined = spansPartCombined.concat(buildSpansT(dr.spansStrip));
+            let divisoesPart = [];
+            degrauResults.forEach(function(dr, dIdx) {
+                // Strip (inner strip entre este degrau e o anterior).
+                // v4.24: passa Ts perpendiculares pra reordenar peças menores
+                // do lado da plataforma compatível.
+                // Strip vai do degrau atual (T_innerV) até o "topo" do trecho
+                // partido (T_top_fixed pro último, ou T_innerV anterior).
+                if(dr.spansStrip>0) {
+                    const T_far = (dIdx===degrauResults.length-1) ? T_top_fixed
+                                : degrauResults[dIdx+1].T_innerV;
+                    spansPartCombined = spansPartCombined.concat(
+                        buildSpansT(dr.spansStrip, dr.T_innerV, T_far)
+                    );
+                }
+                // divisão antes do step (no fim do strip atual)
+                divisoesPart.push({ spanIndex: spansPartCombined.length, T: dr.T_innerV });
                 spansPartCombined = spansPartCombined.concat(dr.resStepV.spans);
             });
             // Se isCutAtTop: partial está em cima → reversed order
-            if(isCutAtTop) spansPartCombined = spansPartCombined.reverse();
+            if(isCutAtTop) {
+                spansPartCombined = spansPartCombined.reverse();
+                // ao reverter a face, inverter também os índices das divisões
+                const totalSpans = spansPartCombined.length;
+                divisoesPart = divisoesPart.map(function(d) {
+                    return { spanIndex: totalSpans - d.spanIndex, T: d.T };
+                });
+            }
             r4[cardPartV] = mkResL(spansPartCombined, T_base_fixed, T_top_fixed);
+            r4[cardPartV].divisoes = divisoesPart;
             b4[cardPartV] = isWestFull ? beirais.leste : beirais.oeste;
 
             // Face seg combinado: [ultimo_seg(externo)...seg1(interno)]
             // Vista de fora: lado cheio vert à esq, lado partido à dir
-            let spansSegCombined = buildSpansT(spansInnermostH);
+            // v4.21: cada degrau gera uma DIVISÃO — ponto onde o andaime "vira".
+            // O T do degrau (T_innerH) NÃO é o T da ponta da face; a ponta
+            // direita é T_pvs (= T do lado partido vertical = T que define o
+            // plat do lado perpendicular). O T do degrau vira um marcador.
+            // v4.24: innermostH tem T_innerH (do último degrau, ou T_pvs se
+            // não houver) numa ponta e T_fvs na outra — passa para reordenar.
+            const lastDr_seg = degrauResults[degrauResults.length-1];
+            const T_innermostH_far = lastDr_seg ? lastDr_seg.T_innerH : T_pvs;
+            let spansSegCombined = buildSpansT(spansInnermostH, T_innermostH_far, T_fvs);
+            let divisoesSeg = []; // marcadores de degrau: {spanIndex, T}
             degrauResults.slice().reverse().forEach(function(dr) {
+                // ponto de divisão = fim do trecho atual (antes de juntar o stepH)
+                divisoesSeg.push({ spanIndex: spansSegCombined.length, T: dr.T_innerH });
                 spansSegCombined = spansSegCombined.concat(dr.resStepH.spans);
             });
-            const lastDr=degrauResults[degrauResults.length-1];
-            r4[cardSeg] = mkResL(spansSegCombined, T_fvs, lastDr?lastDr.T_innerH:T_pvs);
+            // t1 = T_fvs (lado cheio); t2 = T_pvs (lado partido = T real da ponta)
+            r4[cardSeg] = mkResL(spansSegCombined, T_fvs, T_pvs);
+            r4[cardSeg].divisoes = divisoesSeg;
             b4[cardSeg] = beirais.seg1||0;
 
             // ── v4.20: Normalização cardinal das faces ───────────────────────
@@ -2592,13 +2630,19 @@
             // medidas das laterais saem trocadas.
             function flipFaceL(r) {
                 if (!r) return r;
+                const n = (r.spans || []).length;
+                // divisões: spanIndex i vira (n - i) quando a face é invertida
+                const novasDiv = (r.divisoes || []).map(function(d) {
+                    return { spanIndex: n - d.spanIndex, T: d.T };
+                });
                 return {
                     spans: (r.spans || []).slice().reverse(),
                     t1: r.t2, t2: r.t1,
                     plat: r.plat,
                     plat1: r.plat2, plat2: r.plat1,
                     avisos: r.avisos || [],
-                    ext1: r.ext2 || 0, ext2: r.ext1 || 0
+                    ext1: r.ext2 || 0, ext2: r.ext1 || 0,
+                    divisoes: novasDiv
                 };
             }
             // cardHoriz natural: esq=OESTE → ok p/ SUL, inverter p/ NORTE
@@ -2990,9 +3034,51 @@
         }
 
         // ── buildSpansT: constrói spans a partir de um total residual ──────
-        function buildSpansT(total) {
+        // v4.24: helpers para reordenação por contexto
+        function _platCatForT(T) {
+            // Categoria simplificada para matching de peças:
+            //  - S (580-779): peça 400 encaixa exato; 200 sobreposto
+            //  - W (780-1099): peça 600 encaixa exato
+            //  - WW (≥1100):   peça 900 encaixa exato (saída de telhado)
+            if (T == null || isNaN(T)) return null;
+            if (T >= 1100) return 'WW';
+            if (T >= 780)  return 'W';
+            if (T >= 580)  return 'S';
+            return null; // M, Sb, C: sem preferência por peça específica
+        }
+        function _prefPlatForPiece(p) {
+            if (p === 200 || p === 400) return 'S';
+            if (p === 600) return 'W';
+            if (p === 900) return 'WW';
+            return null;
+        }
+        function _reorderSpansByContext(spans, T_esq, T_dir) {
+            // Reordena (na verdade só decide se inverte o array inteiro).
+            // Para cada extremo, vê se a peça nele "prefere" a plataforma do
+            // outro lado — se a inversão melhora o casamento, inverte.
+            if (!spans || spans.length < 2) return spans;
+            var catEsq = _platCatForT(T_esq);
+            var catDir = _platCatForT(T_dir);
+            if (!catEsq && !catDir) return spans;
+            function fit(arr) {
+                var n=0, len=arr.length;
+                var pE = _prefPlatForPiece(arr[0]);
+                var pD = _prefPlatForPiece(arr[len-1]);
+                if (pE && pE === catEsq) n++;
+                if (pD && pD === catDir) n++;
+                return n;
+            }
+            var s1 = fit(spans);
+            var rev = spans.slice().reverse();
+            var s2 = fit(rev);
+            return (s2 > s1) ? rev : spans;
+        }
+
+        function buildSpansT(total, T_esq, T_dir) {
             // Decompõe um total em peças válidas {1800,1200,900,600,400,200}
             // Usa enumeração de combos para evitar restos inválidos (ex: 100mm)
+            // v4.24: T_esq/T_dir opcionais — reordena pra peças menores caírem
+            //   do lado da plataforma compatível (400→S, 600→W, 900→WW)
             if (total <= 0) return [];
             var pieces=[1200,900,600,400,200];
             function qpB(ps){return ps.filter(function(x){return x===400;}).length*100
@@ -3025,8 +3111,15 @@
                 var ps=em.get(rem);
                 if(ps===undefined && rem!==0) continue;
                 var psFinal=ps||[];
-                // Score: 1) evitar pequenas ilhadas (peso ALTO), 2) qualidade, 3) menos peças
-                var score=nPeqIlhadas(psFinal)*10000 + qpB(psFinal)*100+psFinal.length*10;
+                // v4.23: priorizar MENOS PEÇAS sobre evitar 200s. O usuário
+                // prefere 1800+200 (2 peças) sobre 1200+400+400 (3 peças) —
+                // mesma soma mas menos peças menores. O score antigo
+                // (qpB*100 + length*10) escolhia o de 3 peças porque o 200
+                // (qpB=300) era mais caro que dois 400s (qpB=200). Agora
+                // length pesa muito mais que qpB.
+                // Ordem: (1) evitar pequenas ilhadas; (2) menos peças;
+                // (3) qualidade (preferir 400 sobre 200) como desempate.
+                var score=nPeqIlhadas(psFinal)*1000000 + psFinal.length*100000 + qpB(psFinal)*100;
                 if(score<bestScore){
                     bestScore=score;
                     var s=[];
@@ -3048,7 +3141,13 @@
             // Bug #13: garantir que peças pequenas (200, 400, 600, 900, 1200) fiquem
             // nas pontas, nunca no meio dos 1800. Isso é regra física: o T do lado
             // adjacente "preenche" o vão da peça pequena na esquina.
-            return garantirPequenasNasPontas(best || []);
+            var resultado = garantirPequenasNasPontas(best || []);
+
+            // v4.24: reordenação opcional por contexto de Ts perpendiculares
+            if (T_esq != null && T_dir != null) {
+                resultado = _reorderSpansByContext(resultado, T_esq, T_dir);
+            }
+            return resultado;
         }
 
         function calcularAndaimesT() {
@@ -5509,6 +5608,66 @@
                 ctx.restore();
             }
 
+            // ── v4.21: Marcadores de DIVISÃO (formato L) ─────────────────────
+            // Lados cortados (L) têm pontos de divisão — onde o andaime VIRA.
+            // O T nesse ponto é mostrado num círculo ROXO (cor distinta dos
+            // círculos laranja do guarda-corpo e dos badges) para deixar claro
+            // que é o T do degrau, NÃO o T de uma extremidade da face.
+            if (res.divisoes && res.divisoes.length > 0) {
+                ctx.save();
+                const rDiv = 12;
+                res.divisoes.forEach(function(div) {
+                    if (div.spanIndex == null || div.spanIndex < 0
+                        || div.spanIndex >= spanCols.length) return;
+                    if (!div.T || div.T <= 0) return;
+                    const xDiv = spanCols[div.spanIndex];
+                    const yDiv = yLT + rDiv;
+                    ctx.beginPath();
+                    ctx.arc(xDiv, yDiv, rDiv, 0, Math.PI * 2);
+                    ctx.fillStyle = '#8e44ad';            // roxo
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.font = 'bold 8px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(div.T), xDiv, yDiv);
+                });
+                ctx.restore();
+            }
+
+            // ── v4.21: Marcadores de divisão (formato L / escada) ───────────
+            // Em laterais cortadas, cada degrau é um ponto onde o andaime
+            // "vira". O T do degrau é marcado num círculo de cor distinta
+            // (vinho) na coluna da divisão — para não confundir com os T das
+            // pontas (T1/T2), que são os que definem as plataformas vizinhas.
+            if (res.divisoes && res.divisoes.length > 0) {
+                for (let di = 0; di < res.divisoes.length; di++) {
+                    const dv = res.divisoes[di];
+                    if (dv.spanIndex < 0 || dv.spanIndex >= spanCols.length) continue;
+                    const xDiv = spanCols[dv.spanIndex];
+                    if (xDiv < 0 || xDiv > logW) continue;
+                    const yDiv = yLT - 4;
+                    const rDiv = 13;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(xDiv, yDiv, rDiv, 0, Math.PI * 2);
+                    ctx.fillStyle = '#8e1b4e'; // vinho — distinto dos T das pontas
+                    ctx.fill();
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.font = 'bold 9px Arial';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(dv.T), xDiv, yDiv);
+                    ctx.restore();
+                }
+            }
+
             // ── Labels de span menor na linha do GL ───────────────────────
             // Para cada span ≠ 1800mm: badge laranja com a medida em mm
             {
@@ -5591,29 +5750,26 @@
         }
 
         async function baixarTodosLados() {
-            // Gera 2 imagens PNG combinadas:
-            // Imagem 1: Norte (cima) + Sul (baixo) lado a lado
-            // Imagem 2: Leste (cima) + Oeste (baixo) lado a lado
+            // v4.25: combinar TODOS os 4 lados em UMA imagem só.
+            // Antes baixava 2 PNGs (N+S e L+O), mas o navegador bloqueava o 2º
+            // — usuário via só N+S. Agora 1 download só, sem risco.
 
-            // v4.13: rastrear motivos de falha por lado para mensagem clara
             var motivosFalha = {};
 
-            // Renderiza um lado num canvas temporário e retorna ImageData
+            // Renderiza um lado num canvas temporário e retorna data + dimensões
             async function renderizarLado(lado) {
                 var ladoSalvo = ladoAtual;
                 try {
-                    // Verificar se tem dados
                     if (!fotosData[lado]) { motivosFalha[lado] = 'sem foto'; return null; }
                     if (!calibData[lado] || calibData[lado].estado !== 'calibrado') {
                         motivosFalha[lado] = 'calibração incompleta';
                         return null;
                     }
-                    // Verificar se tem cálculo e altura
                     if (!resultadosCalc[lado] || !resultadosCalc[lado].spans || resultadosCalc[lado].spans.length === 0) {
                         motivosFalha[lado] = 'sem cálculo de spans';
                         return null;
                     }
-                    // Fallback: se alturaCalhaData não foi salva mas o input tem valor (lado atual aberto), usa
+                    // Fallback altura: se lado é o atual, lê do input
                     if (!alturaCalhaData[lado] || alturaCalhaData[lado] <= 0) {
                         if (lado === ladoAtual) {
                             var altInput = parseInt(document.getElementById('alturaCalha').value)||0;
@@ -5625,7 +5781,6 @@
                         return null;
                     }
                     ladoAtual = lado;
-                    // Desenhar TUDO (linhas vermelhas, pins, plataformas) — não só foto+pins
                     desenharLinhasNoCanvas(lado);
                     await new Promise(res => setTimeout(res, 60));
                     var canvas = document.getElementById('fotoCanvas');
@@ -5635,10 +5790,10 @@
                     return { lado, dataUrl, w, h };
                 } catch(e) {
                     console.error('renderizarLado error:', lado, e);
+                    motivosFalha[lado] = 'erro de renderização: ' + e.message;
                     return null;
                 } finally {
                     ladoAtual = ladoSalvo;
-                    // Re-renderizar o lado original com linhas se possível
                     if (calibData[ladoSalvo] && calibData[ladoSalvo].estado === 'calibrado'
                         && resultadosCalc[ladoSalvo] && alturaCalhaData[ladoSalvo] > 0) {
                         desenharLinhasNoCanvas(ladoSalvo);
@@ -5648,127 +5803,210 @@
                 }
             }
 
-            // Combina dois dataURLs verticalmente num canvas e baixa como PNG
-            async function combinarEBaixar(r1, r2, nomeArquivo) {
-                return new Promise(function(resolve) {
-                    var img1 = new Image(), img2 = r2 ? new Image() : null;
-                    var loaded = 0;
-                    var total = r2 ? 2 : 1;
+            // v4.27: gera PDF mínimo com N páginas A4, cada uma embebendo
+            // 1 JPEG. Impressora respeita as páginas → 2 folhas A4 reais
+            // (não comprime tudo em 1 como acontecia com PNG).
+            function _buildPdfWithJpegPages(jpegPages, imgW, imgH) {
+                var PAGE_W = 595, PAGE_H = 842; // A4 em pontos PDF (1pt = 1/72")
 
-                    function onLoad() {
-                        loaded++;
-                        if (loaded < total) return;
+                function strB(s) {
+                    var b = new Uint8Array(s.length);
+                    for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xff;
+                    return b;
+                }
+                function cat(arrs) {
+                    var total = 0;
+                    for (var i = 0; i < arrs.length; i++) total += arrs[i].length;
+                    var out = new Uint8Array(total);
+                    var pos = 0;
+                    for (var j = 0; j < arrs.length; j++) { out.set(arrs[j], pos); pos += arrs[j].length; }
+                    return out;
+                }
 
-                        // ── DIMENSÕES A4 RETRATO (em pé) ────────────────────
-                        // 210mm x 297mm = 2480 x 3508 px (300 DPI)
-                        // Como temos 2 fotos horizontais empilhadas, o A4 em pé
-                        // dá mais espaço vertical para cada foto não ficar muito pequena
-                        var A4_W = 2480;
-                        var A4_H = 3508;
-                        var MARGEM = 150;        // margem de segurança (px) — impressoras cortam ~5mm
-                        var GAP = 60;            // espaço entre as 2 fotos
-                        var LABEL_H = 50;        // altura do texto "NORTE", "SUL", etc
+                var N = jpegPages.length;
+                var objs = []; // cada elemento: Uint8Array (corpo do objeto)
 
-                        // Espaço útil dentro da página (descontando margens)
-                        var areaW = A4_W - 2 * MARGEM;
-                        var areaH = A4_H - 2 * MARGEM;
+                function addObj() {
+                    var pieces = [];
+                    for (var i = 0; i < arguments.length; i++) {
+                        var p = arguments[i];
+                        pieces.push(typeof p === 'string' ? strB(p) : p);
+                    }
+                    objs.push(cat(pieces));
+                    return objs.length;
+                }
 
-                        // Espaço por foto (descontando label e gap entre elas)
-                        var fotoMaxH;
-                        if (r2) {
-                            fotoMaxH = (areaH - 2 * LABEL_H - GAP) / 2;
-                        } else {
-                            fotoMaxH = areaH - LABEL_H;
-                        }
+                // IDs:
+                //   1 = Catalog
+                //   2 = Pages
+                //   3..(2+N) = Page N
+                //   (3+N)..(2+2N) = Image N
+                //   (3+2N)..(2+3N) = Content stream N
+                var pageRefs = [];
+                for (var i = 0; i < N; i++) pageRefs.push((3+i) + ' 0 R');
 
-                        // Calcular escala que faz CADA foto caber na área disponível
-                        // (sem cortar — mantém proporção)
-                        function escalaFoto(w, h) {
-                            var sw = areaW / w;
-                            var sh = fotoMaxH / h;
-                            return Math.min(sw, sh);  // pega o menor → cabe inteira
-                        }
-                        var s1 = escalaFoto(r1.w, r1.h);
-                        var s2 = r2 ? escalaFoto(r2.w, r2.h) : 1;
+                addObj('<< /Type /Catalog /Pages 2 0 R >>');
+                addObj('<< /Type /Pages /Kids [' + pageRefs.join(' ') + '] /Count ' + N + ' >>');
+                for (var i = 0; i < N; i++) {
+                    addObj('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + PAGE_W + ' ' + PAGE_H + '] '
+                        + '/Resources << /XObject << /Im0 ' + (3+N+i) + ' 0 R >> /ProcSet [/PDF /ImageC] >> '
+                        + '/Contents ' + (3+2*N+i) + ' 0 R >>');
+                }
+                for (var i = 0; i < N; i++) {
+                    addObj(
+                        '<< /Type /XObject /Subtype /Image /Width ' + imgW + ' /Height ' + imgH
+                        + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode '
+                        + '/Length ' + jpegPages[i].length + ' >>\nstream\n',
+                        jpegPages[i],
+                        '\nendstream'
+                    );
+                }
+                for (var i = 0; i < N; i++) {
+                    var cs = 'q\n' + PAGE_W + ' 0 0 ' + PAGE_H + ' 0 0 cm\n/Im0 Do\nQ\n';
+                    addObj('<< /Length ' + cs.length + ' >>\nstream\n' + cs + 'endstream');
+                }
 
-                        var w1 = r1.w * s1, h1 = r1.h * s1;
-                        var w2 = r2 ? r2.w * s2 : 0, h2 = r2 ? r2.h * s2 : 0;
+                // Montar PDF final
+                var parts = [];
+                var offsets = [];
+                var pos = 0;
+                var header = strB('%PDF-1.4\n%\xff\xff\xff\xff\n');
+                parts.push(header);
+                pos += header.length;
 
-                        // Criar canvas A4
-                        var c = document.createElement('canvas');
-                        c.width = A4_W;
-                        c.height = A4_H;
-                        var ctx = c.getContext('2d');
+                for (var i = 0; i < objs.length; i++) {
+                    offsets.push(pos);
+                    var h = strB((i+1) + ' 0 obj\n');
+                    var f = strB('\nendobj\n');
+                    parts.push(h, objs[i], f);
+                    pos += h.length + objs[i].length + f.length;
+                }
 
-                        // Fundo branco
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, A4_W, A4_H);
+                var xrefStart = pos;
+                var xref = 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+                for (var i = 0; i < objs.length; i++) {
+                    var off = offsets[i].toString();
+                    while (off.length < 10) off = '0' + off;
+                    xref += off + ' 00000 n \n';
+                }
+                xref += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root 1 0 R >>\n'
+                     + 'startxref\n' + xrefStart + '\n%%EOF\n';
+                parts.push(strB(xref));
 
-                        // Posicionar foto 1 centralizada horizontalmente
-                        ctx.fillStyle = '#2c3e50';
-                        ctx.font = 'bold 32px sans-serif';
-                        ctx.textBaseline = 'top'; // texto NÃO sobe acima da posição
-                        var y = MARGEM;
-                        var x1 = (A4_W - w1) / 2;
-                        ctx.fillText(r1.lado.toUpperCase(), x1, y);
-                        ctx.drawImage(img1, x1, y + LABEL_H, w1, h1);
+                return cat(parts);
+            }
 
-                        // Foto 2 (se houver)
-                        if (r2 && img2) {
-                            var y2 = y + LABEL_H + h1 + GAP;
-                            var x2 = (A4_W - w2) / 2;
-                            ctx.fillText(r2.lado.toUpperCase(), x2, y2);
-                            ctx.drawImage(img2, x2, y2 + LABEL_H, w2, h2);
-                        }
+            // v4.27: gerar PDF com N páginas A4 (não PNG mais).
+            // PNG comprimia tudo em 1 folha na impressão. PDF tem páginas
+            // explícitas, impressora respeita 2+ folhas A4 separadas.
+            async function combinarTodos(rs, nomeArquivo) {
+                if (!rs || rs.length === 0) return;
 
-                        var link = document.createElement('a');
-                        link.download = nomeArquivo;
-                        link.href = c.toDataURL('image/png');
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        resolve();
+                // Dimensões A4 portrait @ 300 DPI
+                var A4_W = 2480;
+                var A4_H = 3508;
+
+                // Pré-carregar imagens
+                await Promise.all(rs.map(function(r) {
+                    return new Promise(function(resolve) {
+                        var img = new Image();
+                        img.onload = function() { r.img = img; resolve(); };
+                        img.onerror = function() { resolve(); };
+                        img.src = r.dataUrl;
+                    });
+                }));
+                rs = rs.filter(function(r) { return r.img; });
+                if (rs.length === 0) return;
+
+                // Agrupa 2 fotos por página (= 1 A4)
+                var pages = [];
+                for (var i = 0; i < rs.length; i += 2) {
+                    var pa = rs[i], pb = rs[i+1] || null;
+                    pages.push(pb ? [pa, pb] : [pa]);
+                }
+
+                // Renderizar cada página em canvas → JPEG bytes
+                var jpegPages = [];
+                for (var pi = 0; pi < pages.length; pi++) {
+                    var pageItems = pages[pi];
+                    var c = document.createElement('canvas');
+                    c.width  = A4_W; c.height = A4_H;
+                    var ctx = c.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, A4_W, A4_H);
+
+                    var MARGEM = 150, GAP = 60, LABEL_H = 50;
+                    var areaW = A4_W - 2*MARGEM, areaH = A4_H - 2*MARGEM;
+                    var fotoMaxH = pageItems.length === 2
+                        ? (areaH - 2*LABEL_H - GAP) / 2
+                        : areaH - LABEL_H;
+
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = 'bold 32px sans-serif';
+                    ctx.textBaseline = 'top';
+
+                    var yPos = MARGEM;
+                    for (var qi = 0; qi < pageItems.length; qi++) {
+                        var r = pageItems[qi];
+                        var s = Math.min(areaW / r.w, fotoMaxH / r.h);
+                        var w = r.w * s, h = r.h * s;
+                        var x = (A4_W - w) / 2;
+                        ctx.fillText(r.lado.toUpperCase(), x, yPos);
+                        ctx.drawImage(r.img, x, yPos + LABEL_H, w, h);
+                        yPos += LABEL_H + h + GAP;
                     }
 
-                    img1.onload = onLoad;
-                    img1.src = r1.dataUrl;
-                    if (img2) { img2.onload = onLoad; img2.src = r2.dataUrl; }
-                });
+                    // Para JPEG bytes (PDF embute JPEG via DCTDecode)
+                    var ju = c.toDataURL('image/jpeg', 0.85);
+                    var b64 = ju.split(',')[1];
+                    var bin = atob(b64);
+                    var bytes = new Uint8Array(bin.length);
+                    for (var bi = 0; bi < bin.length; bi++) bytes[bi] = bin.charCodeAt(bi);
+                    jpegPages.push(bytes);
+                }
+
+                // Construir PDF com N páginas
+                var pdfBytes = _buildPdfWithJpegPages(jpegPages, A4_W, A4_H);
+
+                // Download
+                var blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                var url = URL.createObjectURL(blob);
+                var link = document.createElement('a');
+                link.download = nomeArquivo;
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
             }
 
-            var pares = [
-                { lados: ['norte', 'sul'],   nome: 'andaimes-norte-sul.png'   },
-                { lados: ['leste', 'oeste'],  nome: 'andaimes-leste-oeste.png' },
-            ];
-
-            var algumBaixado = false;
-            for (var pi = 0; pi < pares.length; pi++) {
-                var par = pares[pi];
-                var r1 = await renderizarLado(par.lados[0]);
-                var r2 = await renderizarLado(par.lados[1]);
-                if (!r1 && !r2) continue;
-                if (!r1) { r1 = r2; r2 = null; }
-                await combinarEBaixar(r1, r2, par.nome);
-                algumBaixado = true;
-                await new Promise(res => setTimeout(res, 200));
+            // Renderizar OS 4 LADOS na ordem norte → sul → leste → oeste
+            var ordem = ['norte', 'sul', 'leste', 'oeste'];
+            var renders = [];
+            for (var i = 0; i < ordem.length; i++) {
+                var r = await renderizarLado(ordem[i]);
+                if (r) renders.push(r);
             }
 
-            if (!algumBaixado) {
+            if (renders.length === 0) {
                 var msg = 'Nenhum lado pronto para download.\n\n';
-                ['norte','sul','leste','oeste'].forEach(function(l) {
+                ordem.forEach(function(l) {
                     if (motivosFalha[l]) msg += '• ' + l.toUpperCase() + ': ' + motivosFalha[l] + '\n';
                 });
                 alert(msg);
-            } else {
-                // v4.13: informar se algum lado dos 4 ficou de fora
-                var falharam = ['norte','sul','leste','oeste'].filter(function(l){ return motivosFalha[l]; });
-                if (falharam.length > 0) {
-                    var msg = 'Download concluído, mas alguns lados ficaram de fora:\n\n';
-                    falharam.forEach(function(l) {
-                        msg += '• ' + l.toUpperCase() + ': ' + motivosFalha[l] + '\n';
-                    });
-                    alert(msg);
-                }
+                return;
+            }
+
+            await combinarTodos(renders, 'andaimes-todos-lados.pdf');
+
+            // Reportar lados que ficaram de fora, se houver
+            var falharam = ordem.filter(function(l){ return motivosFalha[l]; });
+            if (falharam.length > 0) {
+                var msg = 'Download concluído com ' + renders.length + ' lado(s).\nLados que ficaram de fora:\n\n';
+                falharam.forEach(function(l) {
+                    msg += '• ' + l.toUpperCase() + ': ' + motivosFalha[l] + '\n';
+                });
+                alert(msg);
             }
         }
 
