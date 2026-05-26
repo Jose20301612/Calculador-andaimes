@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.27 - Download PDF com 2 páginas A4 (imprime sem encolher)</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.29 - Kobus por COLUNA (cada coluna usa calha local +900 snap 450)</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -5437,127 +5437,137 @@
                 ctx.stroke(); ctx.setLineDash([]);
             }
 
-            // ── Linha GUARDA-CORPO (laranja) — degraus por span ────────────────
-            // Calcular GC por span e guardar altura de cada coluna para labels
+            // ── Linha GUARDA-CORPO (laranja) — POR COLUNA (v4.29) ─────────
             //
-            // ⚠️ ALGORITMO (v4.18 — corrige bug do GC com 2 inclinações):
-            // O GC fica 900mm acima da calha de cada span, em incrementos
-            // discretos de 450mm acima do baseline (calha mais baixa do 1º span).
-            // Calculado POR SPAN (não acumulativo) — assim sobe na inclinação
-            // esquerda, e DESCE na inclinação direita após o cume.
+            // ⚠️ ALGORITMO v4.29 — calcula altGC INDEPENDENTE para cada coluna,
+            // baseado na altura da calha NAQUELA posição X. Antes (v4.28) o GC
+            // era calculado POR SPAN (2 colunas adjacentes recebiam o mesmo
+            // yGC, igual à calha mais alta do span). Isso fazia a coluna baixa
+            // do span ficar marcada igual à coluna alta — bug.
             //
-            // - Mínimo (baseline): calhaBaixa0 + 900
-            // - A cada span: GC ≥ calhaAlta_desse_span + 800
-            // - Incrementos: +450 a partir do baseline (snap discreto)
+            // Regra: altGC = ceil((calha_em_X + 900) / 450) * 450
+            //   - 900mm é a folga do guarda-corpo acima da calha
+            //   - Snap em múltiplos de 450 (peças disponíveis: 3600/1800/900/450)
             //
-            // Para 1 inclinação: GC sobe monotonicamente (mesmo resultado do
-            // algoritmo antigo).
-            // Para 2 inclinações: GC sobe até o cume e DESCE depois.
-            var gcPorColuna = []; // yGC e elevacoes para cada coluna
+            // Desenho: linha em "escada" — entre cols adjacentes, peça
+            // horizontal na altitude MAIS ALTA (cobre os 2 lados com segurança).
+            // Coluna mais baixa tem extensão vertical pra subir até essa altura.
+            var gcPorColuna = []; // {x, yGC, altGCmm, altCalha}
 
+            for (var ci = 0; ci < spanCols.length; ci++) {
+                var xCol = spanCols[ci];
+                var yCalhaCol = yCalhaEmX(xCol);
+                var altCalhaCol = (oy - yCalhaCol) / escZ;
+                var altGCdesired = altCalhaCol + 900;
+                // Snap up: múltiplos de 450 (mínimo zero, sem piso forçado)
+                var altGC = Math.max(0, Math.ceil(altGCdesired / 450) * 450);
+                gcPorColuna.push({
+                    x: xCol,
+                    yGC: oy - altGC * escZ,
+                    altGCmm: altGC,
+                    altCalha: altCalhaCol,
+                    yCalha: yCalhaCol
+                });
+            }
+
+            // Desenhar linha GC em escada
             ctx.strokeStyle = '#e67e22'; ctx.lineWidth = 2.0; ctx.setLineDash([]);
             ctx.beginPath();
-
-            // Calcular calha mais BAIXA do PRIMEIRO span (referência baseline)
-            var gcXa0 = spanCols[0], gcXb0 = spanCols[1];
-            var yCalhaEsq0 = yCalhaEmX(gcXa0);
-            var yCalhaDir0 = yCalhaEmX(gcXb0);
-            var yCalhaBaixo0 = Math.max(yCalhaEsq0, yCalhaDir0);
-            var altCalhaBaixo0Mm = (oy - yCalhaBaixo0) / escZ;
-            var altGCBaseMm = altCalhaBaixo0Mm + 900; // baseline (mínimo)
-
-            for (var gcSi = 0; gcSi < spans.length; gcSi++) {
-                var gcXa = spanCols[gcSi], gcXb = spanCols[gcSi + 1];
-                var yCalhaEsq = yCalhaEmX(gcXa);
-                var yCalhaDir = yCalhaEmX(gcXb);
-                var yCalhaAlto = Math.min(yCalhaEsq, yCalhaDir);  // ponto MAIS ALTO (menor y)
-                var altCalhaAltoMm = (oy - yCalhaAlto) / escZ;
-
-                // Per-span: começa do baseline e sobe em 450 até cobrir calhaAlto+800
-                var altGCmm = altGCBaseMm;
-                var _maxIter = 20;
-                while (altGCmm < altCalhaAltoMm + 800 && _maxIter > 0) {
-                    altGCmm += 450;
-                    _maxIter--;
+            if (gcPorColuna.length > 0) {
+                ctx.moveTo(gcPorColuna[0].x, gcPorColuna[0].yGC);
+                for (var ci2 = 1; ci2 < gcPorColuna.length; ci2++) {
+                    var prevC = gcPorColuna[ci2 - 1];
+                    var curC  = gcPorColuna[ci2];
+                    // Peça horizontal na altitude FÍSICA MAIS ALTA (= menor y no canvas)
+                    var yHigh = Math.min(prevC.yGC, curC.yGC);
+                    // Step UP na col esquerda se ela estiver mais baixa
+                    if (prevC.yGC !== yHigh) ctx.lineTo(prevC.x, yHigh);
+                    // Peça horizontal
+                    ctx.lineTo(curC.x, yHigh);
+                    // Step DOWN na col direita se ela estiver mais baixa
+                    if (curC.yGC !== yHigh) ctx.lineTo(curC.x, curC.yGC);
                 }
-                if (_maxIter === 0) {
-                    console.warn('[GC] Limite de iterações atingido em span ' + gcSi);
-                }
-
-                // Converter altura mm → posição y no canvas
-                var yGC = oy - altGCmm * escZ;
-                var gcExtra = altGCmm - altGCBaseMm; // quanto subiu além do base
-
-                // Guardar GC de cada coluna (esq e dir de cada span)
-                if (gcSi === 0) {
-                    gcPorColuna.push({ x: gcXa, yGC: yGC, gcExtra: gcExtra,
-                        yCalha: yCalhaEsq, altCalha: (oy - yCalhaEsq) / escZ });
-                }
-                gcPorColuna.push({ x: gcXb, yGC: yGC, gcExtra: gcExtra,
-                    yCalha: yCalhaDir, altCalha: (oy - yCalhaDir) / escZ });
-
-                if (gcSi === 0) { ctx.moveTo(gcXa, yGC); }
-                else            { ctx.lineTo(gcXa, yGC); }
-                ctx.lineTo(gcXb, yGC);
             }
             ctx.stroke();
 
-            // ── Labels por coluna: extremas=altura mm, intermediárias=incrementos ──
-            // Só quando telhado inclinado (1 ou 2 inclinações)
-            const inclinado2 = (altP1px !== altP2px) || (tem2Incl && altCumePx > 0);
-            if (inclinado2 && gcPorColuna.length > 0) {
+            // ── v4.29: Labels por coluna — kobus a partir do baseline 7200 ──
+            // Baseline 7200mm = 2 peças de 3600 = 8+8 kobus (configuração padrão).
+            // Coluna >= 7200: marca (altura - 7200)/450 = kobus excedentes.
+            // Coluna < 7200: marca a composição em kobus, ex 5400 = "8+4".
+            // Altura JÁ INCLUI o guarda-corpo (altGC = calha + 900 snap 450).
+            // v4.29: cada coluna usa SEU OWN altGCmm (não mais por span).
+            if (gcPorColuna.length > 0) {
                 ctx.save();
-                var rCirc = 8;
+                var rCirc = 11;
+                var BASELINE = 7200;
 
-                // Altura em mm de cada coluna (GL→GC)
-                var altsMm = gcPorColuna.map(function(col) {
-                    return Math.round((oy - col.yGC) / escZ);
-                });
+                // Decompõe altura em kobus por peça (greedy maior primeiro)
+                // 5400 → [8, 4]  (= 3600 + 1800)
+                // 6750 → [8, 4, 2, 1]  (= 3600 + 1800 + 900 + 450)
+                function decomporKobus(altMm) {
+                    var pecasMm = [3600, 1800, 900, 450];
+                    var kobus = [];
+                    var rest = altMm;
+                    for (var pi = 0; pi < pecasMm.length; pi++) {
+                        var p = pecasMm[pi];
+                        while (rest >= p) {
+                            rest -= p;
+                            kobus.push(p / 450);
+                        }
+                    }
+                    return kobus;
+                }
 
-                // Base = altura da primeira coluna
-                var baseMm = altsMm[0];
-
-                function desenharCirculo(x, y, texto, cor) {
+                function desenharCirculoKobu(x, y, texto, cor) {
+                    // Largura do círculo cresce um pouco se texto for longo
+                    var rUse = Math.max(rCirc, 4 + 3 * texto.length);
                     ctx.beginPath();
-                    ctx.arc(x, y, rCirc, 0, Math.PI * 2);
+                    ctx.arc(x, y, rUse, 0, Math.PI * 2);
                     ctx.fillStyle = cor;
                     ctx.fill();
                     ctx.strokeStyle = 'rgba(255,255,255,0.8)';
                     ctx.lineWidth = 1;
                     ctx.stroke();
-                    ctx.font = 'bold 8px Arial';
+                    ctx.font = 'bold 9px Arial';
                     ctx.fillStyle = 'white';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(texto, x, y);
+                    return rUse;
                 }
 
-                for (var ci = 0; ci < gcPorColuna.length; ci++) {
-                    var col = gcPorColuna[ci];
+                for (var ci3 = 0; ci3 < gcPorColuna.length; ci3++) {
+                    var col = gcPorColuna[ci3];
                     var xCol = col.x;
                     var yGCCol = col.yGC;
-                    var yLabel = yGCCol - rCirc - 3;
-                    var altMm = altsMm[ci];
-                    var isFirst = (ci === 0);
-                    var isLast  = (ci === gcPorColuna.length - 1);
+                    var altMm = col.altGCmm; // v4.29: usa direto
+                    var isFirst = (ci3 === 0);
+                    var isLast  = (ci3 === gcPorColuna.length - 1);
 
+                    var txt = '';
+                    if (altMm >= BASELINE) {
+                        var nKobus = Math.round((altMm - BASELINE) / 450);
+                        if (nKobus <= 0) continue; // v4.29: defensivo — nunca negativo
+                        txt = String(nKobus);
+                    } else if (altMm > 0) {
+                        // Coluna baixa — mostra composição em kobus
+                        var kobus = decomporKobus(altMm);
+                        if (kobus.length === 0) continue;
+                        txt = kobus.join('+');
+                    } else {
+                        continue; // altura inválida (≤0) → não marca
+                    }
+
+                    var yLabel = yGCCol - rCirc - 3;
+                    var rDes = desenharCirculoKobu(xCol, yLabel, txt, '#e67e22');
+
+                    // Extremas: mostrar também a altura em mm (acima do círculo)
                     if (isFirst || isLast) {
-                        // Extremas: mostrar altura em mm como texto
                         ctx.font = 'bold 9px Arial';
                         ctx.fillStyle = '#e67e22';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
-                        ctx.fillText(String(altMm), xCol, yGCCol - 3);
-                    } else {
-                        // Intermediárias: círculo com nº de incrementos de 450mm acima da base
-                        var nIncr = Math.round((altMm - baseMm) / 450);
-                        if (nIncr > 0) {
-                            desenharCirculo(xCol, yLabel, String(nIncr), '#e67e22');
-                        } else if (nIncr < 0) {
-                            // Abaixo da base (caso raro) — mostrar negativo em cinza
-                            desenharCirculo(xCol, yLabel, String(nIncr), '#7f8c8d');
-                        }
-                        // Se nIncr == 0: mesma altura da base → sem marcação
+                        ctx.fillText(String(altMm), xCol, yLabel - rDes - 2);
                     }
                 }
                 ctx.restore();
