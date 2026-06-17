@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.29 - Kobus por COLUNA (cada coluna usa calha local +900 snap 450)</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.31 - Linha/coluna+extensão; plat face=linha; kobu degrau na col esquerda; sem W acima do telhado</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -2157,36 +2157,61 @@
         }
 
         // ── calcSpan global — acessível por formato L, T e outros ──────
-        function calcSpan(medida, kiso, t1_disp, t2_disp, muro, beiral1, beiral2) {
+        function calcSpan(medida, kiso, t1_disp, t2_disp, muro, beiral1, beiral2, terr1, muro1, terr2, muro2) {
             // beiral2 opcional — se não passado, usa beiral1 para ambos os lados
             if (beiral2 === undefined) beiral2 = beiral1;
+            // terr1/muro1/terr2/muro2 opcionais: terreno SEM muro + muro de cada lado.
+            // Se passados, proíbe a coluna de ficar na zona morta (entre chão e muro).
+            const CLR_DZ = 70;
+            function tValidoDZ(T, terr, muroV) {
+                if (!terr || (muroV || 0) <= 0) return true; // sem muro → sem zona morta
+                const chaoMax = terr - CLR_DZ;
+                const muroMax = terr + muroV - CLR_DZ;   // muro: 70mm fixo da borda externa
+                if (T <= chaoMax + 1) return true;              // no chão
+                if (T >= terr - 1 && T <= muroMax + 1) return true; // firme no muro (faixa)
+                return false;                                    // zona morta entre chão e muro
+            }
             const av = [];
-            const util1 = t1_disp - 70 + (muro||0);
-            const util2 = t2_disp - 70 + (muro||0);
+            // LINHA do andaime: com muro pode chegar até a borda do vizinho (terr+muro);
+            // sem muro fica no firme do chão (terr-70). A coluna recua via extensão quando
+            // a linha passa do firme (terr+muro-70).
+            const util1 = ((muro1||0) > 0 ? t1_disp : (t1_disp - 70)) + (muro||0);
+            const util2 = ((muro2||0) > 0 ? t2_disp : (t2_disp - 70)) + (muro||0);
+            // Tamanho da extensão pela plataforma da linha: S→400, W/outras→200
+            function extSizeLinha(dep){ return getPlatform(dep).plat === 'S' ? 400 : 200; }
+            // Coluna firme: se a linha cabe no firme, coluna=linha; senão recua pela extensão
+            function colunaFirme(T, terr, muroV) {
+                if (!terr || (muroV || 0) <= 0) return tValidoDZ(T, terr, muroV);
+                const firmMax = terr + muroV - CLR_DZ;
+                if (T <= firmMax + 1) return tValidoDZ(T, terr, muroV); // linha = coluna (firme)
+                const col = T - extSizeLinha(T);  // linha passa do firme → coluna recua
+                if (col < 100) return false;       // base não pode colar na parede
+                return tValidoDZ(col, terr, muroV); // coluna recuada tem que ser firme
+            }
             const baseFixa = medida + kiso;
             const bMargin1 = (beiral1||0) > 0 ? (beiral1+50) : 0;
             const bMargin2 = (beiral2||0) > 0 ? (beiral2+50) : 0;
             const T1max = util1, T2max = util2;
             const T1min = Math.max(250, bMargin1), T2min = Math.max(250, bMargin2);
 
-            // ── Extensão 200mm: quando beiral força T_min mas terreno não alcança ──
-            // Coluna fica mais perto da parede, extensão cobre a diferença
-            // Com ext: coluna em T, cobertura = T + 200 ≥ beiral
-            //   → T ≥ beiral - 200, T ≤ t_disp - 200 (para caber)
-            const EXT = 200;
-            const t1UsaExt = T1max < T1min && (t1_disp - EXT + (muro||0)) >= Math.max(250, bMargin1 - EXT);
-            const t2UsaExt = T2max < T2min && (t2_disp - EXT + (muro||0)) >= Math.max(250, bMargin2 - EXT);
-            const T1maxEff = t1UsaExt ? (t1_disp - EXT + (muro||0)) : T1max;
-            const T2maxEff = t2UsaExt ? (t2_disp - EXT + (muro||0)) : T2max;
-            const T1minEff = t1UsaExt ? Math.max(250, bMargin1 - EXT) : T1min;
-            const T2minEff = t2UsaExt ? Math.max(250, bMargin2 - EXT) : T2min;
+            // ── Extensão: quando beiral força T_min mas terreno não alcança ──
+            // Tamanho da extensão pela plataforma da lateral: S→400, W/outras→200
+            // Coluna recua EXT, extensão cobre: cobertura = T + EXT ≥ beiral
+            function extSize(dep){ return getPlatform(dep).plat === 'S' ? 400 : 200; }
+            const EXT1 = extSize(T1min), EXT2 = extSize(T2min);
+            const t1UsaExt = T1max < T1min && (t1_disp - EXT1 + (muro||0)) >= Math.max(250, bMargin1 - EXT1);
+            const t2UsaExt = T2max < T2min && (t2_disp - EXT2 + (muro||0)) >= Math.max(250, bMargin2 - EXT2);
+            const T1maxEff = t1UsaExt ? (t1_disp - EXT1 + (muro||0)) : T1max;
+            const T2maxEff = t2UsaExt ? (t2_disp - EXT2 + (muro||0)) : T2max;
+            const T1minEff = t1UsaExt ? Math.max(250, bMargin1 - EXT1) : T1min;
+            const T2minEff = t2UsaExt ? Math.max(250, bMargin2 - EXT2) : T2min;
 
             if (T1maxEff < T1minEff || T2maxEff < T2minEff) {
-                av.push('⚠️ Sem solução mesmo com extensão 200mm. Verifique as medidas.');
+                av.push('⚠️ Sem solução mesmo com extensão. Verifique as medidas.');
                 return { spans:[], t1:0, t2:0, plat:'?', tot:0, avisos:av };
             }
-            if (t1UsaExt) av.push('📌 Lado 1: usa extensão 200mm (beiral ' + (beiral1||0) + 'mm)');
-            if (t2UsaExt) av.push('📌 Lado 2: usa extensão 200mm (beiral ' + (beiral2||0) + 'mm)');
+            if (t1UsaExt) av.push('📌 Lado 1: usa extensão ' + EXT1 + 'mm (beiral ' + (beiral1||0) + 'mm)');
+            if (t2UsaExt) av.push('📌 Lado 2: usa extensão ' + EXT2 + 'mm (beiral ' + (beiral2||0) + 'mm)');
 
             // Usar limites efetivos daqui em diante
             const T1maxF = T1maxEff, T2maxF = T2maxEff;
@@ -2234,6 +2259,8 @@
                     }
                 }
                 if(T1===null) return null;
+                // Linha/coluna: a coluna (recuada por extensão se preciso) tem que ser firme
+                if(!colunaFirme(T1, terr1, muro1) || !colunaFirme(T2, terr2, muro2)) return null;
                 const pen1=PPEN[getPlatform(T1).plat]??1000;
                 const pen2=PPEN[getPlatform(T2).plat]??1000;
                 // Prioridade 1: melhorar o PIOR lado (o mais apertado para quem trabalha)
@@ -2255,12 +2282,19 @@
             }
             // Testar distribuições nas fronteiras de plataforma para achar o ótimo
             const bndsPl=[250,450,550,580,780,850,920,cap1,cap2,T1min,T2min];
+            // Candidatos explícitos: coluna no muro e no chão-máximo de cada lado
+            const muroPos1 = (muro1||0) > 0 ? (terr1 + muro1 - 70) : cap1;
+            const muroPos2 = (muro2||0) > 0 ? (terr2 + muro2 - 70) : cap2;
+            const chaoMx1  = terr1 ? (terr1 - 70) : cap1;
+            const chaoMx2  = terr2 ? (terr2 - 70) : cap2;
             for(let n=nMin;n<=nMax;n++)for(const ex of extras){
                 const eNec=n*1800+ex-baseFixa;
                 if(eNec<T1minF+T2minF||eNec>cap1+cap2)continue;
                 const ps=em.get(ex);
                 const fr=cap1/(cap1+cap2);
-                const t1cands=[Math.round(eNec*fr),cap1,T1min,...bndsPl,...bndsPl.map(b=>eNec-b)];
+                const t1cands=[Math.round(eNec*fr),cap1,T1min,
+                    muroPos1, eNec-muroPos2, chaoMx1, eNec-chaoMx2,
+                    ...bndsPl,...bndsPl.map(b=>eNec-b)];
                 for(const t1c of t1cands){
                     // Passar ps (peças extras) para tentarDist usar na penalização
                     const r=tentarDist(eNec,t1c,eNec-t1c,ps);
@@ -2270,13 +2304,28 @@
             if(!best){av.push('⚠️ Sem solução. Verifique as medidas.');return{spans:[],t1:0,t2:0,plat:'?',tot:0,avisos:av};}
             const spans=[];for(let i=0;i<best.n;i++)spans.push(1800);best.ps.slice().sort((a,b)=>b-a).forEach(p=>spans.push(p));
             const P1=getPlatform(best.T1),P2=getPlatform(best.T2),Pmin=getPlatform(Math.min(best.T1,best.T2));
-            if(t1UsaExt) av.push('  → Lado 1: coluna a '+best.T1+'mm + ext200 = '+(best.T1+EXT)+'mm cobertura');
-            if(t2UsaExt) av.push('  → Lado 2: coluna a '+best.T2+'mm + ext200 = '+(best.T2+EXT)+'mm cobertura');
+            // Afunilamento: se a LINHA passou do firme, a coluna recua pela extensão
+            function infoExt(T, terr, muroV) {
+                if (!terr || (muroV||0) <= 0) return { ext: 0, col: T };
+                const firmMax = terr + muroV - CLR_DZ;
+                if (T <= firmMax + 1) return { ext: 0, col: T };
+                const ext = extSizeLinha(T);
+                return { ext, col: T - ext };
+            }
+            const ie1 = infoExt(best.T1, terr1, muro1);
+            const ie2 = infoExt(best.T2, terr2, muro2);
+            if (ie1.ext > 0) av.push('📌 Lado 1: terreno afunila → coluna firme a '+ie1.col+'mm + extensão '+ie1.ext+'mm = linha '+best.T1+'mm');
+            if (ie2.ext > 0) av.push('📌 Lado 2: terreno afunila → coluna firme a '+ie2.col+'mm + extensão '+ie2.ext+'mm = linha '+best.T2+'mm');
+            if(t1UsaExt) av.push('  → Lado 1: coluna a '+best.T1+'mm + ext'+EXT1+' = '+(best.T1+EXT1)+'mm cobertura');
+            if(t2UsaExt) av.push('  → Lado 2: coluna a '+best.T2+'mm + ext'+EXT2+' = '+(best.T2+EXT2)+'mm cobertura');
+            const t1ExtFinal = t1UsaExt ? EXT1 : ie1.ext;
+            const t2ExtFinal = t2UsaExt ? EXT2 : ie2.ext;
             const ordSpans = ordenarEsquinasSpan(spans, P1.plat, P2.plat);
             // Bug #13: garantir TODAS as peças <1800 nas pontas
             const finalSpans = garantirPequenasNasPontas(ordSpans);
             return{spans:finalSpans,t1:best.T1,t2:best.T2,plat1:P1.plat,plat2:P2.plat,plat:Pmin.plat,
-                   tot:baseFixa+best.T1+best.T2,avisos:av,t1Ext:t1UsaExt?EXT:0,t2Ext:t2UsaExt?EXT:0};
+                   tot:baseFixa+best.T1+best.T2,avisos:av,t1Ext:t1ExtFinal,t2Ext:t2ExtFinal,
+                   t1Col:ie1.col,t2Col:ie2.col};
         }
 
         function atualizarVisualL() {
@@ -2372,16 +2421,30 @@
             const bVertTop  = isCutAtTop ? beirais.seg2     : beirais.sulnorte;
 
             // ══ PASSO 1: Retângulo base ════════════════════════════════════
-            // Horizontal cheio
-            const resHoriz = calcSpan(mSulNorte, kiso, tOesteDisp, tLesteDisp, 0, beirais.oeste, beirais.leste);
+            // Horizontal cheio — passa terreno SEM muro + muro p/ proibir zona morta
+            const tOesteBare = Math.min(tV('L7'), tV('L8'));
+            const tLesteBare = Math.min(tV('L3'), tV('L4'));
+            const mOesteV    = mVL('L7','L8');
+            const mLesteV    = mVL('L3','L4');
+            const resHoriz = calcSpan(mSulNorte, kiso, tOesteDisp, tLesteDisp, 0, beirais.oeste, beirais.leste,
+                                      tOesteBare, mOesteV, tLesteBare, mLesteV);
             const T_oeste_fixed = resHoriz.t1;
             const T_leste_fixed = resHoriz.t2;
             const T_fvs = isWestFull ? T_oeste_fixed : T_leste_fixed; // T do lado cheio vert
             const T_pvs = isWestFull ? T_leste_fixed : T_oeste_fixed; // T do lado partido vert
             const spansH_tot = resHoriz.spans.reduce((s,v)=>s+v,0);
 
-            // Vertical cheio total
-            const resVert = calcSpan(mFullVert, kiso, tVertBase, tVertTop, 0, bVertBase, bVertTop);
+            // Vertical cheio total — passa terreno SEM muro + muro p/ proibir zona morta
+            const tCheioBare = Math.min(tV('L1'), tV('L2'));
+            const tFarBare   = Math.min(tV('L11'), tV('L12'));
+            const mCheioV    = mVL('L1','L2');
+            const mFarV      = mVL('L11','L12');
+            const tVBaseBare = isCutAtTop ? tCheioBare : tFarBare;
+            const mVBaseV    = isCutAtTop ? mCheioV    : mFarV;
+            const tVTopBare  = isCutAtTop ? tFarBare   : tCheioBare;
+            const mVTopV     = isCutAtTop ? mFarV      : mCheioV;
+            const resVert = calcSpan(mFullVert, kiso, tVertBase, tVertTop, 0, bVertBase, bVertTop,
+                                     tVBaseBare, mVBaseV, tVTopBare, mVTopV);
             const T_base_fixed = resVert.t1;
             const T_top_fixed  = resVert.t2;
             const spansV_tot   = resVert.spans.reduce((s,v)=>s+v,0);
@@ -2405,6 +2468,21 @@
                 const ptIds = ['L13','L15','L19','L23','L27','L31'];
                 return tP[ptIds[d-1]] ? (tP[ptIds[d-1]].terreno + (mML[ptIds[d-1]]||0)) : tPartV;
             }
+            // Terreno SEM muro + muro das faces internas (para proibir zona morta)
+            function tInnerV_bm(d) {
+                if (d===0) return { bare: (isWestFull ? tLesteBare : tOesteBare), muro: (isWestFull ? mLesteV : mOesteV) };
+                const ptIds = ['L14','L16','L20','L24','L28','L32'];
+                const id = ptIds[d-1];
+                return tP[id] ? { bare: tP[id].terreno, muro: (mML[id]||0) }
+                              : { bare: (isWestFull ? tLesteBare : tOesteBare), muro: (isWestFull ? mLesteV : mOesteV) };
+            }
+            function tInnerH_bm(d) {
+                if (d===0) return { bare: Math.min(tV('L5'), tV('L6')), muro: mVL('L5','L6') };
+                const ptIds = ['L13','L15','L19','L23','L27','L31'];
+                const id = ptIds[d-1];
+                return tP[id] ? { bare: tP[id].terreno, muro: (mML[id]||0) }
+                              : { bare: Math.min(tV('L5'), tV('L6')), muro: mVL('L5','L6') };
+            }
 
             // Medidas de cada degrau
             // Para n=1: usa mLeste (vert) e mSeg1 (horiz) exatamente como declarado
@@ -2427,14 +2505,16 @@
                 // Vertical deste degrau: mStepV + kiso_d + T_outerV + T_innerV
                 // kiso_d: 1º degrau é externo; degraus internos são paredes internas
                 const tInnV = tInnerV_for(d);
+                const innVbm = tInnerV_bm(d);
                 const bInnV = d===0 ? beirais.inner : 0;
                 let resStepV;
                 if (d===0) {
-                    resStepV = calcSpan(mStepV, kiso_d, T_outerV+70, tInnV, 0, bVertBase, bInnV);
+                    resStepV = calcSpan(mStepV, kiso_d, T_outerV+70, tInnV, 0, bVertBase, bInnV,
+                                        0, 0, innVbm.bare, innVbm.muro);
                     // Forçar t1 = T_outerV passando T_outerV+70 como t1_disp
                 } else {
                     // Parede interna: sem kiso, usa calcSpanInterno (T_outerV fixo)
-                    resStepV = calcSpanInterno(mStepV, T_outerV, tInnV, bInnV);
+                    resStepV = calcSpanInterno(mStepV, T_outerV, tInnV, bInnV, innVbm.bare, innVbm.muro);
                 }
                 const T_innerV = resStepV.t2;
                 const spansThisV = resStepV.spans.reduce((s,v)=>s+v,0);
@@ -2442,8 +2522,9 @@
 
                 // Horizontal deste degrau: mStepH + T_outerH (interno, sem kiso)
                 const tInnH = tInnerH_for(d);
+                const innHbm = tInnerH_bm(d);
                 const bInnH = d===0 ? beirais.seg1 : 0;
-                const resStepH = calcSpanInterno(mStepH, T_outerH, tInnH, bInnH);
+                const resStepH = calcSpanInterno(mStepH, T_outerH, tInnH, bInnH, innHbm.bare, innHbm.muro);
                 const T_innerH = resStepH.t2;
                 const spansThisH = resStepH.spans.reduce((s,v)=>s+v,0);
                 const spansRemH  = spansSegPrev - spansThisH;
@@ -2957,12 +3038,21 @@
         // ── calcSpanInterno: paredes internas (sem kiso) ─────────────────
         // Fórmula: medida + T_outer_fixo = spans + T_inner
         // T_outer é FIXO (do retângulo base). Enumera combos para achar T_inner.
-        function calcSpanInterno(medida, T_outer_fixo, t_inner_disp, beiral_inner) {
+        function calcSpanInterno(medida, T_outer_fixo, t_inner_disp, beiral_inner, terr_inner, muro_inner) {
             var total = medida + T_outer_fixo;
             var T_max = Math.min(t_inner_disp - 70,
                                  (beiral_inner||0) > 780 ? 9999 : 920);
             var T_min = Math.max(250, (beiral_inner||0) > 0 ? (beiral_inner+50) : 0);
             T_min = Math.max(250, T_min);
+            // Zona morta: coluna interna deve estar no chão (≤terr-70) ou firme no muro
+            function tValidoInt(T) {
+                if (!terr_inner || (muro_inner||0) <= 0) return true;
+                const chaoMax = terr_inner - 70;
+                const muroMax = terr_inner + muro_inner - 70;
+                if (T <= chaoMax + 1) return true;               // no chão
+                if (T >= terr_inner - 1 && T <= muroMax + 1) return true; // firme no muro
+                return false;                                     // zona morta
+            }
             var av = [];
             if (T_max < T_min) {
                 av.push('⚠️ Sem solução interna. T_max='+T_max+'<T_min='+T_min);
@@ -3003,6 +3093,7 @@
                     if(sp < spMin || sp > spMax) continue;
                     var T_inner = total - sp;
                     if(T_inner < T_min || T_inner > T_max) continue;
+                    if(!tValidoInt(T_inner)) continue; // rejeitar zona morta
                     var pen = PPEN[getPlatform(T_inner).plat];
                     if(pen===undefined) pen=1000;
                     // Bug #13: penalizar peças pequenas (<700) ilhadas no meio
@@ -3179,10 +3270,23 @@
             var tG=Math.min(tV('T13'),tV('T14'))  + mV2('T13','T14');
             var tH=Math.min(tV('T15'),tV('T16'))  + mV2('T15','T16');
 
+            // Terreno SEM muro + muro de cada lado (para proibir zona morta)
+            function tBareT(a,b){return Math.min(tV(a),tV(b));}
+            var tA_b=tBareT('T1','T2'),  mA=mV2('T1','T2');
+            var tB_b=tBareT('T3','T4'),  mB=mV2('T3','T4');
+            var tC_b=tBareT('T5','T6'),  mC=mV2('T5','T6');
+            var tD_b=tBareT('T7','T8'),  mD=mV2('T7','T8');
+            var tE_b=tBareT('T9','T10'), mE=mV2('T9','T10');
+            var tF_b=tBareT('T11','T12'),mF=mV2('T11','T12');
+            var tG_b=tBareT('T13','T14'),mG=mV2('T13','T14');
+            var tH_b=tBareT('T15','T16'),mH=mV2('T15','T16');
+            // Lado limitante (menor terreno+muro) para colunas de canto
+            function efTM(ba,ma,bb,mb){return (ba+ma)<=(bb+mb)?{b:ba,m:ma}:{b:bb,m:mb};}
+
             // ══ PASSO 1: Retângulo base ═══════════════════════════════════
             // A (lado longo, externo): perpendiculares = H(esq) e B(dir)
             // spans_A = A + kiso + T_H + T_B
-            var resA = calcSpan(m[0], kiso, tH, tB, 0, b[7], b[1]);
+            var resA = calcSpan(m[0], kiso, tH, tB, 0, b[7], b[1], tH_b, mH, tB_b, mB);
             var T_H = resA.t1;  // FIXO — T do lado H/esq (NORTE perp)
             var T_B = resA.t2;  // FIXO — T do lado B/dir (SUL perp)
             var spansA_tot = resA.spans.reduce(function(s,v){return s+v;},0);
@@ -3196,7 +3300,7 @@
             // O lado perpendicular "outer" do B+D usa o mesmo tH que A (mesma face física)
             // spans_BD = (B+D) + kiso + T_H + T_E
             // BD: T_H é FIXO do retângulo base → forçar T1=T_H no resultado
-            var resBD = calcSpan(m[1]+m[3], kiso, tH, tE, 0, b[0], b[4]);
+            var resBD = calcSpan(m[1]+m[3], kiso, tH, tE, 0, b[0], b[4], tH_b, mH, tE_b, mE);
             if (resBD.spans.length > 0) {
                 resBD.t1 = T_H;
                 resBD.plat1 = getPlatform(T_H).plat;
@@ -3210,8 +3314,9 @@
             // T_H fixo, encontrar T_C dentro de tC
             // T_C = coluna do canto dir — constrangida por L-DIR(tC) E EXT-DIR(tD)
             var tC_efetivo = Math.min(tC, tD);
+            var efC = efTM(tC_b, mC, tD_b, mD); // canto dir: lado limitante
             // B usa MESMO lateral do A → T_H é FIXO (do retângulo base)
-            var resB = calcSpan(m[1], kiso, tH, tC_efetivo, 0, b[0], b[2]);
+            var resB = calcSpan(m[1], kiso, tH, tC_efetivo, 0, b[0], b[2], tH_b, mH, efC.b, efC.m);
             // Forçar T1=T_H exato (evita discrepância por snap10)
             if (resB.spans.length > 0) {
                 resB.t1 = T_H;
@@ -3247,7 +3352,7 @@
             // Fórmula: C + T_B = spans_C + T_inner
             // T_inner da L-DIR = coluna do canto direito
             // constrangida por tC (L-DIR) e tD (EXT-DIR) — mesma coluna física
-            var resC = calcSpanInterno(m[2], T_B, tC_efetivo, b[2]);
+            var resC = calcSpanInterno(m[2], T_B, tC_efetivo, b[2], efC.b, efC.m);
             var T_inner = resC.t2;  // FIXO — T interno do canto (880 no exemplo)
 
             // ══ PASSO 5: E (externo, kiso) ════════════════════════════════
@@ -3256,7 +3361,8 @@
             // Forçar t1 = T_inner passando T_inner+70 como t1_disp
             // T_F = coluna do canto esq — constrangida por EXT-ESQ(tF) E L-ESQ(tG)
             var tF_efetivo = Math.min(tF, tG);
-            var resE = calcSpan(m[4], kiso, T_inner+70, tF_efetivo, 0, b[2], b[5]);
+            var efF = efTM(tF_b, mF, tG_b, mG); // canto esq: lado limitante
+            var resE = calcSpan(m[4], kiso, T_inner+70, tF_efetivo, 0, b[2], b[5], 0, 0, efF.b, efF.m);
             var T_F = resE.t2;
             var spansE_tot = resE.spans.reduce(function(s,v){return s+v;},0);
 
@@ -3639,24 +3745,22 @@
         // label1/label2: nomes para mensagens de erro
         function calcSpans(medida, kiso, t1_terreno, t2_terreno, muro1, muro2, beiral1, beiral2, label1, label2) {
             const avisos = [];
-            const CLR = 70; // folga fixa parede → coluna
+            const CLR = 70; // folga fixa da borda (chão ou muro) → coluna
 
             const T1_max = t1_terreno - CLR + (muro1 || 0);
             const T2_max = t2_terreno - CLR + (muro2 || 0);
             const T1_min = Math.max(250, beiral1 > 0 ? beiral1 + 50 : 0);
             const T2_min = Math.max(250, beiral2 > 0 ? beiral2 + 50 : 0);
 
-            // Extensão 200mm: permite colocar a coluna mais longe da parede
-            // A peça de extensão alcança 200mm ALÉM da coluna em direção à parede
-            // Efeito: reduz T_min em 200mm (plataforma ainda cobre o beiral)
-            // Extensão: coluna fica mais perto da parede, extensão cobre a diferença
-            // Sem ext: coluna em T ≤ T_max = terreno-CLR, cobertura = T
-            // Com ext 200: coluna em T, extensão alcança +200mm → cobertura = T+200
-            //   Para caber: T + 200 ≤ terreno → T ≤ terreno - 200
-            //   Para cobrir beiral: T + 200 ≥ T_min → T ≥ T_min - 200
+            // Extensão 200mm na esquina:
+            // Sem ext: coluna em T ≤ terreno - CLR (70mm folga obrigatória)
+            // Com ext: extensão cobre a folga → coluna pode ir até o terreno completo
+            //          Cobertura total = T + 200 (extensão vai 200mm em direção à parede)
+            //          T ≤ terreno (sem descontar CLR — a extensão cobre essa margem)
+            //          T + 200 ≥ T_min → T ≥ T_min - 200
             const EXT = 200;
-            const T1_maxExt = t1_terreno - EXT; // coluna + ext deve caber no terreno
-            const T2_maxExt = t2_terreno - EXT;
+            const T1_maxExt = t1_terreno + (muro1 || 0); // terreno completo com extensão
+            const T2_maxExt = t2_terreno + (muro2 || 0);
             const T1_minExt = Math.max(50, T1_min - EXT);
             const T2_minExt = Math.max(50, T2_min - EXT);
             // Ext necessária: T_max normal insuficiente mas T_maxExt >= T_minExt
@@ -3664,8 +3768,16 @@
             const t2UsaExt = T2_max < T2_min && T2_maxExt >= T2_minExt;
             if (t1UsaExt) avisos.push(`⚠️ ${label1}: terreno apertado (${t1_terreno}mm) — requer extensão 200mm`);
             if (t2UsaExt) avisos.push(`⚠️ ${label2}: terreno apertado (${t2_terreno}mm) — requer extensão 200mm`);
-            const T1_minFinal = t1UsaExt ? T1_minExt : T1_min;
-            const T2_minFinal = t2UsaExt ? T2_minExt : T2_min;
+
+            // Quando usa muro: base da coluna deve estar firmemente sobre o muro
+            // Mínimo: terreno + (muro - CLR) — folga CLR também da borda interna do muro
+            // Isso garante que a base não fique na borda (flutuando entre chão e muro)
+            const t1UsaMuro = !t1UsaExt && (muro1 || 0) > 0 && T1_max < T1_min;
+            const t2UsaMuro = !t2UsaExt && (muro2 || 0) > 0 && T2_max < T2_min;
+            const T1_minMuro = t1UsaMuro ? (t1_terreno + ((muro1 || 0) - CLR)) : 0;
+            const T2_minMuro = t2UsaMuro ? (t2_terreno + ((muro2 || 0) - CLR)) : 0;
+            const T1_minFinal = Math.max(t1UsaExt ? T1_minExt : T1_min, T1_minMuro);
+            const T2_minFinal = Math.max(t2UsaExt ? T2_minExt : T2_min, T2_minMuro);
             // Cap em 920mm (W máximo) quando não há beiral grande que justifique WS/WW
             const wCapR1 = beiral1 > 780 ? 9999 : 920;
             const wCapR2 = beiral2 > 780 ? 9999 : 920;
@@ -3727,6 +3839,16 @@
                         }
                         return v;
                     }
+                    // v4.31: posição válida da coluna = no chão (≤ terreno-CLR)
+                    // OU firme no muro (= terreno+muro-CLR). Nunca na zona morta entre os dois.
+                    function tValido(T, terreno, muro) {
+                        if ((muro || 0) <= 0) return true; // sem muro → sem zona morta
+                        const chaoMax = terreno - CLR;
+                        const muroMax = terreno + muro - CLR;
+                        if (T <= chaoMax + 1) return true;              // no chão
+                        if (T >= terreno - 1 && T <= muroMax + 1) return true; // firme no muro (faixa)
+                        return false;                                    // zona morta
+                    }
                     function tryDist(t1raw) {
                         let T1r = Math.min(T1_maxFinal, Math.max(T1_minFinal, t1raw));
                         let T2r = eNec - T1r;
@@ -3739,7 +3861,8 @@
                                       base-10, base+10, base-20, base+20];
                         for (var i=0;i<opcoes.length;i++) {
                             var t1 = opcoes[i]; var t2 = eNec - t1;
-                            if (t1>=T1_minFinal && t1<=T1_maxFinal && t2>=T2_minFinal && t2<=T2_maxFinal) {
+                            if (t1>=T1_minFinal && t1<=T1_maxFinal && t2>=T2_minFinal && t2<=T2_maxFinal
+                                && tValido(t1, t1_terreno, muro1) && tValido(t2, t2_terreno, muro2)) {
                                 return {T1: t1, T2: t2};
                             }
                         }
@@ -3749,9 +3872,16 @@
                     // Isso garante que o algoritmo encontre redistribuições ótimas
                     const fracT1 = T1_maxFinal / (T1_maxFinal + T2_maxFinal);
                     const platBounds = [250, 450, 550, 580, 780, 850, 920];
+                    // Posições no muro e no chão-máximo de cada lado (candidatos explícitos)
+                    const muroPos1 = (muro1||0) > 0 ? (t1_terreno + muro1 - CLR) : T1_maxFinal;
+                    const muroPos2 = (muro2||0) > 0 ? (t2_terreno + muro2 - CLR) : T2_maxFinal;
+                    const chaoMax1 = t1_terreno - CLR;
+                    const chaoMax2 = t2_terreno - CLR;
                     const t1Cands = [
                         Math.round(eNec * fracT1),
                         T1_maxFinal, T1_minFinal,
+                        muroPos1, eNec - muroPos2,   // coluna no muro (lado 1 ou lado 2)
+                        chaoMax1, eNec - chaoMax2,    // coluna no chão-máximo
                         ...platBounds,                    // T1 exatamente em cada limite
                         ...platBounds.map(b => eNec - b) // T2 exatamente em cada limite
                     ];
@@ -4259,31 +4389,19 @@
                         ctx.lineTo(logW, calib.p3.y*z);
                         ctx.strokeStyle='#27ae60'; ctx.lineWidth=1; ctx.setLineDash([8,5]); ctx.stroke(); ctx.setLineDash([]);
                     }
-                    // Desenhar pins C1, C2, C3 (calhas e cume do telhado com 2 inclinações)
+                    // Pins C1, C2, C3 (calhas e cume do telhado com 2 inclinações)
                     if (calib.pc1) desenharPin(ctx, calib.pc1.x*z + paddingLeft, calib.pc1.y*z, 'C1', '#9b59b6');
                     if (calib.pc2) desenharPin(ctx, calib.pc2.x*z + paddingLeft, calib.pc2.y*z, 'C2', '#9b59b6');
                     if (calib.pc3) desenharPin(ctx, calib.pc3.x*z + paddingLeft, calib.pc3.y*z, 'C3', '#9b59b6');
-                    // Linha roxa conectando C1→C2→C3 (forma do telhado)
-                    if (calib.pc1 && calib.pc2 && calib.pc3) {
+                    // Linha tracejada C1→C2→C3 mostrando inclinação do telhado
+                    if (calib.pc1 && calib.pc2) {
                         ctx.beginPath();
                         ctx.moveTo(calib.pc1.x*z + paddingLeft, calib.pc1.y*z);
                         ctx.lineTo(calib.pc2.x*z + paddingLeft, calib.pc2.y*z);
-                        ctx.lineTo(calib.pc3.x*z + paddingLeft, calib.pc3.y*z);
+                        if (calib.pc3) ctx.lineTo(calib.pc3.x*z + paddingLeft, calib.pc3.y*z);
                         ctx.strokeStyle='#9b59b6'; ctx.lineWidth=2; ctx.setLineDash([8,4]); ctx.stroke(); ctx.setLineDash([]);
                     }
-                    // Draw cume marker if defined
-                    if (tem2InclData[lado] && altCumeData[lado] && calib.p3 && calib.escala) {
-                        var escZ2 = calib.escala * z;
-                        var xCume2 = calib.p1.x*z + paddingLeft + (posCumeData[lado]||0) * escZ2;
-                        var yCume2 = calib.p3.y*z - altCumeData[lado] * escZ2;
-                        desenharPin(ctx, xCume2, yCume2, '🏔', '#8e44ad');
-                        // Dashed lines from P1→cume→P2
-                        ctx.beginPath();
-                        ctx.moveTo(calib.p1.x*z + paddingLeft, calib.p1.y*z);
-                        ctx.lineTo(xCume2, yCume2);
-                        ctx.lineTo(calib.p2.x*z + paddingLeft, calib.p2.y*z);
-                        ctx.strokeStyle='#8e44ad'; ctx.lineWidth=1.5; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
-                    }
+                    // (v4.30: pin 🏔 e linhas P1→cume→P2 removidos — método antigo)
                 }
                 if (calibrado && resultadosCalc[lado]) {
                     desenharLinhasNoCanvas(lado);
@@ -5087,8 +5205,11 @@
 
             // ── Plataforma deste lado — usa res.plat ou tFace se disponível ──
             const platColors = { WW:'#8e44ad', WS:'#8e44ad', 'W⚠️':'#e67e22', W:'#27ae60', S:'#3498db', Sb:'#3498db', M:'#f39c12', C:'#e74c3c', ERRO:'#e74c3c' };
-            // tFace: profundidade do andaime na face (para Formato T)
-            const tFacePlat = res.platFace || null;
+            // tFace: plataforma = LINHA do andaime (tDaFace), não a coluna (tA-70).
+            // Assim a badge bate com o título "T face: Xmm → plat".
+            const tFacePlat = (res.tDaFace != null && res.tDaFace > 0 && typeof getPlatform === 'function')
+                ? getPlatform(res.tDaFace).plat
+                : (res.platFace || null);
             const platLado = {
                 plat: tFacePlat || res.plat || '?',
                 cor: platColors[tFacePlat || res.plat] || '#2c3e50'
@@ -5332,6 +5453,11 @@
                     // 200 e 300: sem badge de plataforma
                     if (spanMm < 400) continue;
 
+                    // Acima da linha do TELHADO não há plataforma → sem badge.
+                    // (telhado inclinado: a linha do telhado varia ao longo da face)
+                    const yRoofMid = yCalhaEmX(xMid);
+                    if (yL < yRoofMid - 10) continue; // badge acima do telhado → pula
+
                     // v4.17: cada linha usa platDestaLinha (= face plat, exceto
                     // a última linha de face W em parteDaCalha que vira S)
                     const pf = platFinal(platDestaLinha, spanMm, altSecao);
@@ -5344,13 +5470,19 @@
                 // ext1 = lado T1 (esquerdo), ext2 = lado T2 (direito)
                 if (ext1mm > 0) {
                     const xExtMid = xPrim - ext1mm * escZ / 2;
-                    const ep = platFinal(platDestaLinha, 200, altSecao); // ext=200mm
-                    if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
+                    const yRoofExt1 = yCalhaEmX(spanCols[0]);
+                    if (yL >= yRoofExt1 - 10) {
+                        const ep = platFinal(platDestaLinha, 200, altSecao);
+                        if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
+                    }
                 }
                 if (ext2mm > 0) {
                     const xExtMid = xUlt + ext2mm * escZ / 2;
-                    const ep = platFinal(platDestaLinha, 200, altSecao);
-                    if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
+                    const yRoofExt2 = yCalhaEmX(spanCols[spanCols.length - 1]);
+                    if (yL >= yRoofExt2 - 10) {
+                        const ep = platFinal(platDestaLinha, 200, altSecao);
+                        if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
+                    }
                 }
             }
 
@@ -5498,7 +5630,7 @@
             // v4.29: cada coluna usa SEU OWN altGCmm (não mais por span).
             if (gcPorColuna.length > 0) {
                 ctx.save();
-                var rCirc = 11;
+                var rCirc = 8;
                 var BASELINE = 7200;
 
                 // Decompõe altura em kobus por peça (greedy maior primeiro)
@@ -5520,7 +5652,7 @@
 
                 function desenharCirculoKobu(x, y, texto, cor) {
                     // Largura do círculo cresce um pouco se texto for longo
-                    var rUse = Math.max(rCirc, 4 + 3 * texto.length);
+                    var rUse = Math.max(rCirc, 3 + 2.2 * texto.length);
                     ctx.beginPath();
                     ctx.arc(x, y, rUse, 0, Math.PI * 2);
                     ctx.fillStyle = cor;
@@ -5528,7 +5660,7 @@
                     ctx.strokeStyle = 'rgba(255,255,255,0.8)';
                     ctx.lineWidth = 1;
                     ctx.stroke();
-                    ctx.font = 'bold 9px Arial';
+                    ctx.font = 'bold 8px Arial';
                     ctx.fillStyle = 'white';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
@@ -5539,21 +5671,32 @@
                 for (var ci3 = 0; ci3 < gcPorColuna.length; ci3++) {
                     var col = gcPorColuna[ci3];
                     var xCol = col.x;
-                    var yGCCol = col.yGC;
-                    var altMm = col.altGCmm; // v4.29: usa direto
                     var isFirst = (ci3 === 0);
                     var isLast  = (ci3 === gcPorColuna.length - 1);
+                    // Telhado inclinado: a peça horizontal do GC entre col ci e ci+1 fica
+                    // na altura MAIS ALTA das duas (mantém 900 acima do telhado em ambas).
+                    // O degrau de subida fica na coluna da ESQUERDA → ela mostra o valor
+                    // JÁ SUBIDO (o mais alto do trecho à direita).
+                    var nextC  = (!isLast) ? gcPorColuna[ci3 + 1] : null;
+                    var altMm  = nextC ? Math.max(col.altGCmm, nextC.altGCmm) : col.altGCmm;
+                    var yGCCol = nextC ? Math.min(col.yGC, nextC.yGC) : col.yGC;
 
                     var txt = '';
                     if (altMm >= BASELINE) {
                         var nKobus = Math.round((altMm - BASELINE) / 450);
-                        if (nKobus <= 0) continue; // v4.29: defensivo — nunca negativo
+                        if (nKobus <= 0) continue; // baseline exato → sem label (implícito)
                         txt = String(nKobus);
                     } else if (altMm > 0) {
-                        // Coluna baixa — mostra composição em kobus
+                        // Coluna baixa — mostra composição em kobus, somando os termos
+                        // depois do primeiro: [8,2,1] → "8+3", [8,4,1] → "8+5"
                         var kobus = decomporKobus(altMm);
                         if (kobus.length === 0) continue;
-                        txt = kobus.join('+');
+                        if (kobus.length === 1) {
+                            txt = String(kobus[0]);
+                        } else {
+                            var resto = kobus.slice(1).reduce(function(a,b){return a+b;}, 0);
+                            txt = kobus[0] + '+' + resto;
+                        }
                     } else {
                         continue; // altura inválida (≤0) → não marca
                     }
