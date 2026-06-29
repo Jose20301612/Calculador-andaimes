@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.31 - Linha/coluna+extensão; plat face=linha; kobu degrau na col esquerda; sem W acima do telhado</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.37 - Empena: tipo misto pela saída do telhado (canto estreita: tDaFace−beiral)</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1872,14 +1872,14 @@
                 pontos: {
                     L1:  [310,140,'Sul 南左'],   L2:  [310,320,'Sul 南右'],
                     L3:  [110,390,'Leste 東上'],  L4:  [230,390,'Leste 東下'],
-                    L5:  [175,170,'N-Dir 北右'],  L6:  [175,105,'N-Dir 北左'],
+                    L5:  [175,170,'N-Esq 北右'],  L6:  [175,105,'N-Esq 北左'],
                     L9:  [75, 210,'Inner 内上'],  L10: [130,210,'Inner 内下'],
-                    L11: [30, 245,'N-Esq 北左'],  L12: [30, 345,'N-Esq 北右'],
+                    L11: [30, 245,'N-Dir 北左'],  L12: [30, 345,'N-Dir 北右'],
                     L7:  [205,80, 'Oeste 西下'],  L8:  [275,80, 'Oeste 西上'],
                 },
                 svgLabels: {
                     'lblL-s-oeste':'OESTE 西','lblL-s-sul':'SUL 南','lblL-s-leste':'LESTE 東',
-                    'lblL-s-ndir':'N-DIR 北右','lblL-s-nesq':'N-ESQ 北左','lblL-s-inner':'INNER'
+                    'lblL-s-ndir':'N-ESQ 北左','lblL-s-nesq':'N-DIR 北右','lblL-s-inner':'INNER'
                 },
                 svgPos: {
                     'lblL-s-oeste':[42,248],'lblL-s-sul':[235,340],'lblL-s-leste':[420,175],
@@ -1887,7 +1887,7 @@
                     'lblL-oeste':[42,290],'lblL-sul':[235,326],'lblL-leste':[418,200],
                     'lblL-ndir':[140,190],'lblL-nesq':[315,28],'lblL-inner':[198,130]
                 },
-                campos: { oeste:'OESTE 西', sul:'SUL 南', leste:'LESTE 東', seg1:'N-DIR 北右', inner:'INNER 内', seg2:'N-ESQ 北左' },
+                campos: { oeste:'OESTE 西', sul:'SUL 南', leste:'LESTE 東', seg1:'N-ESQ 北左', inner:'INNER 内', seg2:'N-DIR 北右' },
                 ladoPontos: { L1:'sul',L2:'sul',L3:'leste',L4:'leste',L5:'ndir',L6:'ndir',L9:'inner',L10:'inner',L11:'nesq',L12:'nesq',L7:'oeste',L8:'oeste' }
             },
             // SE: corte no canto inf-direito
@@ -1922,14 +1922,14 @@
                 pontos: {
                     L1:  [30, 150,'Norte 北左'],  L2:  [30, 310,'Norte 北右'],
                     L3:  [100,390,'Leste 東上'],  L4:  [220,390,'Leste 東下'],
-                    L5:  [175,160,'S-Dir 南右'],  L6:  [175,100,'S-Dir 南左'],
+                    L5:  [175,160,'S-Esq 南右'],  L6:  [175,100,'S-Esq 南左'],
                     L9:  [225,210,'Inner 内上'],  L10: [275,210,'Inner 内下'],
-                    L11: [310,250,'S-Esq 南右'],  L12: [310,345,'S-Esq 南左'],
+                    L11: [310,250,'S-Dir 南左'],  L12: [310,345,'S-Dir 南右'],
                     L7:  [90, 80, 'Oeste 西上'],  L8:  [155,80, 'Oeste 西下'],
                 },
                 svgLabels: {
-                    'lblL-s-oeste':'OESTE 西','lblL-s-sul':'S-ESQ 南左','lblL-s-leste':'LESTE 東',
-                    'lblL-s-ndir':'NORTE 北','lblL-s-nesq':'S-DIR 南右','lblL-s-inner':'INNER'
+                    'lblL-s-oeste':'OESTE 西','lblL-s-sul':'S-DIR 南右','lblL-s-leste':'LESTE 東',
+                    'lblL-s-ndir':'NORTE 北','lblL-s-nesq':'S-ESQ 南左','lblL-s-inner':'INNER'
                 },
                 svgPos: {
                     'lblL-s-oeste':[42,248],'lblL-s-sul':[300,340],'lblL-s-leste':[420,175],
@@ -1937,7 +1937,7 @@
                     'lblL-oeste':[42,290],'lblL-sul':[300,326],'lblL-leste':[418,200],
                     'lblL-ndir':[235,28],'lblL-nesq':[140,326],'lblL-inner':[198,248]
                 },
-                campos: { oeste:'OESTE 西', sul:'NORTE 北', leste:'LESTE 東', seg1:'S-DIR 南右', inner:'INNER 内', seg2:'S-ESQ 南左' },
+                campos: { oeste:'OESTE 西', sul:'NORTE 北', leste:'LESTE 東', seg1:'S-ESQ 南左', inner:'INNER 内', seg2:'S-DIR 南右' },
                 ladoPontos: { L1:'norte',L2:'norte',L3:'leste',L4:'leste',L5:'ndir',L6:'ndir',L9:'inner',L10:'inner',L11:'nesq',L12:'nesq',L7:'oeste',L8:'oeste' }
             }
         };
@@ -5323,24 +5323,43 @@
                 linhasValidas.push({ offsetMm, yL });
             }
 
-            // ── Linhas extras acima da calha para cobrir até o cume ──────
-            // Com 2 inclinações: parede sobe da calha até o cume
-            // Adicionar linhas a cada 1800mm acima da calha
+            // ── Reforço na empena (face com cume) ────────────────────────
+            // A linha principal está 1800 abaixo da calha. O triângulo do
+            // telhado (calha→cume) passa de 1800 acima dela, então reforça:
+            //   H = altura do cume acima da calha (altura do triângulo)
+            //   Caso A (H≥800): fileira a +1800 acima da principal (= nível da calha)
+            //   Caso B (H<800): linha AZUL a +450 acima da principal, só spans do meio
             const linhasAcimaDaCalha = [];
+            let linhaAzulEmpena = null; // {yL, xIni, xFim} (Caso B)
+            const degrausEmpena = [];   // {yL, xIni, xFim} (H>1800, parte central)
             if (parteDaCalha && tem2Incl && altCumePx > 0) {
                 const altCalhaRefMm = (oy - yCalhaRef) / escZ;
-                const distCalha2Cume = altCumeMm - altCalhaRefMm;
-                if (distCalha2Cume > 100) {
-                    // Adiciona linhas a cada 1800mm acima da calha, até cobrir o cume
-                    // Última linha deve estar a ≤ 1800mm do cume (pode ser um pouco acima)
-                    for (let offMm = 1800; offMm < distCalha2Cume + 1800; offMm += 1800) {
-                        const yExtra = yCalhaRef - offMm * escZ;
-                        const altExtra = altCalhaRefMm + offMm;
-                        // Só adiciona se estiver abaixo ou até o cume (não acima do cume)
-                        if (altExtra <= altCumeMm + 50) {
-                            linhasAcimaDaCalha.push({ offsetMm: -offMm, yL: yExtra });
+                const H = altCumeMm - altCalhaRefMm;
+                if (H >= 800) {
+                    // Caso A: fileira no nível da calha (base do triângulo)
+                    linhasAcimaDaCalha.push({ offsetMm: 0, yL: yCalhaRef, empena: true });
+                    // H>1800: degraus a cada 1800 acima da calha, só na parte central
+                    // (spans onde o telhado fica acima do degrau = parte distante)
+                    for (let k = 1; 1800 * k < H; k++) {
+                        const A_k  = 1800 * k;                 // mm acima da calha
+                        const yRow = yCalhaRef - A_k * escZ;
+                        let xL = null, xR = null;
+                        for (let si = 0; si < spanCols.length - 1; si++) {
+                            const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
+                            const altR = (oy - yCalhaEmX(xMid)) / escZ - altCalhaRefMm;
+                            if (altR > A_k) { if (xL === null) xL = spanCols[si]; xR = spanCols[si + 1]; }
+                        }
+                        if (xL !== null && xR !== null && xR > xL) {
+                            degrausEmpena.push({ yL: yRow, xIni: xL, xFim: xR });
                         }
                     }
+                } else if (H > 50) {
+                    // Caso B: linha azul a 450 acima da principal (= calha + 1350)
+                    const yAzul = yCalhaRef + 1350 * escZ;
+                    const nC = spanCols.length;
+                    const xIni = nC > 2 ? spanCols[1]      : spanCols[0];
+                    const xFim = nC > 2 ? spanCols[nC - 2] : spanCols[nC - 1];
+                    linhaAzulEmpena = { yL: yAzul, xIni, xFim };
                 }
             }
             const todasLinhas = [...linhasAcimaDaCalha.reverse(), ...linhasValidas];
@@ -5354,6 +5373,21 @@
                 ctx.stroke();
             });
             ctx.setLineDash([]);
+
+            // ── Linha AZUL da empena (Caso B): degrau a +450 da principal ──
+            if (linhaAzulEmpena) {
+                ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3; ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(linhaAzulEmpena.xIni, linhaAzulEmpena.yL);
+                ctx.lineTo(linhaAzulEmpena.xFim, linhaAzulEmpena.yL);
+                ctx.stroke();
+            }
+
+            // Rebaixar plataforma um nível pra reforço da empena: S→C, W→S
+            function rebaixarPlat(p) {
+                const mapa = { WW:'WS', WS:'W', W:'S', 'W⚠️':'S', S:'C', Sb:'C', M:'C', C:'C' };
+                return mapa[p] || 'C';
+            }
 
             // ── Badges de plataforma em cada célula ───────────────────────
             const platCoresMap = {WW:'#6c3483',WS:'#6c3483','W⚠️':'#e67e22',W:'#27ae60',
@@ -5398,18 +5432,8 @@
                     ? 'SS' : finalPlat;
                 return { plat: finalPlat, label };
             }
-            // ── Cap da última linha (parteDaCalha=true) só vale para face W ──
-            // v4.17: Regra esclarecida:
-            //   • Face W + telhado>300: linhas de cima W, ÚLTIMA linha = S
-            //   • Face S + telhado>300: TODAS as linhas S (não aplica cap)
-            //   • Sem telhado>300: nada muda
-            //
-            // O cap da última linha é FIXO em S (não desce para Sb/M/C, mesmo
-            // que altSecao seja muito curta) — esses casos extremos exigem
-            // decisão manual.
-            const _idxPlatLado = platOrder.indexOf(platLado.plat);
-            const _idxW = platOrder.indexOf('W');
-            const aplicarCapUltimaLinha = (_idxPlatLado >= _idxW);
+            // (v4.34) Removido o cap "última linha = S": a badge de cada linha
+            // segue sempre a plataforma do face (platLado.plat).
 
             // Badge para spans do MEIO (não usado diretamente, platFinal usado direto)
             function badgeParaSecao(spanSizeMm, altMm) {
@@ -5430,18 +5454,19 @@
                     continue; // pula badges desta linha — só a linha vermelha
                 }
 
-                // Plataforma desta linha (parte do face plat, com cap em S na
-                // última linha quando aplicarCapUltimaLinha=true)
+                // Plataforma desta linha = plataforma do face.
+                // A ÚLTIMA linha (resto da divisão, perto do GL) usa a altura
+                // REAL da seção até o GL: se < 1800 a plataforma cai pelo
+                // heightCapSection (ex.: 900 do GL → S, tanto se W quanto S),
+                // porque a 900 do GL só cabe S (espaço pra trabalhar).
+                // As demais linhas têm seção cheia de 1800 → seguem o face.
                 let platDestaLinha = platLado.plat;
                 let altSecao = 1800;
-                if (parteDaCalha && offsetMm >= 0
-                    && li === todasLinhas.length - 1
-                    && aplicarCapUltimaLinha) {
-                    // Face W + última linha → fica S (cap fixo)
-                    platDestaLinha = 'S';
+                if (li === todasLinhas.length - 1) {
+                    altSecao = distLinhaAoGLmm; // seção real do último andar até o GL
                 }
-                // Para qualquer outro caso, mantém platLado.plat e altSecao=1800
-                // (sem heightCapSection mexer na plataforma)
+                // Esta é a fileira de reforço da empena (no nível da calha)?
+                const ehEmpenaCalha = todasLinhas[li].empena === true;
 
                 const { plat: bpMid, cor: bcMid } = badgeParaSecao(altSecao);
 
@@ -5458,9 +5483,22 @@
                     const yRoofMid = yCalhaEmX(xMid);
                     if (yL < yRoofMid - 10) continue; // badge acima do telhado → pula
 
-                    // v4.17: cada linha usa platDestaLinha (= face plat, exceto
-                    // a última linha de face W em parteDaCalha que vira S)
-                    const pf = platFinal(platDestaLinha, spanMm, altSecao);
+                    // Tipo desta badge = tipo do face. EXCEÇÃO: na fileira da
+                    // empena, onde o telhado fica BAIXO (perto da fileira, nos
+                    // cantos), o beiral que sai estreita o espaço:
+                    //   disponível = tDaFace − beiral  (ex.: 590−300=290 → C)
+                    // No meio (telhado alto acima da fileira) sobra o espaço
+                    // cheio → mantém o tipo do lateral.
+                    let platSpan = platDestaLinha;
+                    if (ehEmpenaCalha && (beiralLado || 0) > 0 && (res.tDaFace || 0) > 0) {
+                        const roofH = (yL - yRoofMid) / escZ; // telhado acima da fileira (mm)
+                        if (roofH <= 900) {
+                            const disp = (res.tDaFace || 0) - beiralLado;
+                            platSpan = getPlatform(Math.max(0, disp)).plat;
+                        }
+                    }
+
+                    const pf = platFinal(platSpan, spanMm, altSecao);
                     if (pf) {
                         drawPlatBadge(pf.label, xMid, yL, platCoresMap[pf.plat] || bcMid);
                     }
@@ -5484,6 +5522,37 @@
                         if (ep) drawPlatBadge(ep.label + '+ext', xExtMid, yL, platCoresMap[ep.plat] || '#e67e22');
                     }
                 }
+            }
+
+            // ── Badges da linha AZUL da empena (Caso B): plataforma rebaixada ──
+            // S→C, W→S (um nível abaixo do lateral), só nos spans do meio
+            if (linhaAzulEmpena) {
+                const platAzul = rebaixarPlat(platLado.plat);
+                for (let si = 1; si < spanCols.length - 2; si++) {
+                    const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
+                    const spanMm = Math.round((spanCols[si + 1] - spanCols[si]) / escZ);
+                    const pf = platFinal(platAzul, spanMm, 1300);
+                    if (pf) drawPlatBadge(pf.label, xMid, linhaAzulEmpena.yL, platCoresMap[pf.plat] || '#2980b9');
+                }
+            }
+
+            // ── Degraus da empena (H>1800): plataforma menor na parte central ──
+            if (degrausEmpena.length > 0) {
+                const platDeg = rebaixarPlat(platLado.plat);
+                degrausEmpena.forEach(function(dg) {
+                    // linha do degrau (azul, só na faixa central)
+                    ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2.5; ctx.setLineDash([]);
+                    ctx.beginPath(); ctx.moveTo(dg.xIni, dg.yL); ctx.lineTo(dg.xFim, dg.yL); ctx.stroke();
+                    // badges nos spans cobertos pelo degrau
+                    for (let si = 0; si < spanCols.length - 1; si++) {
+                        const xa = spanCols[si], xb = spanCols[si + 1];
+                        const xMid = (xa + xb) / 2;
+                        if (xMid < dg.xIni - 1 || xMid > dg.xFim + 1) continue;
+                        const spanMm = Math.round((xb - xa) / escZ);
+                        const pf = platFinal(platDeg, spanMm, 1300);
+                        if (pf) drawPlatBadge(pf.label, xMid, dg.yL, platCoresMap[pf.plat] || '#2980b9');
+                    }
+                });
             }
 
             ctx.setLineDash([]);
