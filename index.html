@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.37 - Empena: tipo misto pela saída do telhado (canto estreita: tDaFace−beiral)</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.54 - Degrau clicável antes do GL; pino DIV no rodapé; verticais até o topo; reforço da empena por zona</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1273,13 +1273,14 @@
                 </div>
 
                 <!-- Controles de zoom -->
-                <div id="zoom-controls" style="display:none; display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
-                    <span style="font-size:13px; font-weight:600; color:#2c3e50;">🔍 Zoom:</span>
-                    <button onclick="ajustarZoom(-0.25)" style="background:#34495e; color:white; padding:8px 14px; border:none; border-radius:6px; font-size:18px; font-weight:700; width:auto; line-height:1;">−</button>
-                    <span id="zoom-label" style="font-size:13px; font-weight:700; min-width:42px; text-align:center;">1×</span>
-                    <button onclick="ajustarZoom(+0.25)" style="background:#34495e; color:white; padding:8px 14px; border:none; border-radius:6px; font-size:18px; font-weight:700; width:auto; line-height:1;">+</button>
-                    <button onclick="resetZoom()" style="background:#7f8c8d; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:12px; font-weight:600; width:auto;">Reset</button>
-                    <span style="font-size:11px; color:#888;">Pinch também funciona no iPhone</span>
+                <div id="zoom-controls" style="display:none; display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                    <span style="font-size:12px; font-weight:600; color:#2c3e50;">🔍</span>
+                    <button onclick="ajustarZoom(-0.25)" style="background:#34495e; color:white; padding:6px 11px; border:none; border-radius:6px; font-size:16px; font-weight:700; width:auto; line-height:1;">−</button>
+                    <span id="zoom-label" style="font-size:12px; font-weight:700; min-width:34px; text-align:center;">1×</span>
+                    <button onclick="ajustarZoom(+0.25)" style="background:#34495e; color:white; padding:6px 11px; border:none; border-radius:6px; font-size:16px; font-weight:700; width:auto; line-height:1;">+</button>
+                    <button onclick="resetZoom()" style="background:#7f8c8d; color:white; padding:6px 9px; border:none; border-radius:6px; font-size:11px; font-weight:600; width:auto;">Reset</button>
+                    <button id="btn-2incl" onclick="abrirPergunta2Incl()" style="background:#8e44ad; color:white; padding:6px 9px; border:none; border-radius:6px; font-size:11px; font-weight:600; width:auto;">⛰️ 2 incl.</button>
+                    <button id="btn-degrau" onclick="abrirDegrau()" style="background:#16a085; color:white; padding:6px 9px; border:none; border-radius:6px; font-size:11px; font-weight:600; width:auto;">🪜 Degrau</button>
                 </div>
 
                 <!-- Canvas da foto -->
@@ -1680,6 +1681,13 @@
             altCumeData = {};
             posCumeData = {};
             tem2InclData = {};
+            temDegrauData = {}; degrauXmm = {}; d1Xmm = {}; d4Xmm = {};
+            calhaAltaDiv = {}; calhaBaixaP1 = {}; calhaBaixaP2 = {};
+            degrauAltoDir = {}; degrauCumeAlta = {}; degrauCumeBaixa = {};
+            degrauCalhaEsq = {}; degrauCalhaDir = {};
+            degrauEsqPts = {}; degrauDirPts = {};
+            degrauCumeEsq = {}; degrauCumeDir = {};
+            beiralAltoData = {}; beiralBaixoData = {};
             beiralLadoData = {};
             beiraisCalc = null;
             medidasCalc = null;
@@ -4301,6 +4309,72 @@
         let altCumeData  = {};      // altura do cume (2 inclinações)
         let posCumeData  = {};      // posição do cume em mm desde P1
         let tem2InclData = {};      // booleano por lado
+        // ── Degrau alto/baixo (casa com alturas diferentes) ──────────────
+        // Cada zona é uma "mini-face": calha alta à esquerda do divisor,
+        // calha baixa à direita. yCalhaEmX usa a reta de cada zona.
+        let temDegrauData  = {};    // booleano por lado (face partida em alto/baixo)
+        let degrauXmm      = {};    // posição do divisor em mm desde P1 (parede esq)
+        let d1Xmm          = {};    // x do D1 (ponta esq alta) em mm desde P1
+        let d4Xmm          = {};    // x do D4 (ponta dir baixa) em mm desde P1
+        let calhaAltaDiv   = {};    // altura da calha ALTA no divisor (D2, mm)
+        let degrauAltoDir  = {};    // true = parte alta à DIREITA do divisor
+        let degrauCumeAlta = {};    // parte alta tem cume (2 inclinações)
+        let degrauCumeBaixa= {};    // parte baixa tem cume (2 inclinações)
+        let degrauCalhaEsq = {};    // calha (mm) do lado ESQUERDO do divisor (reta)
+        let degrauCalhaDir = {};    // calha (mm) do lado DIREITO do divisor (reta)
+        let degrauEsqPts   = {};    // parte esquerda: 2 pontos [{xmm,hmm},{xmm,hmm}]
+        let degrauDirPts   = {};    // parte direita: 2 pontos [{xmm,hmm},{xmm,hmm}]
+        let degrauCumeEsq  = {};    // parte esquerda tem cume
+        let degrauCumeDir  = {};    // parte direita tem cume
+
+        // Tela única de perguntas do degrau (alta dir/esq + cume por parte)
+        function mostrarPerguntasDegrau() {
+            var ov = document.getElementById('modal-degrau');
+            if (!ov) {
+                ov = document.createElement('div');
+                ov.id = 'modal-degrau';
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+                ov.innerHTML =
+                    '<div style="background:#fff;padding:20px;border-radius:12px;max-width:330px;width:90%;font-family:sans-serif;">'
+                    + '<h3 style="margin:0 0 12px;">🪜 Degrau + cume</h3>'
+                    + '<p style="margin:6px 0;font-weight:600;">Qual parte tem cume (2 inclinações)?</p>'
+                    + '<label style="display:block;margin:6px 0;"><input type="checkbox" id="dg-cume-esq"> Parte ESQUERDA tem cume</label>'
+                    + '<label style="display:block;margin:6px 0;"><input type="checkbox" id="dg-cume-dir"> Parte DIREITA tem cume</label>'
+                    + '<p style="margin:12px 0 0;font-size:11px;color:#888;">Parte com cume: marca C1 (esq)→C2 (pico)→C3 (dir). Parte sem cume: marca 2 pontos (as calhas). Sempre esquerda primeiro.</p>'
+                    + '<button onclick="confirmarPerguntasDegrau()" style="margin-top:14px;width:100%;background:#16a085;color:#fff;border:none;padding:11px;border-radius:8px;font-weight:700;font-size:15px;">Continuar →</button>'
+                    + '</div>';
+                document.body.appendChild(ov);
+            }
+            ov.style.display = 'flex';
+        }
+        function confirmarPerguntasDegrau() {
+            degrauCumeEsq[ladoAtual]  = document.getElementById('dg-cume-esq').checked;
+            degrauCumeDir[ladoAtual]  = document.getElementById('dg-cume-dir').checked;
+            var ov = document.getElementById('modal-degrau'); if (ov) ov.style.display = 'none';
+            iniciarCapturaParteDegrau('esq'); // esquerda primeiro
+        }
+        function iniciarCapturaParteDegrau(parte) {
+            const calib = calibData[ladoAtual];
+            calib._parteAtual = parte;
+            const temCume = parte === 'esq' ? degrauCumeEsq[ladoAtual] : degrauCumeDir[ladoAtual];
+            const nome = parte === 'esq' ? 'ESQUERDA' : 'DIREITA';
+            if (temCume) {
+                calib.pc1 = calib.pc2 = calib.pc3 = null;
+                calib.estado = 'aguardando_c1';
+                mostrarStatusCalib('📍 Parte ' + nome + ' (cume): marque a <strong>CALHA ESQUERDA (C1)</strong>');
+                atualizarBadges('aguardando_c1');
+            } else {
+                calib.estado = parte === 'esq' ? 'aguardando_desq1' : 'aguardando_ddir1';
+                mostrarStatusCalib('📍 Parte ' + nome + ': marque a calha na <strong>PONTA EXTERNA</strong><br><span style="font-size:11px;color:#16a085;">Depois a calha no divisor (linha roxa confere se está reto)</span>');
+                atualizarBadges('aguardando_p1');
+            }
+            ativarCalibCanvas(ladoAtual);
+            redrawCanvas(ladoAtual);
+        }
+        let calhaBaixaP1   = {};    // altura da calha baixa no divisor (D3, mm)
+        let calhaBaixaP2   = {};    // altura da calha baixa na ponta direita (mm)
+        let beiralAltoData = {};    // beiral da parte alta (mm)
+        let beiralBaixoData= {};    // beiral da parte baixa (mm)
         let beiralLadoData   = {};
         // zoom como fator de escala do canvas (resize real)
         let zoomAtual = 1.0;
@@ -4402,6 +4476,30 @@
                         ctx.strokeStyle='#9b59b6'; ctx.lineWidth=2; ctx.setLineDash([8,4]); ctx.stroke(); ctx.setLineDash([]);
                     }
                     // (v4.30: pin 🏔 e linhas P1→cume→P2 removidos — método antigo)
+
+                    // Pino do DIVISOR (degrau alto/baixo) + linha vertical
+                    if (calib.pdiv) {
+                        const xdv = calib.pdiv.x*z + paddingLeft;
+                        // linha vertical do divisor (guia)
+                        ctx.beginPath(); ctx.moveTo(xdv, 0); ctx.lineTo(xdv, logH || (canvas ? canvas.height : 2000));
+                        ctx.strokeStyle='#16a085'; ctx.lineWidth=1.5; ctx.setLineDash([6,4]); ctx.stroke(); ctx.setLineDash([]);
+                        // bolinha embaixo, perto do GL (não tampa os pontos de cima)
+                        if (calib.estado !== 'calibrado') {
+                            const yGLpin = (calib.p3 ? calib.p3.y*z : calib.pdiv.y*z);
+                            desenharPin(ctx, xdv, yGLpin, 'DIV', '#16a085');
+                        }
+                    }
+                    // Pontos das partes do degrau (2 por parte) + LINHA PONTILHADA ROXA
+                    function _pinPt(p, txt) { if (p) desenharPin(ctx, p.x*z + paddingLeft, p.y*z, txt, '#8e44ad'); }
+                    function _linhaRoxa(a, b) {
+                        if (!a || !b) return;
+                        ctx.beginPath();
+                        ctx.moveTo(a.x*z + paddingLeft, a.y*z);
+                        ctx.lineTo(b.x*z + paddingLeft, b.y*z);
+                        ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 2; ctx.setLineDash([8,4]); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                    _pinPt(calib.pdesq1, 'E1'); _pinPt(calib.pdesq2, 'E2'); _linhaRoxa(calib.pdesq1, calib.pdesq2);
+                    _pinPt(calib.pddir1, 'D1'); _pinPt(calib.pddir2, 'D2'); _linhaRoxa(calib.pddir1, calib.pddir2);
                 }
                 if (calibrado && resultadosCalc[lado]) {
                     desenharLinhasNoCanvas(lado);
@@ -4506,6 +4604,126 @@
         // ── Modal pergunta 2 inclinações ───────────────────────────────
         var _ladoAguardandoResposta = null;
 
+        // Botão "⛰️ 2 incl." (ao lado do Zoom): abre a mesma pergunta de antes,
+        // mas só quando o usuário clica (não pergunta mais sozinho em cada foto).
+        // Mostra quais modos estão ligados nesta face (feedback visual)
+        function atualizarBotoesModo() {
+            var b2 = document.getElementById('btn-2incl');
+            var bd = document.getElementById('btn-degrau');
+            var t2 = !!(ladoAtual && tem2InclData[ladoAtual]);
+            var td = !!(ladoAtual && temDegrauData[ladoAtual]);
+            if (b2) { b2.style.boxShadow = t2 ? '0 0 0 3px #f39c12' : 'none';
+                      b2.textContent = t2 ? '⛰️ 2 incl. ✓' : '⛰️ 2 incl.'; }
+            if (bd) { bd.style.boxShadow = td ? '0 0 0 3px #f39c12' : 'none';
+                      bd.textContent = td ? '🪜 Degrau ✓' : '🪜 Degrau'; }
+        }
+
+        function abrirPergunta2Incl() {
+            if (!ladoAtual) { alert('Selecione um lado (aba) primeiro.'); return; }
+            const calib = calibData[ladoAtual];
+            // Desligar se já estava ligado
+            if (tem2InclData[ladoAtual]) {
+                tem2InclData[ladoAtual] = false;
+                atualizarBotoesModo();
+                return;
+            }
+            var jaDesenhou = document.getElementById('acoes-foto').style.display !== 'none';
+            if (jaDesenhou) {
+                if (!confirm('Isso vai recomeçar a calibração desta face. Continuar?')) return;
+                limparPontosCalib();
+            }
+            tem2InclData[ladoAtual] = true; // liga a intenção "tem cume"
+            atualizarBotoesModo();
+            const temBase = calib && calib.escala && calib.p1 && calib.p2 && calib.p3;
+            if (!temBase) {
+                alert('Marque P1, P2 e GL primeiro. A marcação da inclinação começa depois de calibrar.');
+                return;
+            }
+            // Se o DEGRAU não está ligado, marca o cume da FACE inteira (C1/C2/C3).
+            // Se o degrau está ligado, o cume será marcado por parte (no fluxo do degrau).
+            if (!temDegrauData[ladoAtual]) {
+                calib.estado = 'aguardando_c1';
+                calib.pc1 = calib.pc2 = calib.pc3 = null;
+                document.getElementById('acoes-foto').style.display = 'none';
+                var bl = document.getElementById('btn-limpar-pontos'); if (bl) bl.style.display = 'inline-block';
+                mostrarStatusCalib('📍 Marque a <strong>CALHA ESQUERDA (C1)</strong> → pico (C2) → direita (C3)');
+                atualizarBadges('aguardando_c1');
+                ativarCalibCanvas(ladoAtual);
+                redrawCanvas(ladoAtual);
+            } else {
+                alert('Modo cume ligado. Agora clique em "Degrau" para marcar o divisor e as partes.');
+            }
+        }
+
+        // Botão "🪜 Degrau" — casa com alturas diferentes. Se "2 incl." estiver
+        // ligado, as partes podem ter cume; senão, cada parte é 2 pontos.
+        function abrirDegrau() {
+            if (!ladoAtual) { alert('Selecione um lado (aba) primeiro.'); return; }
+            const calib = calibData[ladoAtual];
+            if (temDegrauData[ladoAtual] && (!calib || calib.estado === 'calibrado')) {
+                // desligar
+                temDegrauData[ladoAtual] = false;
+                degrauEsqPts[ladoAtual] = degrauDirPts[ladoAtual] = null;
+                atualizarBotoesModo();
+                redrawCanvas(ladoAtual);
+                return;
+            }
+            var jaDesenhou = document.getElementById('acoes-foto').style.display !== 'none';
+            if (jaDesenhou) {
+                if (!confirm('Isso vai recomeçar a calibração desta face. Continuar?')) return;
+                limparPontosCalib();
+            }
+            // Pode clicar ANTES de calibrar: fica pendente e arranca sozinho
+            // assim que o GL for confirmado (evita esquecer de clicar depois).
+            temDegrauData[ladoAtual] = true;
+            atualizarBotoesModo();
+            if (!calib || !calib.escala || !calib.p1 || !calib.p2 || !calib.p3) {
+                mostrarStatusCalib('🪜 Degrau ligado — marque P1, P2 e GL. Depois o programa pede o DIVISOR.');
+                return;
+            }
+            calib.estado = 'aguardando_div';
+            calib.pdiv = null;
+            calib.pdesq1 = calib.pdesq2 = calib.pddir1 = calib.pddir2 = null;
+            degrauEsqPts[ladoAtual] = degrauDirPts[ladoAtual] = null;
+            document.getElementById('acoes-foto').style.display = 'none';
+            var bl = document.getElementById('btn-limpar-pontos'); if (bl) bl.style.display = 'inline-block';
+            mostrarStatusCalib('📍 Marque o <strong>DIVISOR</strong> — a parede entre o 1º e o 2º andar<br><span style="font-size:11px; color:#16a085;">Onde a casa muda de altura</span>');
+            atualizarBadges('aguardando_div');
+            ativarCalibCanvas(ladoAtual);
+            redrawCanvas(ladoAtual);
+        }
+
+        // Finaliza o degrau (caso sem cume nas duas partes = reta+reta).
+        // Calha ALTA vem da altura digitada (campo alturaCalha); calha BAIXA
+        // vem do Y do pino DIVISOR (topo da parede do 1º andar).
+        function finalizarDegrau() {
+            const calib = calibData[ladoAtual];
+            if (!calib) return;
+            temDegrauData[ladoAtual] = true;
+            // fallback: se alguma parte não tem pontos nem cume, usa altura digitada
+            const escZ = calib.escala;
+            const xDivMm = degrauXmm[ladoAtual] || 0;
+            const xPontaEsqMm = Math.round((calib.p1.x - calib.p1.x)/escZ); // 0 (parede esq)
+            const altDig = parseInt(document.getElementById('alturaCalha').value) || calib._altDiv || 0;
+            if (!degrauEsqPts[ladoAtual] && !degrauCumeEsq[ladoAtual]) {
+                degrauEsqPts[ladoAtual] = [{xmm:0, hmm:altDig}, {xmm:xDivMm, hmm:altDig}];
+            }
+            if (!degrauDirPts[ladoAtual] && !degrauCumeDir[ladoAtual]) {
+                const altB = calib._altDiv || altDig;
+                degrauDirPts[ladoAtual] = [{xmm:xDivMm, hmm:altB}, {xmm:xDivMm+3000, hmm:altB}];
+            }
+            calib.estado = 'calibrado';
+            calib.zoomAtCalib = zoomAtual;
+            calib._parteAtual = null;
+            removerListenerCalib(document.getElementById('fotoCanvas'));
+            document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+            document.getElementById('status-calib').style.display = 'none';
+            document.getElementById('acoes-foto').style.display = 'grid';
+            atualizarBadges('calibrado');
+            atualizarStatusEscala(ladoAtual);
+            redrawCanvas(ladoAtual);
+        }
+
         function mostrarModal2Inclinacoes(lado) {
             console.log('[mostrarModal2Inclinacoes] lado=' + lado);
             const nomesFull = { sul:'SUL 南 (Minami)', norte:'NORTE 北 (Kita)', leste:'LESTE 東 (Higashi)', oeste:'OESTE 西 (Nishi)' };
@@ -4554,14 +4772,12 @@
                 }
             });
             
-            // Perguntar sobre 2 inclinações se ainda não respondeu (independente de ter foto)
-            console.log('[abrirAba] verificando: tem2InclData[' + lado + '] === undefined ? ' + (tem2InclData[lado] === undefined));
+            // (v4.43) A pergunta de 2 inclinações virou BOTÃO — não pergunta
+            // mais sozinha. Default: sem 2 inclinações. O usuário liga pelo
+            // botão "⛰️ 2 incl." ao lado do Zoom quando a face tiver cume.
             if (tem2InclData[lado] === undefined) {
-                console.log('[abrirAba] -> CHAMANDO mostrarModal2Inclinacoes para ' + lado);
-                mostrarModal2Inclinacoes(lado);
-                return; // modal vai chamar continuarAbrirAba() depois da resposta
+                tem2InclData[lado] = false;
             }
-            console.log('[abrirAba] -> Pergunta JÁ respondida (' + tem2InclData[lado] + '), continuando direto');
             continuarAbrirAba(lado);
         }
 
@@ -4582,6 +4798,7 @@
             const ld = labDir[lado]||{p1:'P1',p2:'P2'};
             const elP1 = document.getElementById('labelP1lado'); if(elP1) elP1.textContent='('+ld.p1+')';
             const elP2 = document.getElementById('labelP2lado'); if(elP2) elP2.textContent='('+ld.p2+')';
+            atualizarBotoesModo(); // reflete 2incl/degrau ligados nesta face
 
             if (fotosData[lado]) {
                 document.getElementById('btn-trocar-foto').style.display = 'block';
@@ -4864,6 +5081,37 @@
                     document.getElementById('hint-confirmar').textContent = 'Ajuste C3 (calha direita) → confirme aqui';
                     document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
                     atualizarBadges('confirmando_c3');
+
+                } else if (estado === 'aguardando_div' || estado === 'confirmando_div') {
+                    calib.pdiv = pos; calib.estado = 'confirmando_div'; redrawCanvas(lado);
+                    document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar DIVISOR';
+                    document.getElementById('hint-confirmar').textContent = 'Divisor = parede entre 1º e 2º andar';
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                    atualizarBadges('confirmando_div');
+                } else if (estado === 'aguardando_desq1' || estado === 'confirmando_desq1') {
+                    calib.pdesq1 = pos; calib.estado = 'confirmando_desq1'; redrawCanvas(lado);
+                    document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar ponto';
+                    document.getElementById('hint-confirmar').textContent = 'Parte esquerda: calha na PONTA EXTERNA';
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                    atualizarBadges('confirmando_p1');
+                } else if (estado === 'aguardando_desq2' || estado === 'confirmando_desq2') {
+                    calib.pdesq2 = pos; calib.estado = 'confirmando_desq2'; redrawCanvas(lado);
+                    document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar ponto';
+                    document.getElementById('hint-confirmar').textContent = 'Parte esquerda: calha no DIVISOR';
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                    atualizarBadges('confirmando_p2');
+                } else if (estado === 'aguardando_ddir1' || estado === 'confirmando_ddir1') {
+                    calib.pddir1 = pos; calib.estado = 'confirmando_ddir1'; redrawCanvas(lado);
+                    document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar ponto';
+                    document.getElementById('hint-confirmar').textContent = 'Parte direita: calha no DIVISOR';
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                    atualizarBadges('confirmando_p1');
+                } else if (estado === 'aguardando_ddir2' || estado === 'confirmando_ddir2') {
+                    calib.pddir2 = pos; calib.estado = 'confirmando_ddir2'; redrawCanvas(lado);
+                    document.getElementById('btn-confirmar-ponto').textContent = '✓ Confirmar ponto';
+                    document.getElementById('hint-confirmar').textContent = 'Parte direita: calha na PONTA EXTERNA';
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'block';
+                    atualizarBadges('confirmando_p2');
                 }
             }
 
@@ -4894,6 +5142,16 @@
                 atualizarBadges('aguardando_medida');
 
             } else if (calib.estado === 'confirmando_p3') {
+                // Degrau pendente → começa pelo DIVISOR (ele decide as partes;
+                // se 2incl também estiver ligado, o cume é marcado por parte)
+                if (temDegrauData[ladoAtual]) {
+                    calib.estado = 'aguardando_div';
+                    calib.pdiv = null;
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                    mostrarStatusCalib('📍 Marque o <strong>DIVISOR</strong> — a parede entre o 1º e o 2º andar');
+                    atualizarBadges('aguardando_div');
+                    return;
+                }
                 // Se tem 2 inclinações, vai para C1 ao invés de finalizar
                 if (tem2InclData[ladoAtual]) {
                     calib.estado = 'aguardando_c1';
@@ -4942,6 +5200,27 @@
                 atualizarBadges('aguardando_c3');
             
             } else if (calib.estado === 'confirmando_c3') {
+                // Se estamos marcando o cume de UMA PARTE do degrau, finaliza o
+                // degrau (não a face inteira). A parte com cume usa as calhas
+                // C1/C3 como referência do lado; o cume detalhado dessa parte é
+                // aproximado pela calha (renderização fina do cume-na-zona: TODO).
+                if (calib._parteAtual) {
+                    // Cume de uma PARTE do degrau: guarda os 3 pontos (C1 esq,
+                    // C2 pico, C3 dir) e segue pra próxima parte.
+                    const glY = calib.p3.y, escZ = calib.escala, p1x = calib.p1.x;
+                    const pts = [
+                        { xmm: Math.round((calib.pc1.x - p1x)/escZ), hmm: Math.round((glY - calib.pc1.y)/escZ) },
+                        { xmm: Math.round((calib.pc2.x - p1x)/escZ), hmm: Math.round((glY - calib.pc2.y)/escZ) },
+                        { xmm: Math.round((calib.pc3.x - p1x)/escZ), hmm: Math.round((glY - calib.pc3.y)/escZ) }
+                    ];
+                    if (calib._parteAtual === 'esq') degrauEsqPts[ladoAtual] = pts;
+                    else                             degrauDirPts[ladoAtual] = pts;
+                    const feita = calib._parteAtual;
+                    calib.pc1 = calib.pc2 = calib.pc3 = null;
+                    document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                    proximaParteDegrau(feita);
+                    return;
+                }
                 // C3 confirmado → finalizar calibração e calcular alturas
                 calib.estado = 'calibrado';
                 calib.tipo2Incl = true;
@@ -4977,6 +5256,57 @@
                 atualizarBadges('calibrado');
                 atualizarStatusEscala(ladoAtual);
                 redrawCanvas(ladoAtual);
+
+            } else if (calib.estado === 'confirmando_div') {
+                const escZ = calib.escala;
+                degrauXmm[ladoAtual] = Math.round((calib.pdiv.x - calib.p1.x) / escZ);
+                calib._altDiv = Math.round((calib.p3.y - calib.pdiv.y) / escZ);
+                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                if (tem2InclData[ladoAtual]) {
+                    // tem cume em alguma parte → perguntar qual (tela única)
+                    mostrarPerguntasDegrau();
+                } else {
+                    // sem cume → cada parte é 2 pontos; começa pela esquerda
+                    degrauCumeEsq[ladoAtual] = false;
+                    degrauCumeDir[ladoAtual] = false;
+                    iniciarCapturaParteDegrau('esq');
+                }
+            } else if (calib.estado === 'confirmando_desq1') {
+                calib.estado = 'aguardando_desq2';
+                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                mostrarStatusCalib('📍 Parte esquerda: marque a calha no <strong>DIVISOR</strong>');
+                atualizarBadges('aguardando_p2');
+            } else if (calib.estado === 'confirmando_desq2') {
+                // guarda os 2 pontos da parte esquerda (em mm)
+                const escZ = calib.escala, glY = calib.p3.y, p1x = calib.p1.x;
+                degrauEsqPts[ladoAtual] = [
+                    { xmm: Math.round((calib.pdesq1.x - p1x)/escZ), hmm: Math.round((glY - calib.pdesq1.y)/escZ) },
+                    { xmm: Math.round((calib.pdesq2.x - p1x)/escZ), hmm: Math.round((glY - calib.pdesq2.y)/escZ) }
+                ];
+                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                proximaParteDegrau('esq'); // vai pra parte direita
+            } else if (calib.estado === 'confirmando_ddir1') {
+                calib.estado = 'aguardando_ddir2';
+                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                mostrarStatusCalib('📍 Parte direita: marque a calha na <strong>PONTA EXTERNA</strong>');
+                atualizarBadges('aguardando_p2');
+            } else if (calib.estado === 'confirmando_ddir2') {
+                const escZ = calib.escala, glY = calib.p3.y, p1x = calib.p1.x;
+                degrauDirPts[ladoAtual] = [
+                    { xmm: Math.round((calib.pddir1.x - p1x)/escZ), hmm: Math.round((glY - calib.pddir1.y)/escZ) },
+                    { xmm: Math.round((calib.pddir2.x - p1x)/escZ), hmm: Math.round((glY - calib.pddir2.y)/escZ) }
+                ];
+                document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
+                proximaParteDegrau('dir'); // finaliza
+            }
+        }
+
+        // Depois de terminar uma parte, vai pra próxima ou finaliza
+        function proximaParteDegrau(parteFeita) {
+            if (parteFeita === 'esq') {
+                iniciarCapturaParteDegrau('dir');
+            } else {
+                finalizarDegrau();
             }
         }
 
@@ -5023,8 +5353,8 @@
             document.getElementById('acoes-foto').style.display = 'none';
             atualizarBadges('aguardando_p1');
             redrawCanvas(ladoAtual);
-            // Disparar a pergunta de 2 inclinações novamente
-            mostrarModal2Inclinacoes(ladoAtual);
+            // (v4.44) Não dispara mais a pergunta sozinho — quem controla é o
+            // botão "⛰️ 2 incl." (ou o botão do degrau).
         }
 
         // ── Desenhar linhas ───────────────────────────────────────────
@@ -5148,17 +5478,51 @@
             // CORRETO: usar a posição da parede P1 (= ox) como base.
             const xCumePx    = tem2Incl && posCumeMm > 0 ? ox + posCumeMm * escZ : (xPrim + xUlt) / 2;
 
+            // ── Degrau alto/baixo ─────────────────────────────────────────
+            // Parte alta: reta (ox, altP1) → (xDiv, altP2 alta).  [zona esquerda]
+            // Parte baixa: reta (xDiv, calhaBaixaP1) → (ox2, calhaBaixaP2). [dir]
+            const temDegrau   = temDegrauData[lado] || false;
+            const degrauMm    = degrauXmm[lado]     || 0;
+            const xDivPx      = temDegrau && degrauMm > 0 ? ox + degrauMm * escZ : 0;
+            const _dEsq       = degrauEsqPts[lado] || null; // parte esq: [{xmm,hmm},{xmm,hmm}]
+            const _dDir       = degrauDirPts[lado] || null; // parte dir
+            // helper: y (px) numa reta de 2 pontos (mm), extrapolando
+            function _reta2(a, b, px) {
+                const xa = ox + a.xmm * escZ, xb = ox + b.xmm * escZ;
+                const ya = oy - a.hmm * escZ, yb = oy - b.hmm * escZ;
+                if (Math.abs(xb - xa) < 0.5) return ya;
+                const frac = (px - xa) / (xb - xa);
+                return ya + (yb - ya) * frac;
+            }
+            function _yRetaPts(pts, px) {
+                // 3 pontos = cume da parte (C1→C2 pico→C3): duas sub-retas,
+                // divididas no x do pico (pts[1]), cada uma extrapolada.
+                if (pts.length >= 3) {
+                    const xPeak = ox + pts[1].xmm * escZ;
+                    return px <= xPeak ? _reta2(pts[0], pts[1], px) : _reta2(pts[1], pts[2], px);
+                }
+                return _reta2(pts[0], pts[1], px);
+            }
+
             // Para verticais: cobrir até o MAIOR entre GC (calha+1100) e beiral (calha+beiral)
-            const maxAltPx = tem2Incl ? Math.max(altP1px, altP2px, altCumePx) : Math.max(altP1px, altP2px);
+            let maxAltPx = tem2Incl ? Math.max(altP1px, altP2px, altCumePx) : Math.max(altP1px, altP2px);
+            if (temDegrau) {
+                // com degrau as alturas vêm dos pontos por parte (não de altP1/P2)
+                let hmax = 0;
+                [degrauEsqPts[lado], degrauDirPts[lado]].forEach(function(pts){
+                    if (pts) pts.forEach(function(p){ if (p.hmm > hmax) hmax = p.hmm; });
+                });
+                if (hmax > 0) maxAltPx = Math.max(maxAltPx, hmax * escZ);
+            }
             const gcOffset = Math.max(1100, beiralLado || 0); // beiral pode ultrapassar GC
             const gcMax    = maxAltPx + gcOffset * escZ;
             const margemY  = Math.min(80 * escZ, logH * 0.08);
             const yTopo    = oy - gcMax - margemY;
 
-            // ── Linhas VERTICAIS (colunas) — chegam até topo do GC ────────
+            // ── Linhas VERTICAIS (colunas) — do GL até o topo do GC ───────
             colPx.forEach(px => {
                 ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
-                ctx.beginPath(); ctx.moveTo(px, oy + 10); ctx.lineTo(px, yTopo); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(px, oy); ctx.lineTo(px, yTopo); ctx.stroke();
             });
 
             // ── Linhas de EXTENSÃO — coluna extra começando na 1ª linha horizontal ──
@@ -5250,26 +5614,50 @@
             // Para telhado inclinado, interpola a altura em cada coluna
             ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.0; ctx.setLineDash([7, 5]);
             const totalPxWidth = xUlt - xPrim; // largura total entre colunas extremas
+            // Paredes: P1 em ox, P2 em ox2 (= última coluna menos T2).
+            // A reta do telhado é definida ENTRE AS PAREDES e PROLONGADA
+            // (extrapolada) até as colunas do andaime (xPrim/xUlt), que ficam
+            // fora das paredes por T1/T2. Antes usava xPrim/xUlt como âncora,
+            // o que mudava a inclinação (o telhado sobe/desce mais na coluna).
+            const ox2 = xUlt - T2 * escZ; // parede direita (P2)
+            // Para 2 inclinações, a reta é definida pelos PINOS C1/C3 (a calha
+            // que o usuário alinhou no desenho), não pela base da parede — o x
+            // do pino pode diferir de ox. Assim a inclinação bate com os 3 C.
+            const _calDraw = calibData[lado] || {};
+            const _zDraw   = (typeof zoomAtual !== 'undefined') ? zoomAtual : 1;
+            const xC1px = (tem2Incl && _calDraw.pc1) ? (_calDraw.pc1.x * _zDraw + paddingLeft) : ox;
+            const xC3px = (tem2Incl && _calDraw.pc3) ? (_calDraw.pc3.x * _zDraw + paddingLeft) : ox2;
             function yCalhaEmX(px) {
+                // ── Degrau alto/baixo: duas retas independentes ───────────
+                if (temDegrau && xDivPx > 0) {
+                    // Cada parte é uma reta de 2 pontos (reta ou 1 inclinação),
+                    // extrapolada até a coluna. Divisor em xDivPx.
+                    if (px <= xDivPx) {
+                        if (_dEsq && _dEsq.length >= 2) return _yRetaPts(_dEsq, px);
+                    } else {
+                        if (_dDir && _dDir.length >= 2) return _yRetaPts(_dDir, px);
+                    }
+                    return oy - (alturaCalha || 0) * escZ; // fallback
+                }
                 if (tem2Incl && altCumePx > 0 && posCumeMm > 0) {
-                    // 2 inclinações: P1→cume (trecho esq) e cume→P2 (trecho dir)
+                    // 2 inclinações: C1(pino)→cume e cume→C3(pino), prolongadas
                     if (px <= xCumePx) {
-                        // Trecho esquerdo: P1 → cume
-                        const w = xCumePx - xPrim;
-                        if (w <= 0) return oy - altP1px;
-                        const frac = (px - xPrim) / w;
+                        const w = xCumePx - xC1px;
+                        if (Math.abs(w) < 0.5) return oy - altP1px;
+                        const frac = (px - xC1px) / w; // <0 ou >1 = extrapola até a coluna
                         return oy - (altP1px + (altCumePx - altP1px) * frac);
                     } else {
-                        // Trecho direito: cume → P2
-                        const w = xUlt - xCumePx;
-                        if (w <= 0) return oy - altP2px;
+                        const w = xC3px - xCumePx;
+                        if (Math.abs(w) < 0.5) return oy - altP2px;
                         const frac = (px - xCumePx) / w;
                         return oy - (altCumePx + (altP2px - altCumePx) * frac);
                     }
                 }
-                // 1 inclinação ou reto
-                if (!inclinado || totalPxWidth <= 0) return oy - altP1px;
-                const frac = (px - xPrim) / totalPxWidth;
+                // 1 inclinação ou reto: reta entre as PAREDES (ox→ox2), prolongada
+                if (!inclinado) return oy - altP1px;
+                const w = ox2 - ox;
+                if (Math.abs(w) < 0.5) return oy - altP1px;
+                const frac = (px - ox) / w; // px fora de [ox,ox2] → extrapola
                 return oy - (altP1px + (altP2px - altP1px) * frac);
             }
             const maxCalha = tem2Incl
@@ -5310,18 +5698,39 @@
                     return oy - offsetMm * escZ;          // sobe do GL
                 }
             }
-            // Linha é válida se estiver entre calha e GL (com margem de 2px)
+            // Linha válida se estiver entre a calha e o GL.
+            // (v4.49) Comparação em MM (não em pixels) → independe do zoom.
+            // Antes usava margem fixa de 2px: perto do limite, uma fileira
+            // entrava/saía conforme o zoom (bug: nº de andares mudava).
+            const calhaLimiteMm = (oy - yCalhaLimite) / escZ; // altura da calha (mm)
             function linhaValida(yL) {
-                return yL > yCalhaLimite + 2 && yL < oy - 2;
+                const hMm = (oy - yL) / escZ; // altura da linha acima do GL (mm)
+                return hMm > 1 && hMm < calhaLimiteMm - 1;
             }
 
-            // ── Coletar linhas horizontais válidas (da calha/GL para baixo/cima) ──
+            // ── Zonas de altura: 1 (normal) ou 2 (degrau alto/baixo) ──────
+            // Cada zona distribui a partir da SUA calha. Sem degrau = 1 zona
+            // de ponta a ponta (comportamento de sempre).
+            const zonas = (temDegrau && xDivPx > 0 && parteDaCalha)
+                ? [
+                    { xIni: xPrim,  xFim: xDivPx, yCalha: Math.min(yCalhaEmX(xPrim),       yCalhaEmX(xDivPx - 0.5)) },
+                    { xIni: xDivPx, xFim: xUlt,   yCalha: Math.min(yCalhaEmX(xDivPx + 0.5), yCalhaEmX(xUlt))       }
+                  ]
+                : [ { xIni: xPrim, xFim: xUlt, yCalha: yCalhaRef } ];
+
+            // ── Coletar linhas horizontais válidas, por zona ──────────────
             const linhasValidas = [];
-            for (let offsetMm = 1800; offsetMm <= 20000; offsetMm += 1800) {
-                const yL = yDeLinha(offsetMm);
-                if (!linhaValida(yL)) break;
-                linhasValidas.push({ offsetMm, yL });
-            }
+            zonas.forEach(function(z) {
+                const linhasZona = [];
+                for (let offsetMm = 1800; offsetMm <= 20000; offsetMm += 1800) {
+                    const yL = parteDaCalha ? (z.yCalha + offsetMm * escZ) : (oy - offsetMm * escZ);
+                    if (!linhaValida(yL)) break;
+                    linhasZona.push({ offsetMm, yL, xIni: z.xIni, xFim: z.xFim });
+                }
+                // última da zona (mais perto do GL) → regra da seção real
+                if (linhasZona.length) linhasZona[linhasZona.length - 1].ultimaDaZona = true;
+                linhasValidas.push.apply(linhasValidas, linhasZona);
+            });
 
             // ── Reforço na empena (face com cume) ────────────────────────
             // A linha principal está 1800 abaixo da calha. O triângulo do
@@ -5330,58 +5739,65 @@
             //   Caso A (H≥800): fileira a +1800 acima da principal (= nível da calha)
             //   Caso B (H<800): linha AZUL a +450 acima da principal, só spans do meio
             const linhasAcimaDaCalha = [];
-            let linhaAzulEmpena = null; // {yL, xIni, xFim} (Caso B)
+            const linhasAzuisEmpena = []; // {yL, xIni, xFim} (Caso B, por zona)
             const degrausEmpena = [];   // {yL, xIni, xFim} (H>1800, parte central)
-            if (parteDaCalha && tem2Incl && altCumePx > 0) {
-                const altCalhaRefMm = (oy - yCalhaRef) / escZ;
-                const H = altCumeMm - altCalhaRefMm;
+            if (parteDaCalha) {
+              zonas.forEach(function(z) {
+                // cume DESTA zona = ponto mais alto do telhado no trecho dela
+                let altCumeZ = 0;
+                const passoZ = Math.max(2, (z.xFim - z.xIni) / 60);
+                for (let xx = z.xIni; xx <= z.xFim; xx += passoZ) {
+                    const h = (oy - yCalhaEmX(xx)) / escZ;
+                    if (h > altCumeZ) altCumeZ = h;
+                }
+                const altCalhaZ = (oy - z.yCalha) / escZ;
+                const H = altCumeZ - altCalhaZ;
+                if (H < 50) return; // sem triângulo (reta/1 inclinação) → sem reforço
                 if (H >= 800) {
-                    // Caso A: fileira no nível da calha (base do triângulo)
-                    linhasAcimaDaCalha.push({ offsetMm: 0, yL: yCalhaRef, empena: true });
-                    // H>1800: degraus a cada 1800 acima da calha, só na parte central
-                    // (spans onde o telhado fica acima do degrau = parte distante)
+                    // Caso A: fileira no nível da calha desta zona
+                    linhasAcimaDaCalha.push({ offsetMm: 0, yL: z.yCalha, empena: true, xIni: z.xIni, xFim: z.xFim });
+                    // H>1800: degraus a cada 1800 acima da calha, na parte central
                     for (let k = 1; 1800 * k < H; k++) {
-                        const A_k  = 1800 * k;                 // mm acima da calha
-                        const yRow = yCalhaRef - A_k * escZ;
+                        const A_k  = 1800 * k;
+                        const yRow = z.yCalha - A_k * escZ;
                         let xL = null, xR = null;
                         for (let si = 0; si < spanCols.length - 1; si++) {
-                            const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
-                            const altR = (oy - yCalhaEmX(xMid)) / escZ - altCalhaRefMm;
-                            if (altR > A_k) { if (xL === null) xL = spanCols[si]; xR = spanCols[si + 1]; }
+                            const xa = spanCols[si], xb = spanCols[si + 1];
+                            const xMid = (xa + xb) / 2;
+                            if (xMid < z.xIni - 1 || xMid > z.xFim + 1) continue;
+                            const altR = (oy - yCalhaEmX(xMid)) / escZ - altCalhaZ;
+                            if (altR > A_k) { if (xL === null) xL = xa; xR = xb; }
                         }
-                        if (xL !== null && xR !== null && xR > xL) {
-                            degrausEmpena.push({ yL: yRow, xIni: xL, xFim: xR });
-                        }
+                        if (xL !== null && xR !== null && xR > xL) degrausEmpena.push({ yL: yRow, xIni: xL, xFim: xR });
                     }
-                } else if (H > 50) {
-                    // Caso B: linha azul a 450 acima da principal (= calha + 1350)
-                    const yAzul = yCalhaRef + 1350 * escZ;
-                    const nC = spanCols.length;
-                    const xIni = nC > 2 ? spanCols[1]      : spanCols[0];
-                    const xFim = nC > 2 ? spanCols[nC - 2] : spanCols[nC - 1];
-                    linhaAzulEmpena = { yL: yAzul, xIni, xFim };
+                } else {
+                    // Caso B: linha azul a 450 acima da principal, spans do meio da zona
+                    const yAzul = z.yCalha + 1350 * escZ;
+                    const cols = spanCols.filter(function(x){ return x >= z.xIni - 1 && x <= z.xFim + 1; });
+                    if (cols.length > 2) linhasAzuisEmpena.push({ yL: yAzul, xIni: cols[1], xFim: cols[cols.length - 2] });
                 }
+              });
             }
             const todasLinhas = [...linhasAcimaDaCalha.reverse(), ...linhasValidas];
 
-            // ── Desenhar as linhas horizontais ────────────────────────────
+            // ── Desenhar as linhas horizontais (por zona) ─────────────────
             ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.0; ctx.setLineDash([7, 5]);
-            todasLinhas.forEach(function({ yL }) {
+            todasLinhas.forEach(function(L) {
                 ctx.beginPath();
-                ctx.moveTo(xPrim, yL);
-                ctx.lineTo(xUlt,  yL);
+                ctx.moveTo(L.xIni != null ? L.xIni : xPrim, L.yL);
+                ctx.lineTo(L.xFim != null ? L.xFim : xUlt,  L.yL);
                 ctx.stroke();
             });
             ctx.setLineDash([]);
 
-            // ── Linha AZUL da empena (Caso B): degrau a +450 da principal ──
-            if (linhaAzulEmpena) {
+            // ── Linhas AZUIS da empena (Caso B): degrau a +450 da principal ──
+            linhasAzuisEmpena.forEach(function(LA) {
                 ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 3; ctx.setLineDash([]);
                 ctx.beginPath();
-                ctx.moveTo(linhaAzulEmpena.xIni, linhaAzulEmpena.yL);
-                ctx.lineTo(linhaAzulEmpena.xFim, linhaAzulEmpena.yL);
+                ctx.moveTo(LA.xIni, LA.yL);
+                ctx.lineTo(LA.xFim, LA.yL);
                 ctx.stroke();
-            }
+            });
 
             // Rebaixar plataforma um nível pra reforço da empena: S→C, W→S
             function rebaixarPlat(p) {
@@ -5444,6 +5860,8 @@
 
             for (let li = 0; li < todasLinhas.length; li++) {
                 const { offsetMm, yL } = todasLinhas[li];
+                const xIniL = todasLinhas[li].xIni != null ? todasLinhas[li].xIni : xPrim;
+                const xFimL = todasLinhas[li].xFim != null ? todasLinhas[li].xFim : xUlt;
 
                 // ── v4.19: linha muito perto do GL → sem plataforma ──────────
                 // Se a distância desta linha até o GL for < 300mm, não marca
@@ -5455,18 +5873,17 @@
                 }
 
                 // Plataforma desta linha = plataforma do face.
-                // A ÚLTIMA linha (resto da divisão, perto do GL) usa a altura
-                // REAL da seção até o GL: se < 1800 a plataforma cai pelo
-                // heightCapSection (ex.: 900 do GL → S, tanto se W quanto S),
-                // porque a 900 do GL só cabe S (espaço pra trabalhar).
-                // As demais linhas têm seção cheia de 1800 → seguem o face.
+                // A ÚLTIMA linha DE CADA ZONA (resto da divisão, perto do GL)
+                // usa a altura REAL da seção até o GL: se < 1800 a plataforma
+                // cai pelo heightCapSection (ex.: 900 do GL → S), porque a 900
+                // do GL só cabe S. As demais têm seção cheia de 1800 → face.
                 let platDestaLinha = platLado.plat;
                 let altSecao = 1800;
-                if (li === todasLinhas.length - 1) {
+                const ehUltimaZona = todasLinhas[li].ultimaDaZona === true
+                                     || li === todasLinhas.length - 1;
+                if (ehUltimaZona) {
                     altSecao = distLinhaAoGLmm; // seção real do último andar até o GL
                 }
-                // Esta é a fileira de reforço da empena (no nível da calha)?
-                const ehEmpenaCalha = todasLinhas[li].empena === true;
 
                 const { plat: bpMid, cor: bcMid } = badgeParaSecao(altSecao);
 
@@ -5475,6 +5892,8 @@
                     const spanMm = spans[si];
                     const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
                     if (xMid < 0 || xMid > logW) continue;
+                    // fora da zona desta linha (degrau alto/baixo) → pula
+                    if (xMid < xIniL - 1 || xMid > xFimL + 1) continue;
                     // 200 e 300: sem badge de plataforma
                     if (spanMm < 400) continue;
 
@@ -5483,18 +5902,20 @@
                     const yRoofMid = yCalhaEmX(xMid);
                     if (yL < yRoofMid - 10) continue; // badge acima do telhado → pula
 
-                    // Tipo desta badge = tipo do face. EXCEÇÃO: na fileira da
-                    // empena, onde o telhado fica BAIXO (perto da fileira, nos
-                    // cantos), o beiral que sai estreita o espaço:
-                    //   disponível = tDaFace − beiral  (ex.: 590−300=290 → C)
-                    // No meio (telhado alto acima da fileira) sobra o espaço
-                    // cheio → mantém o tipo do lateral.
+                    // Tipo desta badge = tipo do face. EXCEÇÃO: onde a fileira
+                    // horizontal encosta no telhado/beiral (telhado perto da
+                    // fileira, pela inclinação que o programa já calcula por
+                    // span), o beiral que sai estreita o espaço:
+                    //   disponível = tDaFace − beiral
+                    // Vale pra empena (cantos) e pra inclinação única (onde o
+                    // telhado cruza cada fileira). Longe do telhado → tipo cheio.
                     let platSpan = platDestaLinha;
-                    if (ehEmpenaCalha && (beiralLado || 0) > 0 && (res.tDaFace || 0) > 0) {
-                        const roofH = (yL - yRoofMid) / escZ; // telhado acima da fileira (mm)
+                    if ((beiralLado || 0) > 0 && (res.tDaFace || 0) > 0) {
+                        const roofH = (yL - yRoofMid) / escZ; // fileira abaixo do telhado (mm)
                         if (roofH <= 900) {
                             const disp = (res.tDaFace || 0) - beiralLado;
-                            platSpan = getPlatform(Math.max(0, disp)).plat;
+                            if (disp < 250) continue; // sobra < 250 → só a linha, sem badge
+                            platSpan = getPlatform(disp).plat;
                         }
                     }
 
@@ -5526,15 +5947,16 @@
 
             // ── Badges da linha AZUL da empena (Caso B): plataforma rebaixada ──
             // S→C, W→S (um nível abaixo do lateral), só nos spans do meio
-            if (linhaAzulEmpena) {
+            linhasAzuisEmpena.forEach(function(LA) {
                 const platAzul = rebaixarPlat(platLado.plat);
-                for (let si = 1; si < spanCols.length - 2; si++) {
+                for (let si = 0; si < spanCols.length - 1; si++) {
                     const xMid = (spanCols[si] + spanCols[si + 1]) / 2;
+                    if (xMid < LA.xIni - 1 || xMid > LA.xFim + 1) continue;
                     const spanMm = Math.round((spanCols[si + 1] - spanCols[si]) / escZ);
                     const pf = platFinal(platAzul, spanMm, 1300);
-                    if (pf) drawPlatBadge(pf.label, xMid, linhaAzulEmpena.yL, platCoresMap[pf.plat] || '#2980b9');
+                    if (pf) drawPlatBadge(pf.label, xMid, LA.yL, platCoresMap[pf.plat] || '#2980b9');
                 }
-            }
+            });
 
             // ── Degraus da empena (H>1800): plataforma menor na parte central ──
             if (degrausEmpena.length > 0) {
@@ -5608,7 +6030,20 @@
             // ── Linha da CALHA (azul) — inclinada se P1≠P2 ───────────────
             ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2.5;
             ctx.beginPath();
-            if (tem2Incl && altCumePx > 0) {
+            if (temDegrau && xDivPx > 0) {
+                // Amostra o yCalhaEmX ao longo da face → pega retas, inclinações
+                // E o pico do cume dentro de cada parte. Degrau vertical no divisor.
+                const passo = Math.max(2, (xUlt - xPrim) / 120);
+                let started = false;
+                for (let xx = xPrim; xx <= xDivPx; xx += passo) {
+                    if (!started) { ctx.moveTo(xx, yCalhaEmX(xx)); started = true; }
+                    else ctx.lineTo(xx, yCalhaEmX(xx));
+                }
+                ctx.lineTo(xDivPx, yCalhaEmX(xDivPx - 0.5)); // fim da parte esquerda
+                ctx.lineTo(xDivPx, yCalhaEmX(xDivPx + 0.5)); // degrau vertical
+                for (let xx = xDivPx; xx <= xUlt; xx += passo) ctx.lineTo(xx, yCalhaEmX(xx));
+                ctx.lineTo(xUlt, yCalhaEmX(xUlt));
+            } else if (tem2Incl && altCumePx > 0) {
                 // Draw 2-segment ridge line: P1→cume→P2
                 ctx.moveTo(xPrim, yCalhaP1);
                 ctx.lineTo(xCumePx, oy - altCumePx);
@@ -5742,13 +6177,17 @@
                     var xCol = col.x;
                     var isFirst = (ci3 === 0);
                     var isLast  = (ci3 === gcPorColuna.length - 1);
-                    // Telhado inclinado: a peça horizontal do GC entre col ci e ci+1 fica
-                    // na altura MAIS ALTA das duas (mantém 900 acima do telhado em ambas).
-                    // O degrau de subida fica na coluna da ESQUERDA → ela mostra o valor
-                    // JÁ SUBIDO (o mais alto do trecho à direita).
-                    var nextC  = (!isLast) ? gcPorColuna[ci3 + 1] : null;
-                    var altMm  = nextC ? Math.max(col.altGCmm, nextC.altGCmm) : col.altGCmm;
-                    var yGCCol = nextC ? Math.min(col.yGC, nextC.yGC) : col.yGC;
+                    // Telhado inclinado: cada coluna precisa alcançar o corrimão
+                    // MAIS ALTO dos dois trechos vizinhos (esquerda e direita),
+                    // porque a peça horizontal do GC entre duas colunas fica na
+                    // altura da mais alta. Olhar os DOIS lados cobre inclinação
+                    // subindo, descendo e empena (sobe+desce) sem inverter.
+                    var prevC  = (!isFirst) ? gcPorColuna[ci3 - 1] : null;
+                    var nextC  = (!isLast)  ? gcPorColuna[ci3 + 1] : null;
+                    var altMm  = col.altGCmm;
+                    var yGCCol = col.yGC;
+                    if (prevC) { altMm = Math.max(altMm, prevC.altGCmm); yGCCol = Math.min(yGCCol, prevC.yGC); }
+                    if (nextC) { altMm = Math.max(altMm, nextC.altGCmm); yGCCol = Math.min(yGCCol, nextC.yGC); }
 
                     var txt = '';
                     if (altMm >= BASELINE) {
@@ -5816,17 +6255,18 @@
             if (res.tDaFace != null && res.tDaFace > 0) {
                 const platDaFace = (typeof getPlatform === 'function')
                     ? getPlatform(res.tDaFace).plat : (res.plat || '?');
-                const txtCentro = 'T face: ' + res.tDaFace + 'mm \u2192 ' + platDaFace;
+                const txtCentro = 'face ' + res.tDaFace + '\u2192' + platDaFace;
                 const xCentro = (xPrim + xUlt) / 2;
                 ctx.save();
-                ctx.font = 'bold 11px Arial';
+                ctx.font = 'bold 9px Arial';
                 ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                // fundo branco para legibilidade
+                // desce um pouco pra não tampar as bolinhas laranjas do topo
+                const yFace = yLT + 12;
                 const tw = ctx.measureText(txtCentro).width;
                 ctx.fillStyle = 'rgba(255,255,255,0.85)';
-                ctx.fillRect(xCentro - tw/2 - 4, yLT - 11, tw + 8, 14);
+                ctx.fillRect(xCentro - tw/2 - 3, yFace - 7, tw + 6, 12);
                 ctx.fillStyle = platCoresMap[platDaFace] || '#2c3e50';
-                ctx.fillText(txtCentro, xCentro, yLT - 4);
+                ctx.fillText(txtCentro, xCentro, yFace);
                 ctx.restore();
             }
 
