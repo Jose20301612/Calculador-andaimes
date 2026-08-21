@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.63 - Pinos P1/P2/GL continuam visíveis após calibrar + aviso quando falta a altura</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.64 - BUGFIX ox2: telhado inclinado (2 alturas) não desenhava nada</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -5483,6 +5483,11 @@
             const oy = oyBase;
             const xPrim = xPrimBase + paddingLeft;   // 1ª coluna em px
             const xUlt  = xUltBase  + paddingLeft;   // última coluna em px
+            // Parede direita (P2) = última coluna menos T2. A reta do telhado é
+            // definida ENTRE AS PAREDES (ox→ox2) e prolongada até as colunas.
+            // Declarado AQUI porque yCalhaEmX (usado logo abaixo pelas verticais
+            // e pelo beiral) precisa de ox2 já inicializado.
+            const ox2 = xUlt - T2 * escZ;
 
             // Todas as colunas em px
             const colPx = [xPrim];
@@ -5657,12 +5662,9 @@
             // Para telhado inclinado, interpola a altura em cada coluna
             ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 1.0; ctx.setLineDash([7, 5]);
             const totalPxWidth = xUlt - xPrim; // largura total entre colunas extremas
-            // Paredes: P1 em ox, P2 em ox2 (= última coluna menos T2).
-            // A reta do telhado é definida ENTRE AS PAREDES e PROLONGADA
-            // (extrapolada) até as colunas do andaime (xPrim/xUlt), que ficam
-            // fora das paredes por T1/T2. Antes usava xPrim/xUlt como âncora,
-            // o que mudava a inclinação (o telhado sobe/desce mais na coluna).
-            const ox2 = xUlt - T2 * escZ; // parede direita (P2)
+            // Paredes: P1 em ox, P2 em ox2 (declarado mais acima, antes das
+            // primeiras chamadas de yCalhaEmX — senão dava "Cannot access 'ox2'
+            // before initialization" em telhado inclinado).
             // Para 2 inclinações, a reta é definida pelos PINOS C1/C3 (a calha
             // que o usuário alinhou no desenho), não pela base da parede — o x
             // do pino pode diferir de ox. Assim a inclinação bate com os 3 C.
