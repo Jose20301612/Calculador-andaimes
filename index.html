@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.60 - N degraus (campo ao lado do botão): N divisores → N+1 zonas</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.63 - Pinos P1/P2/GL continuam visíveis após calibrar + aviso quando falta a altura</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -4515,6 +4515,24 @@
                 if (calibrado && resultadosCalc[lado]) {
                     desenharLinhasNoCanvas(lado);
                 }
+                if (calibrado) {
+                    // Marcadores discretos de P1/P2/GL depois de calibrar.
+                    // Antes os pinos sumiam por completo ao calibrar: se a face
+                    // ainda não tinha altura/linhas, a tela parecia "vazia" e dava
+                    // a impressão de que a calibração tinha sido perdida.
+                    const z2 = zoomAtual;
+                    ctx.save();
+                    ctx.fillStyle = '#f39c12';
+                    [calib.p1, calib.p2].forEach(function(pp){
+                        if (!pp) return;
+                        ctx.beginPath(); ctx.arc(pp.x*z2 + paddingLeft, pp.y*z2, 3.5, 0, Math.PI*2); ctx.fill();
+                    });
+                    if (calib.p3) {
+                        ctx.fillStyle = '#27ae60';
+                        ctx.beginPath(); ctx.arc(calib.p3.x*z2 + paddingLeft, calib.p3.y*z2, 3.5, 0, Math.PI*2); ctx.fill();
+                    }
+                    ctx.restore();
+                }
                 // Bug #10 (corrigido): antes desenhava o pin do cume + linha tracejada
                 // POR CIMA das linhas vermelhas, deixando a tela poluída após "Desenhar".
                 // Os pins C1/C2/C3 e a linha tracejada já são desenhados acima (durante a
@@ -4855,6 +4873,13 @@
                 imgObj.onload=()=>{
                     fotosData[ladoAtual]=imgObj;
                     calibData[ladoAtual]={estado:'aguardando_p1',p1:null,p2:null,p3:null,pc1:null,pc2:null,pc3:null,escala:null,pinAtivo:null};
+                    // Foto nova = face do zero: desliga degrau/2incl (senão o modo
+                    // ficava ligado invisível e o fluxo pulava pro divisor após o GL)
+                    delete temDegrauData[ladoAtual];
+                    delete tem2InclData[ladoAtual];
+                    delete degrauDivsMm[ladoAtual];
+                    delete degrauZonasPts[ladoAtual];
+                    if (typeof atualizarBotoesModo === 'function') atualizarBotoesModo();
                     zoomAtual=1.0;
                     // Mostrar elementos ANTES de desenhar
                     document.getElementById('zona-upload').style.display='none';
@@ -5149,6 +5174,8 @@
                     document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                     mostrarStatusCalib('📍 Marque o <strong>DIVISOR 1</strong> de ' + nDeg + ' (esquerda→direita)');
                     atualizarBadges('aguardando_div');
+                    ativarCalibCanvas(ladoAtual);   // garante o clique ativo
+                    redrawCanvas(ladoAtual);          // mostra P1/P2/GL + guia do divisor
                     return;
                 }
                 // Se tem 2 inclinações, vai para C1 ao invés de finalizar
@@ -5182,6 +5209,11 @@
                     var beiL = parseInt(document.getElementById('beiralLadoAtual').value)||0;
                     if (beiL >= 0) beiralLadoData[ladoAtual] = beiL;
                     desenharLinhasNoCanvas(ladoAtual);
+                } else if (!temDegrauData[ladoAtual] && !tem2InclData[ladoAtual]) {
+                    // Calibrou, mas falta a altura da calha → sem ela não há
+                    // linhas para desenhar. Avisar (antes a tela ficava "vazia"
+                    // e parecia que a calibração tinha sumido).
+                    mostrarStatusCalib('✅ Calibração OK (P1, P2 e GL marcados).<br><strong>Digite a altura da calha</strong> e toque em 🔴 Desenhar.');
                 }
             
             } else if (calib.estado === 'confirmando_c1') {
@@ -5330,6 +5362,13 @@
             posCumeData[ladoAtual] = 0;
             // E limpar tem2InclData para que a pergunta apareça de novo
             delete tem2InclData[ladoAtual];
+            // BUGFIX: limpar também o DEGRAU. Antes ficava ligado "invisível" e,
+            // depois do GL, o fluxo pulava pro modo divisor — parecendo que a
+            // calibração tinha sumido/recomeçado.
+            delete temDegrauData[ladoAtual];
+            delete degrauDivsMm[ladoAtual];
+            delete degrauZonasPts[ladoAtual];
+            if (typeof atualizarBotoesModo === 'function') atualizarBotoesModo();
 
             document.getElementById('status-calib').style.display = 'none';
             document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
