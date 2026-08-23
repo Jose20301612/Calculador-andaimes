@@ -500,7 +500,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.64 - BUGFIX ox2: telhado inclinado (2 alturas) não desenhava nada</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.65 - Restaurada a tela única "qual parte tem cume" (funciona com 1 ou N degraus)</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -4345,18 +4345,62 @@
             }
         }
 
-        function mostrarPerguntasDegrau() { iniciarZonaDegrau(0); } // compat
-        // Inicia a captura da zona i (0..N). Se "2 incl." ligado, pergunta se
-        // esta zona tem cume; senão, 2 pontos (calhas esq/dir da zona).
+        // Tela ÚNICA: pergunta de uma vez quais partes têm cume (como antes).
+        // Com 1 degrau são 2 partes; com N degraus, N+1 partes.
+        function mostrarPerguntasDegrau() {
+            const calib = calibData[ladoAtual];
+            const total = (calib._nDeg || 1) + 1;
+            if (!tem2InclData[ladoAtual]) {
+                // sem "2 incl." → nenhuma parte tem cume, vai direto
+                calib._cumesZona = new Array(total).fill(false);
+                iniciarZonaDegrau(0);
+                return;
+            }
+            let linhas = '';
+            for (let i = 0; i < total; i++) {
+                const rot = (total === 2)
+                    ? (i === 0 ? 'Parte ESQUERDA' : 'Parte DIREITA')
+                    : ('Parte ' + (i + 1) + ' (da esquerda p/ direita)');
+                linhas += '<label style="display:block;margin:6px 0;"><input type="checkbox" class="dg-cume" data-i="' + i + '"> ' + rot + ' tem cume</label>';
+            }
+            var ov = document.getElementById('modal-degrau');
+            if (!ov) {
+                ov = document.createElement('div');
+                ov.id = 'modal-degrau';
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;';
+                document.body.appendChild(ov);
+            }
+            ov.innerHTML =
+                '<div style="background:#fff;padding:20px;border-radius:12px;max-width:330px;width:90%;font-family:sans-serif;">'
+                + '<h3 style="margin:0 0 12px;">🪜 Degrau + cume</h3>'
+                + '<p style="margin:6px 0;font-weight:600;">Qual parte tem cume (2 inclinações)?</p>'
+                + linhas
+                + '<p style="margin:12px 0 0;font-size:11px;color:#888;">Parte com cume: marca C1 (esq) → C2 (pico) → C3 (dir). Parte sem cume: marca 2 pontos (as calhas). Sempre da esquerda para a direita.</p>'
+                + '<button onclick="confirmarPerguntasDegrau()" style="margin-top:14px;width:100%;background:#16a085;color:#fff;border:none;padding:11px;border-radius:8px;font-weight:700;font-size:15px;">Continuar →</button>'
+                + '</div>';
+            ov.style.display = 'flex';
+        }
+        function confirmarPerguntasDegrau() {
+            const calib = calibData[ladoAtual];
+            const total = (calib._nDeg || 1) + 1;
+            const cumes = new Array(total).fill(false);
+            document.querySelectorAll('#modal-degrau .dg-cume').forEach(function(cb){
+                if (cb.checked) cumes[parseInt(cb.dataset.i)] = true;
+            });
+            calib._cumesZona = cumes;
+            var ov = document.getElementById('modal-degrau'); if (ov) ov.style.display = 'none';
+            iniciarZonaDegrau(0);
+        }
+        // Inicia a captura da zona i (0..N) — sem perguntar nada aqui: a resposta
+        // já veio da tela única acima.
         function iniciarZonaDegrau(i) {
             const calib = calibData[ladoAtual];
             calib._zonaAtual = i;
             const total = (calib._nDeg || 1) + 1;
-            const nome = 'Parte ' + (i + 1) + '/' + total;
-            let temCume = false;
-            if (tem2InclData[ladoAtual]) {
-                temCume = confirm(nome + ' (esquerda→direita) tem CUME (2 inclinações)?\n\nOK = sim   |   Cancelar = não');
-            }
+            const nome = (total === 2)
+                ? (i === 0 ? 'Parte ESQUERDA' : 'Parte DIREITA')
+                : ('Parte ' + (i + 1) + '/' + total);
+            const temCume = !!(calib._cumesZona && calib._cumesZona[i]);
             calib._zonaCume = temCume;
             if (temCume) {
                 calib.pc1 = calib.pc2 = calib.pc3 = null;
@@ -5301,11 +5345,12 @@
                     mostrarStatusCalib('📍 Marque o <strong>DIVISOR ' + (calib._pdivs.length + 1) + '</strong> de ' + (calib._nDeg || 1) + ' (esquerda→direita)');
                     atualizarBadges('aguardando_div');
                 } else {
-                    // todos os divisores prontos → ordena e começa as zonas
+                    // todos os divisores prontos → ordena e pergunta (tela única)
+                    // quais partes têm cume; depois começa a marcar as partes.
                     calib._pdivs.sort(function(a,b){ return a-b; });
                     degrauDivsMm[ladoAtual] = calib._pdivs.slice();
                     degrauZonasPts[ladoAtual] = [];
-                    iniciarZonaDegrau(0);
+                    mostrarPerguntasDegrau();
                 }
             } else if (calib.estado === 'confirmando_dz1') {
                 calib.estado = 'aguardando_dz2';
