@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- Impede o navegador de guardar a página: no GitHub Pages o celular
+         servia a versão antiga mesmo depois do commit novo. -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Calculador de Andaimes v3.0</title>
     <style>
         * {
@@ -500,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.67 - Beiral por PARTE (um campo por zona do degrau)</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.77 - Anti-cache (GitHub Pages servia versão velha) + correções da v4.76</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1385,7 +1390,22 @@
                 <div id="acoes-foto" style="display:none; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
                     <button onclick="abrirTelaCheia()" style="background:#2c3e50; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">⛶ Tela Cheia</button>
                     <button onclick="customizarLado()" style="background:#27ae60; color:white; padding:12px; border:none; border-radius:8px; font-weight:600;">✏️ Customizar lado</button>
+                    <button onclick="abrirPlantaAndaime()" style="background:#16a085; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; grid-column:1/-1;">📐 Planta do andaime + contagem de peças</button>
                     <button onclick="baixarTodosLados()" style="background:#2980b9; color:white; padding:12px; border:none; border-radius:8px; font-weight:600; grid-column:1/-1;">⬇ Baixar PDF com todos os lados</button>
+                </div>
+
+                <!-- Modal Planta do andaime (vista de cima) -->
+                <div id="modalPlanta" style="display:none; position:fixed; inset:0; background:#f4f6f7; z-index:9998; flex-direction:column;">
+                    <div style="background:#16a085; color:white; padding:10px 12px; display:flex; align-items:center; justify-content:space-between;">
+                        <strong style="font-size:15px;">📐 Planta do andaime — ブラケット足場</strong>
+                        <button onclick="fecharPlanta()" style="background:#c0392b; color:white; border:none; border-radius:6px; padding:8px 14px; font-weight:700; width:auto;">✕ Fechar</button>
+                    </div>
+                    <div style="flex:1; overflow:auto; -webkit-overflow-scrolling:touch; padding:10px;">
+                        <div style="background:white; border-radius:10px; padding:8px; margin-bottom:10px;">
+                            <canvas id="plantaCanvas" style="width:100%; display:block;"></canvas>
+                        </div>
+                        <div id="plantaPecas" style="background:white; border-radius:10px; padding:12px; font-size:13px;"></div>
+                    </div>
                 </div>
 
                 <!-- Modal Tela Cheia -->
@@ -1695,7 +1715,7 @@
             degrauDivsMm = {}; degrauZonasPts = {}; degrauBeirais = {};
             degrauCumeEsq = {}; degrauCumeDir = {};
             beiralAltoData = {}; beiralBaixoData = {};
-            beiralLadoData = {};
+            beiralLadoData = {}; plantaDados = {};
             beiraisCalc = null;
             medidasCalc = null;
             formatoAlicerce = null;
@@ -4467,6 +4487,23 @@
         let beiralAltoData = {};    // beiral da parte alta (mm)
         let beiralBaixoData= {};    // beiral da parte baixa (mm)
         let beiralLadoData   = {};
+        // O que o desenho de cada face produziu (fileiras + badges reais).
+        // É a base da contagem de peças: nada é estimado.
+        let plantaDados = {};
+        // Algumas empresas pedem 2 tesuris por plataforma (um a 450 da
+        // plataforma e outro na cintura). Padrão = 1.
+        let TESURI_POR_PLATAFORMA = 1;
+        // Guarda-corpo do telhado: 1 (o de 900 acima do telhado) ou 3
+        // (esse mais os de −450 e −900). Padrão = 1.
+        let TESURI_GUARDA_CORPO = 1;
+        function alternarTesuriPorPlat() {
+            TESURI_POR_PLATAFORMA = (TESURI_POR_PLATAFORMA === 1) ? 2 : 1;
+            desenharPlantaAndaime();
+        }
+        function alternarGuardaCorpo() {
+            TESURI_GUARDA_CORPO = (TESURI_GUARDA_CORPO === 1) ? 3 : 1;
+            desenharPlantaAndaime();
+        }
         // zoom como fator de escala do canvas (resize real)
         let zoomAtual = 1.0;
         const ZOOM_MIN = 0.5, ZOOM_MAX = 6.0;
@@ -5575,6 +5612,16 @@
             // Declarado AQUI porque yCalhaEmX (usado logo abaixo pelas verticais
             // e pelo beiral) precisa de ox2 já inicializado.
             const ox2 = xUlt - T2 * escZ;
+            // Âncoras da inclinação com cume: a reta é definida pelos PINOS
+            // C1/C3 (a calha que o usuário alinhou), não pela base da parede.
+            // Declarados AQUI pelo mesmo motivo de ox2: as verticais chamam
+            // yCalhaEmX logo abaixo e davam "Cannot access 'xC1px' before
+            // initialization" quando 2 inclinações estava ligado.
+            const _calDraw = calibData[lado] || {};
+            const _zDraw   = (typeof zoomAtual !== 'undefined') ? zoomAtual : 1;
+            const _tem2Pre = tem2InclData[lado] || false;
+            const xC1px = (_tem2Pre && _calDraw.pc1) ? (_calDraw.pc1.x * _zDraw + paddingLeft) : ox;
+            const xC3px = (_tem2Pre && _calDraw.pc3) ? (_calDraw.pc3.x * _zDraw + paddingLeft) : ox2;
 
             // Todas as colunas em px
             const colPx = [xPrim];
@@ -5755,10 +5802,7 @@
             // Para 2 inclinações, a reta é definida pelos PINOS C1/C3 (a calha
             // que o usuário alinhou no desenho), não pela base da parede — o x
             // do pino pode diferir de ox. Assim a inclinação bate com os 3 C.
-            const _calDraw = calibData[lado] || {};
-            const _zDraw   = (typeof zoomAtual !== 'undefined') ? zoomAtual : 1;
-            const xC1px = (tem2Incl && _calDraw.pc1) ? (_calDraw.pc1.x * _zDraw + paddingLeft) : ox;
-            const xC3px = (tem2Incl && _calDraw.pc3) ? (_calDraw.pc3.x * _zDraw + paddingLeft) : ox2;
+            // (xC1px/xC3px declarados mais acima, junto de ox2 — ver lá.)
             function yCalhaEmX(px) {
                 // ── Degrau alto/baixo: duas retas independentes ───────────
                 if (temDegrau && _divsPx.length > 0) {
@@ -5850,10 +5894,15 @@
                 let xStart = xPrim;
                 for (let i = 0; i <= _divsPx.length; i++) {
                     const xEnd = (i < _divsPx.length) ? _divsPx[i] : xUlt;
-                    // calha da zona = ponto mais alto (menor y) do telhado nela
-                    let yc = Math.min(yCalhaEmX(xStart + 0.5), yCalhaEmX(xEnd - 0.5));
-                    const passo = Math.max(2, (xEnd - xStart) / 40);
-                    for (let xx = xStart; xx <= xEnd; xx += passo) yc = Math.min(yc, yCalhaEmX(xx));
+                    // calha da zona = ponto mais alto (menor y) do telhado nela.
+                    // Amostra ESTRITAMENTE dentro da zona: no x exato do divisor a
+                    // consulta cai na zona anterior, e a parte baixa herdava a calha
+                    // alta (ganhando fileiras a mais).
+                    const eps = 0.5;
+                    const xa = xStart + eps, xb = xEnd - eps;
+                    let yc = Math.min(yCalhaEmX(xa), yCalhaEmX(xb));
+                    const passo = Math.max(2, (xb - xa) / 40);
+                    for (let xx = xa; xx <= xb; xx += passo) yc = Math.min(yc, yCalhaEmX(xx));
                     // beiral DESTA parte (campo por parte); se vazio usa o da face
                     const bZona = (_bz[i] > 0) ? _bz[i] : (beiralLado || 0);
                     zonas.push({ xIni: xStart, xFim: xEnd, yCalha: yc, beiral: bZona, daCalha: bZona > 300 });
@@ -5967,14 +6016,18 @@
             // 400 → máximo S (badge especial: "SS" quando lado é W)
             // 200,300 → sem plataforma (não desenhar badge)
             function heightCap(spanSizeMm) {
-                if (spanSizeMm >= 600)  return 'W';
+                // Vão normal não limita o TIPO (que é a largura/profundidade):
+                // devolve o topo da escala, senão uma face WS/WW era truncada
+                // em W e nunca aparecia.
+                if (spanSizeMm >= 600)  return 'WW';
                 if (spanSizeMm >= 400)  return 'S';   // 400mm → máx S
                 return null;  // 200,300 → sem plataforma
             }
             // Teto de plataforma por altura da seção (frame de andaime)
             function heightCapSection(altMm) {
                 var a = Math.round(altMm / 50) * 50; // absorve variação de pixel
-                if (a >= 1200) return 'W';
+                // Seção cheia não limita o tipo (ver heightCap): topo da escala.
+                if (a >= 1200) return 'WW';
                 if (a >= 900)  return 'S';
                 if (a >= 550)  return 'Sb';
                 if (a >= 450)  return 'M';
@@ -6010,6 +6063,10 @@
                 return { plat: pf.label, cor: platCoresMap[pf.plat] || '#e74c3c' };
             }
 
+            // Coletor: o que o desenho realmente produziu nesta face
+            // (fileiras + badges). A contagem de peças sai DAQUI, não de estimativa.
+            const _capFileiras = [];
+            const _capColunas = [];   // {xMm, altMm} — altura final de cada coluna
             for (let li = 0; li < todasLinhas.length; li++) {
                 const { offsetMm, yL } = todasLinhas[li];
                 const xIniL = todasLinhas[li].xIni != null ? todasLinhas[li].xIni : xPrim;
@@ -6040,6 +6097,15 @@
                 }
 
                 const { plat: bpMid, cor: bcMid } = badgeParaSecao(altSecao);
+
+                // ── Captura desta fileira p/ a planta/contagem de peças ──
+                const _capF = {
+                    alturaMm: Math.round(distLinhaAoGLmm),
+                    xIniMm: Math.round((xIniL - xPrim) / escZ),
+                    xFimMm: Math.round((xFimL - xPrim) / escZ),
+                    badges: []
+                };
+                _capFileiras.push(_capF);
 
                 // Recalcular bpMid com spanMm real (feito por span individual)
                 for (let si = 0; si < spans.length; si++) {
@@ -6079,6 +6145,7 @@
                     const pf = platFinal(platSpan, spanMm, altSecao);
                     if (pf) {
                         drawPlatBadge(pf.label, xMid, yL, platCoresMap[pf.plat] || bcMid);
+                        _capF.badges.push({ si: si, spanMm: spanMm, plat: pf.plat, label: pf.label });
                     }
                 }
 
@@ -6350,6 +6417,9 @@
                     if (prevC) { altMm = Math.max(altMm, prevC.altGCmm); yGCCol = Math.min(yGCCol, prevC.yGC); }
                     if (nextC) { altMm = Math.max(altMm, nextC.altGCmm); yGCCol = Math.min(yGCCol, nextC.yGC); }
 
+                    // Captura a altura final desta coluna → vira peças de ashiba
+                    _capColunas.push({ xMm: Math.round((xCol - xPrim) / escZ), altMm: altMm });
+
                     var txt = '';
                     if (altMm >= BASELINE) {
                         var nKobus = Math.round((altMm - BASELINE) / 450);
@@ -6560,6 +6630,16 @@
             ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
             ctx.fillText(spanTxt, circX + circR + 4, circY);
             ctx.restore();
+
+            // ── Guarda o que esta face produziu (base da contagem de peças) ──
+            plantaDados[lado] = {
+                spans: spans.slice(),
+                t1: T1, t2: T2,
+                tDaFace: (res.tDaFace != null && res.tDaFace > 0) ? res.tDaFace : T1,
+                plat: platLado.plat,
+                fileiras: _capFileiras.slice().sort(function(a, b){ return a.alturaMm - b.alturaMm; }),
+                colunas: _capColunas.slice()
+            };
         } // fim desenharLinhasNoCanvas
 
         function roundRect(ctx, x, y, w, h, r) { // iOS-safe rounded rect
@@ -6848,6 +6928,403 @@
         // (ex: mover linhas, ajustar plataformas, mudar cores, etc)
         function customizarLado() {
             alert('🚧 Função "Customizar lado" em desenvolvimento.\n\nEm breve será possível personalizar este lado individualmente.');
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        //  PLANTA DO ANDAIME (vista de cima) — ブラケット足場
+        //  Regras:
+        //   • tesuri do pé interno: 600 se a face é W, 400 se é S
+        //   • pé interno a cada no MÁX 3600 (2 vãos), contado da esquina
+        //   • último trecho nunca ≤600 (encurta um passo e redistribui)
+        //   • coluna sem pé interno recebe BURAKETO (nenhuma fica sem nada)
+        //   • cantos: buraketo dos dois lados (plataformas se encontram)
+        // ══════════════════════════════════════════════════════════════
+        function tesuriDaFace(plat) {
+            return (plat && String(plat).charAt(0) === 'W') ? 600 : 400;
+        }
+        // Sb e M: o espaço do terreno é apertado → NÃO cabe pé interno.
+        // A face inteira fica só com buraketo em TODAS as colunas.
+        function temPeInterno(plat) {
+            const p = String(plat || '');
+            return (p.charAt(0) === 'W' || p === 'S');
+        }
+        // Medida do buraketo conforme a plataforma da face
+        function buraketoDaFace(plat) {
+            const p = String(plat || '');
+            if (p.charAt(0) === 'W') return 600;   // W, WW, WS, W⚠️
+            if (p === 'S')  return 400;
+            if (p === 'Sb') return 400;
+            return 300;                            // M (e menores)
+        }
+
+        // Posições (mm, desde a esquina inicial) que recebem pé interno.
+        function calcPesInternos(spans) {
+            const pos = [0];
+            spans.forEach(function(s){ pos.push(pos[pos.length - 1] + s); });
+            const total = pos[pos.length - 1];
+            const pes = [];
+            let cur = 0, guard = 0;
+            while (guard++ < 60) {
+                // coluna mais distante dentro de 3600
+                let next = null;
+                for (let i = 0; i < pos.length; i++) {
+                    if (pos[i] > cur && pos[i] - cur <= 3600) next = pos[i];
+                }
+                if (next === null) break;
+                // último trecho ≤600 → encurta (usa uma coluna antes)
+                if (total - next <= 600) {
+                    let alt = null;
+                    for (let i = 0; i < pos.length; i++) {
+                        if (pos[i] > cur && pos[i] < next && total - pos[i] > 600) alt = pos[i];
+                    }
+                    if (alt === null) break;
+                    next = alt;
+                }
+                pes.push(next);
+                cur = next;
+                if (total - cur <= 3600) break; // resto já coberto
+            }
+            return pes;
+        }
+
+        // Monta a geometria de cada face no plano (mm), perímetro no sentido
+        // sul → leste → norte → oeste. Cada face começa na sua esquina t1.
+        function _facesPlanta() {
+            const W = (medidasCalc && medidasCalc.comp) || 0;
+            const H = (medidasCalc && medidasCalc.larg) || 0;
+            const r = resultadosCalc;
+            const def = [
+                { k:'sul',   nome:'SUL 南',   dir:[1,0],  dentro:[0,-1], ini:function(f){ return [ -f.t1, H + f.tF ]; } },
+                { k:'leste', nome:'LESTE 東', dir:[0,-1], dentro:[-1,0], ini:function(f){ return [ W + f.tF, H + f.t1 ]; } },
+                { k:'norte', nome:'NORTE 北', dir:[-1,0], dentro:[0,1],  ini:function(f){ return [ W + f.t1, -f.tF ]; } },
+                { k:'oeste', nome:'OESTE 西', dir:[0,1],  dentro:[1,0],  ini:function(f){ return [ -f.tF, -f.t1 ]; } }
+            ];
+            const out = [];
+            def.forEach(function(d) {
+                const res = r[d.k];
+                if (!res || !res.spans || !res.spans.length) return;
+                const f = {
+                    k: d.k, nome: d.nome, spans: res.spans.slice(),
+                    plat: res.plat || 'W',
+                    t1: res.t1 || 0, t2: res.t2 || 0,
+                    tF: (res.tDaFace != null && res.tDaFace > 0) ? res.tDaFace : (res.t1 || 0)
+                };
+                const p0 = d.ini(f);
+                // colunas ao longo da face
+                const cols = []; let acum = 0;
+                cols.push({ x: p0[0], y: p0[1], d: 0 });
+                f.spans.forEach(function(s){
+                    acum += s;
+                    cols.push({ x: p0[0] + d.dir[0]*acum, y: p0[1] + d.dir[1]*acum, d: acum });
+                });
+                f.cols = cols;
+                f.dentro = d.dentro;
+                f.pes = temPeInterno(f.plat) ? calcPesInternos(f.spans) : [];
+                f.tesuri = tesuriDaFace(f.plat);
+                f.burMm = buraketoDaFace(f.plat);
+                out.push(f);
+            });
+            return { W: W, H: H, faces: out };
+        }
+
+        function abrirPlantaAndaime() {
+            if (!resultadosCalc || !resultadosCalc.sul || !resultadosCalc.sul.spans) {
+                alert('Calcule os spans da planta primeiro.'); return;
+            }
+            document.getElementById('modalPlanta').style.display = 'flex';
+            setTimeout(desenharPlantaAndaime, 50);
+        }
+        function fecharPlanta() { document.getElementById('modalPlanta').style.display = 'none'; }
+
+        function desenharPlantaAndaime() {
+            const dados = _facesPlanta();
+            const W = dados.W, H = dados.H, faces = dados.faces;
+            if (!faces.length) return;
+            const canvas = document.getElementById('plantaCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // limites do desenho
+            let minX = 0, maxX = W, minY = 0, maxY = H;
+            faces.forEach(function(f){
+                f.cols.forEach(function(c){
+                    if (c.x < minX) minX = c.x; if (c.x > maxX) maxX = c.x;
+                    if (c.y < minY) minY = c.y; if (c.y > maxY) maxY = c.y;
+                });
+            });
+            const margem = 1400; // mm de folga p/ rótulos
+            minX -= margem; maxX += margem; minY -= margem; maxY += margem;
+
+            const cont = canvas.parentElement;
+            const larguraCss = Math.max(300, (cont.clientWidth || 340) - 16);
+            const esc = larguraCss / (maxX - minX);
+            const alturaCss = Math.round((maxY - minY) * esc);
+            const DPR = Math.min(3, window.devicePixelRatio || 1);
+            canvas.width = Math.round(larguraCss * DPR);
+            canvas.height = Math.round(alturaCss * DPR);
+            canvas.style.height = alturaCss + 'px';
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, larguraCss, alturaCss);
+
+            function PX(x) { return (x - minX) * esc; }
+            function PY(y) { return (y - minY) * esc; }
+
+            // casa (alicerce)
+            ctx.fillStyle = '#eceff1';
+            ctx.fillRect(PX(0), PY(0), W * esc, H * esc);
+            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+            ctx.strokeRect(PX(0), PY(0), W * esc, H * esc);
+
+            const rCol = Math.max(3.5, Math.min(7, 9 * esc * 100));
+            faces.forEach(function(f) {
+                const a = f.cols[0], b = f.cols[f.cols.length - 1];
+                // linha do andaime
+                ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 1.4;
+                ctx.beginPath(); ctx.moveTo(PX(a.x), PY(a.y)); ctx.lineTo(PX(b.x), PY(b.y)); ctx.stroke();
+
+                const pesSet = {}; f.pes.forEach(function(d){ pesSet[d] = true; });
+                f.cols.forEach(function(c) {
+                    const cx = PX(c.x), cy = PY(c.y);
+                    const temPe = !!pesSet[c.d];
+                    if (temPe) {
+                        // tesuri para dentro + pé interno (jack)
+                        const ix = c.x + f.dentro[0] * f.tesuri;
+                        const iy = c.y + f.dentro[1] * f.tesuri;
+                        ctx.strokeStyle = '#2980b9'; ctx.lineWidth = 2;
+                        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(PX(ix), PY(iy)); ctx.stroke();
+                        ctx.fillStyle = '#2980b9';
+                        ctx.beginPath(); ctx.arc(PX(ix), PY(iy), rCol * 0.85, 0, Math.PI * 2); ctx.fill();
+                    } else {
+                        // buraketo (apoio da plataforma) apontando para dentro
+                        const bx = c.x + f.dentro[0] * 420;
+                        const by = c.y + f.dentro[1] * 420;
+                        ctx.strokeStyle = '#8e44ad'; ctx.lineWidth = 5;
+                        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(PX(bx), PY(by)); ctx.stroke();
+                    }
+                    // coluna (jack externo)
+                    ctx.fillStyle = '#34495e';
+                    ctx.beginPath(); ctx.arc(cx, cy, rCol, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2; ctx.stroke();
+                });
+
+                // medidas dos vãos
+                ctx.save();
+                ctx.font = 'bold 9px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                for (let i = 0; i < f.spans.length; i++) {
+                    const c1 = f.cols[i], c2 = f.cols[i + 1];
+                    const mx = (c1.x + c2.x) / 2 - f.dentro[0] * 330;
+                    const my = (c1.y + c2.y) / 2 - f.dentro[1] * 330;
+                    const txt = String(f.spans[i]);
+                    const tw = ctx.measureText(txt).width;
+                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                    ctx.fillRect(PX(mx) - tw/2 - 2, PY(my) - 6, tw + 4, 12);
+                    ctx.fillStyle = '#c0392b';
+                    ctx.fillText(txt, PX(mx), PY(my));
+                }
+                // rótulo da face (nas faces verticais o texto gira p/ não cortar)
+                const mid = f.cols[Math.floor(f.cols.length / 2)];
+                const lx = mid.x - f.dentro[0] * 950, ly = mid.y - f.dentro[1] * 950;
+                const n18 = f.spans.filter(function(s){ return s === 1800; }).length;
+                const resto = f.spans.filter(function(s){ return s !== 1800; });
+                const rot = f.nome + ': ' + n18 + '×1800' + (resto.length ? '+' + resto.join('+') : '') + '  [' + f.plat + ']';
+                const vertical = (f.dentro[1] === 0); // leste/oeste
+                ctx.font = 'bold 11px Arial';
+                const tw2 = ctx.measureText(rot).width;
+                ctx.save();
+                ctx.translate(PX(lx), PY(ly));
+                if (vertical) ctx.rotate(-Math.PI / 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.fillRect(-tw2/2 - 4, -9, tw2 + 8, 18);
+                ctx.fillStyle = '#16a085';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(rot, 0, 0);
+                ctx.restore();
+                ctx.restore();
+            });
+
+            montarContagemPecas(faces);
+        }
+
+        function montarContagemPecas(faces) {
+            let jacks = 0, quadros = 0, pesInt = 0, buraketos = 0;
+            const tesuris = {};      // por medida: 1800, 1200, 900, 600, 400...
+            const tesuriInt = {};    // tesuri do pé interno: 600 (W) / 400 (S)
+            const buraketosMm = {};  // por medida: 600 (W) / 400 (S,Sb) / 300 (M)
+            const plataformas = {};  // por tipo+medida — vem das badges desenhadas
+            const porFace = [];
+            let semDesenho = [];
+
+            faces.forEach(function(f) {
+                const dados = plantaDados[f.k];
+                const nCol = f.cols.length;
+                jacks += nCol;                        // 1 jack por coluna (base)
+
+                // Usa a MESMA plataforma que o desenho usou (vem do T da face),
+                // não a do resultado — senão buraketo/pé saem de um tipo e as
+                // badges de outro.
+                const platF = (dados && dados.plat) ? dados.plat : f.plat;
+                if (!dados || !dados.fileiras || !dados.fileiras.length) {
+                    semDesenho.push(f.nome);
+                    porFace.push({ nome:f.nome, plat:platF, nCol:nCol, fileiras:0,
+                                   quadros:0, pes:0, bur:0, plats:0, det:'face ainda não desenhada' });
+                    return;
+                }
+
+                // posições (mm) das colunas a partir da 1ª
+                const colPosMm = [0]; let ac = 0;
+                f.spans.forEach(function(s){ ac += s; colPosMm.push(ac); });
+
+                // nº de fileiras que cobrem cada coluna (zona do degrau respeitada)
+                let quadrosF = 0, pesF = 0, burF = 0, platsF = 0;
+                colPosMm.forEach(function(xm) {
+                    let n = 0;
+                    dados.fileiras.forEach(function(fi) {
+                        if (xm >= fi.xIniMm - 1 && xm <= fi.xFimMm + 1) n++;
+                    });
+                    quadrosF += n;                    // 1 quadro por coluna por andar
+                });
+                quadros += quadrosF;
+
+                // ── PÉS INTERNOS da face (posições em mm) ─────────────────
+                // Calculados antes porque o buraketo depende deles.
+                let _spansPe = f.spans.slice();
+                while (_spansPe.length && _spansPe[_spansPe.length - 1] < 400) _spansPe.pop();
+                while (_spansPe.length && _spansPe[0] < 400) _spansPe.shift();
+                const pesMm = temPeInterno(platF) ? calcPesInternos(_spansPe) : [];
+                // índice de coluna de cada pé (as posições batem com colPosMm)
+                const colComPe = {};
+                pesMm.forEach(function(mm) {
+                    const idx = colPosMm.indexOf(mm);
+                    if (idx >= 0) colComPe[idx] = true;
+                });
+
+                // por fileira: buraketos onde HÁ plataforma
+                dados.fileiras.forEach(function(fi) {
+                    // O buraketo existe para apoiar plataforma: sem plataforma,
+                    // sem buraketo. Então só contam as colunas que fazem borda
+                    // de um vão COM badge nesta fileira.
+                    const colsComPlat = {};
+                    fi.badges.forEach(function(bd) {
+                        colsComPlat[bd.si] = true;
+                        colsComPlat[bd.si + 1] = true;
+                    });
+                    let nBurFi = 0;
+                    Object.keys(colsComPlat).forEach(function(ci) {
+                        if (!colComPe[ci]) nBurFi++;   // coluna com pé não leva buraketo
+                    });
+                    burF += nBurFi;
+                    const bMm = buraketoDaFace(platF);
+                    if (nBurFi) buraketosMm[bMm] = (buraketosMm[bMm] || 0) + nBurFi;
+                    // (o tesuri do pé interno é contado por face, não por fileira)
+                    // plataformas = badges REAIS desenhadas nesta fileira
+                    fi.badges.forEach(function(b) {
+                        if (b.spanMm === 400 && String(platF).charAt(0) === 'W') {
+                            plataformas['S 400'] = (plataformas['S 400'] || 0) + 2;
+                            platsF += 2;
+                        } else {
+                            const ch = b.plat + ' ' + b.spanMm;
+                            plataformas[ch] = (plataformas[ch] || 0) + 1;
+                            platsF += 1;
+                        }
+                    });
+                });
+                // Pé interno: peça VERTICAL, contada 1x por posição.
+                pesF = pesMm.length;
+                pesInt += pesF; buraketos += burF;
+                if (pesF) {
+                    const tInt2 = tesuriDaFace(platF);
+                    tesuriInt[tInt2] = (tesuriInt[tInt2] || 0) + pesF;
+                }
+
+                // ── TESURI, vão por vão ───────────────────────────────────
+                //   1 negarami (根がらみ) na base, grudando coluna a coluna
+                // + 1 por plataforma, na altura da cintura (ou 2, se a empresa
+                //   pedir: um a 450 da plataforma e outro na cintura)
+                // + 1 do guarda-corpo, em cima
+                // Ex.: vão com 3 plataformas → 1 + 3 + 1 = 5 tesuris
+                const platPorSpan = {};
+                dados.fileiras.forEach(function(fi) {
+                    fi.badges.forEach(function(bd) {
+                        platPorSpan[bd.si] = (platPorSpan[bd.si] || 0) + 1;
+                    });
+                });
+                f.spans.forEach(function(s, si) {
+                    let nPlat = platPorSpan[si] || 0;
+                    // Vão pequeno da ponta (200/300): não tem plataforma própria,
+                    // mas é onde a plataforma da face perpendicular se apoia
+                    // (sobreposição de esquina). Leva 1 tesuri por plataforma
+                    // apoiada nele → usa a contagem do vão vizinho.
+                    if (s < 400 && nPlat === 0) {
+                        const viz = (si === 0) ? 1 : si - 1;
+                        nPlat = platPorSpan[viz] || 0;
+                    }
+                    const n = 1 + nPlat * TESURI_POR_PLATAFORMA + TESURI_GUARDA_CORPO;
+                    tesuris[s] = (tesuris[s] || 0) + n;
+                });
+
+                const alturas = dados.fileiras.map(function(x){ return x.alturaMm; });
+                porFace.push({ nome:f.nome, plat:platF, nCol:nCol,
+                               fileiras:dados.fileiras.length, quadros:quadrosF,
+                               pes:pesF, bur:burF, plats:platsF,
+                               det:'fileiras a ' + alturas.join('mm, ') + 'mm do GL' });
+            });
+
+            function linha(nome, qtd, cor) {
+                return '<tr><td style="padding:5px 4px;border-bottom:1px solid #eee;">'
+                     + '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + cor + ';margin-right:6px;"></span>'
+                     + nome + '</td><td style="padding:5px 4px;border-bottom:1px solid #eee;text-align:right;font-weight:700;">' + qtd + '</td></tr>';
+            }
+            let html = '';
+            if (semDesenho.length) {
+                html += '<div style="background:#fdf2e9;border:1px solid #e67e22;border-radius:6px;padding:8px;margin-bottom:10px;font-size:12px;color:#a04000;">'
+                      + '⚠️ Desenhe primeiro estas faces (a contagem por andar vem do desenho): <strong>'
+                      + semDesenho.join(', ') + '</strong></div>';
+            }
+            html += '<div style="font-weight:700;color:#16a085;margin-bottom:8px;">🧮 Contagem de peças</div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            html += linha('Jacks (base)', jacks, '#34495e');
+            html += linha('Colunas / quadros 建枠 (todos os andares)', quadros, '#34495e');
+            html += linha('Pés internos', pesInt, '#2980b9');
+            Object.keys(tesuriInt).sort(function(a,b){return b-a;}).forEach(function(k) {
+                html += linha('Tesuri ' + k + ' (pé interno)', tesuriInt[k], '#2980b9');
+            });
+            Object.keys(tesuris).sort(function(a,b){ return Number(b) - Number(a); }).forEach(function(k) {
+                html += linha('Tesuri ' + k, tesuris[k], '#f39c12');
+            });
+            html += '</table>';
+            html += '<div style="margin:6px 0 10px;font-size:11px;color:#666;">'
+                 +  'Tesuri por vão = 1 negarami + ' + TESURI_POR_PLATAFORMA + ' por plataforma + '
+                 +  TESURI_GUARDA_CORPO + ' guarda-corpo.<br>'
+                 +  '<button onclick="alternarTesuriPorPlat()" style="background:#f39c12;color:#fff;border:none;border-radius:5px;padding:5px 9px;font-size:11px;font-weight:700;width:auto;margin:4px 4px 0 0;">'
+                 +  (TESURI_POR_PLATAFORMA === 1 ? '2' : '1') + ' por plataforma</button>'
+                 +  '<button onclick="alternarGuardaCorpo()" style="background:#e67e22;color:#fff;border:none;border-radius:5px;padding:5px 9px;font-size:11px;font-weight:700;width:auto;margin-top:4px;">'
+                 +  'guarda-corpo ' + (TESURI_GUARDA_CORPO === 1 ? '3 (−450/−900)' : '1') + '</button></div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+            Object.keys(buraketosMm).sort(function(a,b){ return Number(b) - Number(a); }).forEach(function(k) {
+                html += linha('Buraketo ' + k, buraketosMm[k], '#8e44ad');
+            });
+            Object.keys(plataformas).sort().forEach(function(k) {
+                html += linha('Plataforma ' + k, plataformas[k], '#27ae60');
+            });
+            html += '</table>';
+
+            html += '<div style="font-weight:700;color:#16a085;margin:14px 0 6px;">Por face (andares vêm do desenho)</div>';
+            html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
+            html += '<tr style="background:#f4f6f7;"><th style="text-align:left;padding:4px;">Face</th>'
+                  + '<th style="padding:4px;">Fil.</th><th style="padding:4px;">Quadros</th>'
+                  + '<th style="padding:4px;">Pés</th><th style="padding:4px;">Bur.</th>'
+                  + '<th style="padding:4px;">Plat.</th></tr>';
+            porFace.forEach(function(p) {
+                html += '<tr><td style="padding:4px;border-bottom:1px solid #eee;">' + p.nome + ' <span style="color:#888;">[' + p.plat + ']</span></td>'
+                      + '<td style="padding:4px;border-bottom:1px solid #eee;text-align:center;">' + p.fileiras + '</td>'
+                      + '<td style="padding:4px;border-bottom:1px solid #eee;text-align:center;">' + p.quadros + '</td>'
+                      + '<td style="padding:4px;border-bottom:1px solid #eee;text-align:center;">' + p.pes + '</td>'
+                      + '<td style="padding:4px;border-bottom:1px solid #eee;text-align:center;">' + p.bur + '</td>'
+                      + '<td style="padding:4px;border-bottom:1px solid #eee;text-align:center;">' + p.plats + '</td></tr>';
+                html += '<tr><td colspan="6" style="padding:2px 4px 6px 14px;color:#888;font-size:11px;border-bottom:1px solid #eee;">' + p.det + '</td></tr>';
+            });
+            html += '</table>';
+            html += '<div style="margin-top:10px;font-size:11px;color:#888;">Plataformas = badges reais do desenho. Quadros contam por coluna × andares daquele trecho (degrau respeitado). Pé interno no máx. a cada 3600mm; coluna sem pé recebe buraketo.</div>';
+            document.getElementById('plantaPecas').innerHTML = html;
         }
 
         function abrirTelaCheia() {
