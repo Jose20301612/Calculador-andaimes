@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.77 - Anti-cache (GitHub Pages servia versão velha) + correções da v4.76</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.82 - GL nivelado (foto torta não distorce mais as alturas) + pontos C em cruz</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1327,6 +1327,10 @@
                         <div id="status-calib" style="background:#fff3cd; border:1px solid #ffc107; padding:8px; border-radius:6px; margin-bottom:8px; font-size:13px; text-align:center; display:none;">
                             👆 Clique no <strong>1º ponto</strong> de referência na foto
                         </div>
+                        <!-- Só aparece quando P1→P2 sai bem fora do nível, que é
+                             sinal de foto de papel torta. Screenshot de PDF sai
+                             reto e esta faixa nunca aparece. -->
+                        <div id="aviso-nivel" style="display:none; background:#eaf2f8; border:1px solid #5dade2; padding:8px; border-radius:6px; margin-bottom:8px; font-size:12px; text-align:center; color:#1b4f72;"></div>
                         <div style="display:flex; gap:8px; flex-wrap:wrap;">
                             <button onclick="iniciarCalibManual()" style="background:#3498db; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">📍 Iniciar calibração</button>
                             <button id="btn-limpar-pontos" onclick="limparPontosCalib()" style="background:#e67e22; color:white; padding:8px 12px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto; display:none;">🗑 Recomeçar</button>
@@ -4586,23 +4590,63 @@
                     }
                     if (calib.p3) {
                         desenharPin(ctx, calib.p3.x*z + paddingLeft, calib.p3.y*z, 'GL', '#27ae60');
+                        // A linha do GL acompanha o eixo P1→P2 (a horizontal
+                        // real da foto). Se a foto saiu um pouco torta, a reta
+                        // verde cai em cima do chão do desenho em vez de cortar
+                        // ele na diagonal — e é essa reta que as alturas usam.
+                        const _eGL = _eixoFoto(calib);
+                        const _gx0 = calib.p3.x*z + paddingLeft, _gy0 = calib.p3.y*z;
+                        const _incGL = _eGL ? (_eGL.uy / _eGL.ux) : 0;
                         ctx.beginPath();
-                        ctx.moveTo(0, calib.p3.y*z);
-                        ctx.lineTo(logW, calib.p3.y*z);
+                        ctx.moveTo(0,    _gy0 + (0    - _gx0) * _incGL);
+                        ctx.lineTo(logW, _gy0 + (logW - _gx0) * _incGL);
                         ctx.strokeStyle='#27ae60'; ctx.lineWidth=1; ctx.setLineDash([8,5]); ctx.stroke(); ctx.setLineDash([]);
                     }
                     // Pins C1, C2, C3 (calhas e cume do telhado com 2 inclinações)
-                    if (calib.pc1) desenharPin(ctx, calib.pc1.x*z + paddingLeft, calib.pc1.y*z, 'C1', '#9b59b6');
-                    if (calib.pc2) desenharPin(ctx, calib.pc2.x*z + paddingLeft, calib.pc2.y*z, 'C2', '#9b59b6');
-                    if (calib.pc3) desenharPin(ctx, calib.pc3.x*z + paddingLeft, calib.pc3.y*z, 'C3', '#9b59b6');
-                    // Linha tracejada C1→C2→C3 mostrando inclinação do telhado
-                    if (calib.pc1 && calib.pc2) {
-                        ctx.beginPath();
-                        ctx.moveTo(calib.pc1.x*z + paddingLeft, calib.pc1.y*z);
-                        ctx.lineTo(calib.pc2.x*z + paddingLeft, calib.pc2.y*z);
-                        if (calib.pc3) ctx.lineTo(calib.pc3.x*z + paddingLeft, calib.pc3.y*z);
-                        ctx.strokeStyle='#9b59b6'; ctx.lineWidth=2; ctx.setLineDash([8,4]); ctx.stroke(); ctx.setLineDash([]);
-                    }
+                    if (calib.pc1) desenharPinCruz(ctx, calib.pc1.x*z + paddingLeft, calib.pc1.y*z, 'C1', '#9b59b6');
+                    if (calib.pc2) desenharPinCruz(ctx, calib.pc2.x*z + paddingLeft, calib.pc2.y*z, 'C2', '#9b59b6');
+                    if (calib.pc3) desenharPinCruz(ctx, calib.pc3.x*z + paddingLeft, calib.pc3.y*z, 'C3', '#9b59b6');
+                    // Trecho C1→C2 e C2→C3, um de cada vez:
+                    //   linha CHEIA   = esse trecho está reto (na horizontal)
+                    //   linha PONTILHADA = esse trecho está inclinado
+                    // Assim dá para ver na hora se o ponto foi marcado certo,
+                    // sem precisar desenhar para descobrir depois.
+                    // "Reto" é comparado com o eixo P1→P2, não com a tela, senão
+                    // uma foto um pouco torta mostrava tudo como inclinado.
+                    (function() {
+                        const _tre = [[calib.pc1, calib.pc2], [calib.pc2, calib.pc3]];
+                        const _ex  = _eixoFoto(calib);
+                        _tre.forEach(function(par) {
+                            const a = par[0], b = par[1];
+                            if (!a || !b) return;
+                            // desnível em mm entre as duas pontas do trecho
+                            let desn;
+                            if (_ex && calib.p3 && calib.escala) {
+                                desn = Math.abs(medirHmm(calib, a) - medirHmm(calib, b));
+                            } else {
+                                desn = Math.abs(a.y - b.y) / (calib.escala || 1);
+                            }
+                            const reto = desn <= 60;      // até 6cm = reto (erro do toque)
+                            ctx.beginPath();
+                            ctx.moveTo(a.x*z + paddingLeft, a.y*z);
+                            ctx.lineTo(b.x*z + paddingLeft, b.y*z);
+                            ctx.strokeStyle = '#9b59b6';
+                            ctx.lineWidth = reto ? 2.5 : 2;
+                            ctx.setLineDash(reto ? [] : [7,5]);
+                            ctx.stroke();
+                            ctx.setLineDash([]);
+                            // etiqueta no meio dizendo o que o programa entendeu
+                            const mx = (a.x + b.x)/2*z + paddingLeft, my = (a.y + b.y)/2*z;
+                            const txt = reto ? 'reto' : ('incl. ' + Math.round(desn) + 'mm');
+                            ctx.font = 'bold 10px Arial';
+                            const tw = ctx.measureText(txt).width;
+                            ctx.fillStyle = 'rgba(255,255,255,0.88)';
+                            ctx.fillRect(mx - tw/2 - 3, my - 16, tw + 6, 13);
+                            ctx.fillStyle = reto ? '#16a085' : '#9b59b6';
+                            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                            ctx.fillText(txt, mx, my - 10);
+                        });
+                    })();
                     // (v4.30: pin 🏔 e linhas P1→cume→P2 removidos — método antigo)
 
                     // Divisores do degrau (todos os já marcados) + o pendente
@@ -4623,7 +4667,7 @@
                     }
                     if (calib.pdiv) _divVert(calib.pdiv); // o que está sendo marcado
                     // Pontos da ZONA sendo marcada (2 pontos) + LINHA ROXA
-                    function _pinPt(p, txt) { if (p) desenharPin(ctx, p.x*z + paddingLeft, p.y*z, txt, '#8e44ad'); }
+                    function _pinPt(p, txt) { if (p) desenharPinCruz(ctx, p.x*z + paddingLeft, p.y*z, txt, '#8e44ad'); }
                     function _linhaRoxa(a, b) {
                         if (!a || !b) return;
                         ctx.beginPath();
@@ -4687,6 +4731,133 @@
             ctx.fillStyle='white'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
             ctx.fillText(label, 0, -(TH+R));
             ctx.restore();
+        }
+
+        // Marcador em cruz/asterisco para os pontos da inclinação (C1/C2/C3).
+        // O pin normal tapa o ponto e é difícil ver onde ele realmente está;
+        // a cruz deixa o centro vazado, então dá para mirar exatamente na
+        // quina da calha e conferir o ângulo.
+        function desenharPinCruz(ctx, x, y, label, cor) {
+            const B = 13;            // braço da cruz
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.lineCap = 'round';
+            // contorno branco para aparecer em cima de desenho escuro
+            [['white', 4.5], [cor, 2.2]].forEach(function(par) {
+                ctx.strokeStyle = par[0]; ctx.lineWidth = par[1];
+                ctx.beginPath();
+                ctx.moveTo(-B, 0); ctx.lineTo(-3, 0);
+                ctx.moveTo( 3, 0); ctx.lineTo( B, 0);
+                ctx.moveTo(0, -B); ctx.lineTo(0, -3);
+                ctx.moveTo(0,  3); ctx.lineTo(0,  B);
+                ctx.stroke();
+            });
+            // ponto central pequeno = a posição exata
+            ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, Math.PI*2);
+            ctx.fillStyle = cor; ctx.fill();
+            // etiqueta ao lado, fora da cruz, para não tapar o ponto
+            if (label) {
+                ctx.font = 'bold 11px Arial';
+                const w = ctx.measureText(label).width;
+                ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                ctx.fillRect(B + 2, -8, w + 6, 16);
+                ctx.fillStyle = cor;
+                ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                ctx.fillText(label, B + 5, 0);
+            }
+            ctx.restore();
+        }
+
+        // ── Eixo nivelado da foto ─────────────────────────────────────────
+        // A foto de uma planta quase nunca sai perfeitamente reta na mão.
+        // P1→P2 marca uma distância que NA PLANTA é horizontal, então a reta
+        // P1→P2 é a horizontal verdadeira daquela foto.
+        //
+        // Antes o programa media altura como (y do GL − y do ponto), ou seja,
+        // na vertical da TELA. Com a foto 1° torta, numa calha reta o C1 e o
+        // C3 davam alturas diferentes — daí o guarda-corpo sair mais alto de
+        // um lado que do outro num lateral sem inclinação nenhuma.
+        // Agora o X é medido AO LONGO de P1→P2 e a ALTURA PERPENDICULAR a ela,
+        // então a torção da foto sai da conta.
+        //
+        // Só vale para torção pequena. Se P1→P2 estiver muito inclinado, o
+        // usuário calibrou numa medida que não é horizontal (uma diagonal ou
+        // uma altura): aí mantém o jeito antigo, x e y da tela.
+        var _NIVEL_MAX_SEN = Math.sin(15 * Math.PI / 180);
+
+        // ⚠️ DESLIGADO POR PADRÃO, de propósito.
+        // O caso normal é screenshot do PDF da planta, que já sai perfeitamente
+        // reto. Nesse caso corrigir pelo P1→P2 só traria de volta o erro do
+        // DEDO (2 toques imprecisos ≈ 1° de inclinação inventada) — ficaria
+        // pior que não fazer nada. Então o nivelamento só entra quando o
+        // usuário liga, no caso de foto tirada de papel.
+        function _eixoFoto(calib) {
+            if (!calib || !calib._nivelar) return null;           // ← chave do nivelamento
+            if (!calib.p1 || !calib.p2 || !calib.escala) return null;
+            var dx = calib.p2.x - calib.p1.x, dy = calib.p2.y - calib.p1.y;
+            var L = Math.sqrt(dx*dx + dy*dy);
+            if (!L) return null;
+            if (Math.abs(dy) / L > _NIVEL_MAX_SEN) return null;   // não é horizontal
+            if (dx < 0) { dx = -dx; dy = -dy; }  // u sempre para a direita → v para baixo
+            return { ux: dx/L, uy: dy/L, vx: -dy/L, vy: dx/L };
+        }
+
+        // Quanto P1→P2 está fora do nível, em graus (sinal ignorado).
+        function anguloP1P2(calib) {
+            if (!calib || !calib.p1 || !calib.p2) return 0;
+            var dx = calib.p2.x - calib.p1.x, dy = calib.p2.y - calib.p1.y;
+            if (!dx && !dy) return 0;
+            return Math.abs(Math.atan2(dy, Math.abs(dx))) * 180 / Math.PI;
+        }
+
+        // Liga/desliga o nivelamento da face atual.
+        function alternarNivelar() {
+            var calib = calibData[ladoAtual];
+            if (!calib) return;
+            calib._nivelar = !calib._nivelar;
+            atualizarAvisoNivel();
+            redrawCanvas(ladoAtual);
+        }
+
+        // Faixa de aviso: só aparece se P1→P2 saiu bem fora do nível.
+        // Num screenshot de PDF isso não acontece, então ela fica invisível e
+        // o fluxo normal não muda em nada.
+        var _NIVEL_AVISO_GRAUS = 0.6;
+        function atualizarAvisoNivel() {
+            var el = document.getElementById('aviso-nivel');
+            if (!el) return;
+            var calib = calibData[ladoAtual];
+            if (!calib || !calib.p1 || !calib.p2) { el.style.display = 'none'; return; }
+            var g = anguloP1P2(calib);
+            if (g < _NIVEL_AVISO_GRAUS && !calib._nivelar) { el.style.display = 'none'; return; }
+            var btn = '<button onclick="alternarNivelar()" style="background:'
+                + (calib._nivelar ? '#27ae60' : '#5dade2')
+                + ';color:#fff;border:none;border-radius:5px;padding:5px 10px;font-size:11px;font-weight:700;width:auto;margin-top:5px;">'
+                + (calib._nivelar ? '✓ Nivelando — desligar' : '📐 Nivelar a foto') + '</button>';
+            el.innerHTML = (calib._nivelar
+                ? 'Alturas sendo medidas em relação à reta <strong>P1→P2</strong> ('
+                  + g.toFixed(1) + '°), e não à tela.'
+                : 'A reta <strong>P1→P2</strong> saiu <strong>' + g.toFixed(1)
+                  + '°</strong> fora do nível.<br>Se a foto é <strong>de papel e está torta</strong>, ligue o nivelamento. '
+                  + 'Se é screenshot do PDF, foi só o toque — deixe desligado.')
+                + '<br>' + btn;
+            el.style.display = 'block';
+        }
+
+        // Posição em mm ao longo da parede, contada a partir de P1.
+        function medirXmm(calib, p) {
+            if (!p || !calib || !calib.p1 || !calib.escala) return 0;
+            var e = _eixoFoto(calib);
+            if (!e) return (p.x - calib.p1.x) / calib.escala;
+            return ((p.x - calib.p1.x) * e.ux + (p.y - calib.p1.y) * e.uy) / calib.escala;
+        }
+
+        // Altura em mm acima do GL, medida perpendicular ao eixo da foto.
+        function medirHmm(calib, p) {
+            if (!p || !calib || !calib.p3 || !calib.escala) return 0;
+            var e = _eixoFoto(calib);
+            if (!e) return (calib.p3.y - p.y) / calib.escala;
+            return ((calib.p3.x - p.x) * e.vx + (calib.p3.y - p.y) * e.vy) / calib.escala;
         }
 
         // ── mostrarStep4 ──────────────────────────────────────────────
@@ -5098,6 +5269,7 @@
             const el = document.getElementById('status-calib');
             el.style.display = 'block';
             el.innerHTML = html;
+            try { atualizarAvisoNivel(); } catch(e) {}
         }
 
         function getPosCanvas(e) {
@@ -5363,9 +5535,9 @@
                     // C2 pico, C3 dir) e segue pra próxima zona.
                     const glY = calib.p3.y, escZ = calib.escala, p1x = calib.p1.x;
                     const pts = [
-                        { xmm: Math.round((calib.pc1.x - p1x)/escZ), hmm: Math.round((glY - calib.pc1.y)/escZ) },
-                        { xmm: Math.round((calib.pc2.x - p1x)/escZ), hmm: Math.round((glY - calib.pc2.y)/escZ) },
-                        { xmm: Math.round((calib.pc3.x - p1x)/escZ), hmm: Math.round((glY - calib.pc3.y)/escZ) }
+                        { xmm: Math.round(medirXmm(calib, calib.pc1)), hmm: Math.round(medirHmm(calib, calib.pc1)) },
+                        { xmm: Math.round(medirXmm(calib, calib.pc2)), hmm: Math.round(medirHmm(calib, calib.pc2)) },
+                        { xmm: Math.round(medirXmm(calib, calib.pc3)), hmm: Math.round(medirHmm(calib, calib.pc3)) }
                     ];
                     if (!degrauZonasPts[ladoAtual]) degrauZonasPts[ladoAtual] = [];
                     degrauZonasPts[ladoAtual][calib._zonaAtual] = pts;
@@ -5383,9 +5555,9 @@
                 // Calcular alturas C1, C2, C3 a partir das posições
                 const glY = calib.p3.y;
                 const escZ = calib.escala;
-                const altC1 = Math.round((glY - calib.pc1.y) / escZ);
-                const altC2 = Math.round((glY - calib.pc2.y) / escZ);
-                const altC3 = Math.round((glY - calib.pc3.y) / escZ);
+                const altC1 = Math.round(medirHmm(calib, calib.pc1));
+                const altC2 = Math.round(medirHmm(calib, calib.pc2));
+                const altC3 = Math.round(medirHmm(calib, calib.pc3));
                 
                 calib.alturas = { calhaEsq: altC1, cume: altC2, calhaDir: altC3 };
                 
@@ -5398,7 +5570,7 @@
                 // Guardar altura do cume (sistema antigo usa altCumeData)
                 altCumeData[ladoAtual] = altC2;
                 // Posição do cume em mm desde P1
-                const posCumeMm = Math.round((calib.pc2.x - calib.p1.x) / escZ);
+                const posCumeMm = Math.round(medirXmm(calib, calib.pc2));
                 posCumeData[ladoAtual] = posCumeMm;
                 
                 // Finalizar UI
@@ -5413,7 +5585,7 @@
 
             } else if (calib.estado === 'confirmando_div') {
                 const escZ = calib.escala;
-                const divMm = Math.round((calib.pdiv.x - calib.p1.x) / escZ);
+                const divMm = Math.round(medirXmm(calib, calib.pdiv));
                 if (!calib._pdivs) calib._pdivs = [];
                 calib._pdivs.push(divMm);
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
@@ -5439,8 +5611,8 @@
             } else if (calib.estado === 'confirmando_dz2') {
                 const escZ = calib.escala, glY = calib.p3.y, p1x = calib.p1.x;
                 const pts = [
-                    { xmm: Math.round((calib.pdz1.x - p1x)/escZ), hmm: Math.round((glY - calib.pdz1.y)/escZ) },
-                    { xmm: Math.round((calib.pdz2.x - p1x)/escZ), hmm: Math.round((glY - calib.pdz2.y)/escZ) }
+                    { xmm: Math.round(medirXmm(calib, calib.pdz1)), hmm: Math.round(medirHmm(calib, calib.pdz1)) },
+                    { xmm: Math.round(medirXmm(calib, calib.pdz2)), hmm: Math.round(medirHmm(calib, calib.pdz2)) }
                 ];
                 pts.sort(function(a,b){ return a.xmm - b.xmm; });
                 if (!degrauZonasPts[ladoAtual]) degrauZonasPts[ladoAtual] = [];
@@ -5524,7 +5696,7 @@
             if (tem2 && calibData[ladoAtual] && calibData[ladoAtual].alturas && calibData[ladoAtual].pc2) {
                 var _cal = calibData[ladoAtual];
                 altCumeData[ladoAtual] = _cal.alturas.cume;
-                posCumeData[ladoAtual] = Math.round((_cal.pc2.x - _cal.p1.x) / _cal.escala);
+                posCumeData[ladoAtual] = Math.round(medirXmm(_cal, _cal.pc2));
             } else if (!tem2) {
                 altCumeData[ladoAtual] = 0;
                 posCumeData[ladoAtual] = 0;
@@ -6417,7 +6589,7 @@
                     if (prevC) { altMm = Math.max(altMm, prevC.altGCmm); yGCCol = Math.min(yGCCol, prevC.yGC); }
                     if (nextC) { altMm = Math.max(altMm, nextC.altGCmm); yGCCol = Math.min(yGCCol, nextC.yGC); }
 
-                    // Captura a altura final desta coluna → vira peças de ashiba
+                    // Captura a altura final desta coluna → vira peças de ashira (柱)
                     _capColunas.push({ xMm: Math.round((xCol - xPrim) / escZ), altMm: altMm });
 
                     var txt = '';
@@ -7144,8 +7316,25 @@
             montarContagemPecas(faces);
         }
 
+        // Decompõe a altura de UMA coluna nas peças de ashira (柱) de estoque.
+        // 3600 = 8 kobus, 1800 = 4, 900 = 2, 450 = 1.
+        // 2700 NÃO é peça de estoque: sai como 1800 + 900 (4+2).
+        function decomporAshira(altMm) {
+            const pecas = [3600, 1800, 900, 450];
+            const out = {};
+            let rest = Math.max(0, Math.round(altMm));
+            pecas.forEach(function(p) {
+                while (rest >= p) { rest -= p; out[p] = (out[p] || 0) + 1; }
+            });
+            // sobra < 450 ainda precisa de uma peça: arredonda para cima
+            if (rest > 0) out[450] = (out[450] || 0) + 1;
+            return out;
+        }
+
         function montarContagemPecas(faces) {
             let jacks = 0, quadros = 0, pesInt = 0, buraketos = 0;
+            const ashira = {};       // colunas por medida: 3600 / 1800 / 900 / 450
+            let ashiraPe = 0;        // quantas dessas peças são dos pés internos
             const tesuris = {};      // por medida: 1800, 1200, 900, 600, 400...
             const tesuriInt = {};    // tesuri do pé interno: 600 (W) / 400 (S)
             const buraketosMm = {};  // por medida: 600 (W) / 400 (S,Sb) / 300 (M)
@@ -7183,6 +7372,19 @@
                     quadrosF += n;                    // 1 quadro por coluna por andar
                 });
                 quadros += quadrosF;
+
+                // ── ASHIRA 柱 (colunas) ──────────────────────────────────────
+                // Cada coluna externa vai do jack até o guarda-corpo. A altura
+                // final de cada uma foi capturada no desenho (_capColunas), então
+                // aqui é só decompor em peças de estoque.
+                let ashiraF = 0;
+                (dados.colunas || []).forEach(function(c) {
+                    const dec = decomporAshira(c.altMm);
+                    Object.keys(dec).forEach(function(mm) {
+                        ashira[mm] = (ashira[mm] || 0) + dec[mm];
+                        ashiraF += dec[mm];
+                    });
+                });
 
                 // ── PÉS INTERNOS da face (posições em mm) ─────────────────
                 // Calculados antes porque o buraketo depende deles.
@@ -7230,10 +7432,39 @@
                 // Pé interno: peça VERTICAL, contada 1x por posição.
                 pesF = pesMm.length;
                 pesInt += pesF; buraketos += burF;
-                if (pesF) {
-                    const tInt2 = tesuriDaFace(platF);
-                    tesuriInt[tInt2] = (tesuriInt[tInt2] || 0) + pesF;
-                }
+
+                // ── ASHIRA, JAK e TESURI do PÉ INTERNO ────────────────────
+                // Altura: o pé interno existe para apoiar plataforma, então sobe
+                // só até a plataforma MAIS ALTA que serve, não até o guarda-corpo.
+                // Ex.: 3 andares começando a 1800 do GL → última plataforma a
+                // 5400 → pé de 5400 = 12 kobus = 8+4 = 3600 + 1800.
+                // Com degrau, cada pé usa a fileira mais alta da SUA zona —
+                // por isso a altura sai das fileiras que cobrem o x do pé.
+                //
+                // Tesuri do pé (600 se a face é W, 400 se é S):
+                //   1 por andar (amarra o pé na coluna de fora) + 1 negarami
+                //   na base. 3 andares → 3 + 1 = 4 tesuris, por pé.
+                //
+                // Jak: o pé apoia no chão, então leva jak igual às outras colunas.
+                const tIntMm = tesuriDaFace(platF);
+                pesMm.forEach(function(xm) {
+                    let altPe = 0, andaresPe = 0;
+                    dados.fileiras.forEach(function(fi) {
+                        if (xm >= fi.xIniMm - 1 && xm <= fi.xFimMm + 1) {
+                            andaresPe++;
+                            if (fi.alturaMm > altPe) altPe = fi.alturaMm;
+                        }
+                    });
+                    if (altPe <= 0) return;           // pé sem plataforma: não sobe
+                    tesuriInt[tIntMm] = (tesuriInt[tIntMm] || 0) + andaresPe + 1;
+                    const dec = decomporAshira(altPe);
+                    Object.keys(dec).forEach(function(mm) {
+                        ashira[mm] = (ashira[mm] || 0) + dec[mm];
+                        ashiraF   += dec[mm];
+                        ashiraPe  += dec[mm];
+                    });
+                    jacks += 1;                       // o pé interno também apoia no chão
+                });
 
                 // ── TESURI, vão por vão ───────────────────────────────────
                 //   1 negarami (根がらみ) na base, grudando coluna a coluna
@@ -7263,7 +7494,7 @@
 
                 const alturas = dados.fileiras.map(function(x){ return x.alturaMm; });
                 porFace.push({ nome:f.nome, plat:platF, nCol:nCol,
-                               fileiras:dados.fileiras.length, quadros:quadrosF,
+                               fileiras:dados.fileiras.length, quadros:ashiraF,
                                pes:pesF, bur:burF, plats:platsF,
                                det:'fileiras a ' + alturas.join('mm, ') + 'mm do GL' });
             });
@@ -7281,9 +7512,18 @@
             }
             html += '<div style="font-weight:700;color:#16a085;margin-bottom:8px;">🧮 Contagem de peças</div>';
             html += '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
-            html += linha('Jacks (base)', jacks, '#34495e');
-            html += linha('Colunas / quadros 建枠 (todos os andares)', quadros, '#34495e');
-            html += linha('Pés internos', pesInt, '#2980b9');
+            html += linha('Jacks (base) ジャッキ', jacks, '#34495e');
+            // Ashira (柱) = colunas verticais, já em peças de estoque.
+            // 2700 não existe: aparece como 1800 + 900 (4+2).
+            const _kobuDe = { '3600':'8', '1800':'4', '900':'2', '450':'1' };
+            Object.keys(ashira).sort(function(a,b){ return Number(b) - Number(a); }).forEach(function(k) {
+                html += linha('Ashira 柱 ' + k + ' (' + (_kobuDe[k] || '?') + ')', ashira[k], '#34495e');
+            });
+            if (ashiraPe) {
+                html += '<tr><td colspan="2" style="padding:2px 4px 7px 20px;font-size:11px;color:#777;border-bottom:1px solid #eee;">'
+                      + '↳ ' + ashiraPe + ' dessas peças são dos pés internos (sobem só até a plataforma mais alta)</td></tr>';
+            }
+            html += linha('Pés internos (posições)', pesInt, '#2980b9');
             Object.keys(tesuriInt).sort(function(a,b){return b-a;}).forEach(function(k) {
                 html += linha('Tesuri ' + k + ' (pé interno)', tesuriInt[k], '#2980b9');
             });
@@ -7294,6 +7534,7 @@
             html += '<div style="margin:6px 0 10px;font-size:11px;color:#666;">'
                  +  'Tesuri por vão = 1 negarami + ' + TESURI_POR_PLATAFORMA + ' por plataforma + '
                  +  TESURI_GUARDA_CORPO + ' guarda-corpo.<br>'
+                 +  'Tesuri do pé interno = 1 por andar + 1 negarami (sem guarda-corpo).<br>'
                  +  '<button onclick="alternarTesuriPorPlat()" style="background:#f39c12;color:#fff;border:none;border-radius:5px;padding:5px 9px;font-size:11px;font-weight:700;width:auto;margin:4px 4px 0 0;">'
                  +  (TESURI_POR_PLATAFORMA === 1 ? '2' : '1') + ' por plataforma</button>'
                  +  '<button onclick="alternarGuardaCorpo()" style="background:#e67e22;color:#fff;border:none;border-radius:5px;padding:5px 9px;font-size:11px;font-weight:700;width:auto;margin-top:4px;">'
@@ -7310,7 +7551,7 @@
             html += '<div style="font-weight:700;color:#16a085;margin:14px 0 6px;">Por face (andares vêm do desenho)</div>';
             html += '<table style="width:100%;border-collapse:collapse;font-size:12px;">';
             html += '<tr style="background:#f4f6f7;"><th style="text-align:left;padding:4px;">Face</th>'
-                  + '<th style="padding:4px;">Fil.</th><th style="padding:4px;">Quadros</th>'
+                  + '<th style="padding:4px;">Fil.</th><th style="padding:4px;">Ashira</th>'
                   + '<th style="padding:4px;">Pés</th><th style="padding:4px;">Bur.</th>'
                   + '<th style="padding:4px;">Plat.</th></tr>';
             porFace.forEach(function(p) {
