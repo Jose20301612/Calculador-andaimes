@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.83 - Nivelamento opcional (screenshot fica reto como antes) + pontos C em cruz</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.86 - Botoes 2 inclinacoes e Degrau: liga/desliga livre, sem apagar a calibracao</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -4694,6 +4694,20 @@
                 if (calibrado && resultadosCalc[lado]) {
                     desenharLinhasNoCanvas(lado);
                 }
+                // v4.85: selo bem visível enquanto o nivelamento estiver ligado.
+                // Ele muda as alturas, então não pode ficar ligado em silêncio.
+                if (calib._nivelar) {
+                    const _sel = '📐 NIVELADO ' + anguloP1P2(calib).toFixed(1) + '°';
+                    ctx.save();
+                    ctx.font = 'bold 12px Arial';
+                    const _sw = ctx.measureText(_sel).width;
+                    ctx.fillStyle = '#e67e22';
+                    ctx.fillRect(6, 6, _sw + 14, 22);
+                    ctx.fillStyle = '#fff';
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                    ctx.fillText(_sel, 13, 17);
+                    ctx.restore();
+                }
                 if (calibrado) {
                     // Marcadores discretos de P1/P2/GL depois de calibrar.
                     // Antes os pinos sumiam por completo ao calibrar: se a face
@@ -4847,6 +4861,11 @@
             var calib = calibData[ladoAtual];
             if (!calib || !calib.p1 || !calib.p2) { el.style.display = 'none'; return; }
             var g = anguloP1P2(calib);
+            // v4.85: enquanto o nivelamento estiver LIGADO, a faixa fica
+            // sempre visível — inclusive depois de calibrar. Antes ela sumia
+            // junto com a mensagem de status, então quem tocasse no botão uma
+            // vez ficava com o nivelamento ligado sem ver e sem como desligar,
+            // e as alturas saíam maiores que a planta.
             if (g < _NIVEL_AVISO_GRAUS && !calib._nivelar) { el.style.display = 'none'; return; }
             var btn = '<button onclick="alternarNivelar()" style="background:'
                 + (calib._nivelar ? '#27ae60' : '#5dade2')
@@ -4957,25 +4976,54 @@
                       bd.textContent = td ? '🪜 Degrau ✓' : '🪜 Degrau'; }
         }
 
+        // v4.86: volta a face ao estado "calibrado" sem apagar P1/P2/GL.
+        // Usado quando o usuário desliga um modo no meio da marcação dos
+        // pontos extras (C1/C2/C3 ou divisores do degrau).
+        function _voltarAoCalibrado(calib) {
+            if (!calib) return false;
+            var base = calib.escala && calib.p1 && calib.p2 && calib.p3;
+            if (!base) return false;
+            calib.estado = 'calibrado';
+            try { removerListenerCalib(document.getElementById('fotoCanvas')); } catch(e) {}
+            var st = document.getElementById('status-calib'); if (st) st.style.display = 'none';
+            var bw = document.getElementById('btn-confirmar-ponto-wrap'); if (bw) bw.style.display = 'none';
+            var af = document.getElementById('acoes-foto'); if (af) af.style.display = 'grid';
+            try { atualizarBadges('calibrado'); } catch(e) {}
+            try { atualizarAvisoNivel(); } catch(e) {}
+            return true;
+        }
+
         function abrirPergunta2Incl() {
             if (!ladoAtual) { alert('Selecione um lado (aba) primeiro.'); return; }
             const calib = calibData[ladoAtual];
-            // Desligar se já estava ligado
+            // DESLIGAR — nunca mexe na calibração, em nenhum momento.
             if (tem2InclData[ladoAtual]) {
                 tem2InclData[ladoAtual] = false;
+                if (calib) {
+                    calib.pc1 = calib.pc2 = calib.pc3 = null;
+                    calib.tipo2Incl = false;
+                    // se estava no meio de marcar C1/C2/C3, volta ao calibrado
+                    if (String(calib.estado || '').indexOf('_c') >= 0) _voltarAoCalibrado(calib);
+                }
                 atualizarBotoesModo();
+                redrawCanvas(ladoAtual);
                 return;
             }
-            var jaDesenhou = document.getElementById('acoes-foto').style.display !== 'none';
-            if (jaDesenhou) {
-                if (!confirm('Isso vai recomeçar a calibração desta face. Continuar?')) return;
-                limparPontosCalib();
-            }
-            tem2InclData[ladoAtual] = true; // liga a intenção "tem cume"
+            // LIGAR — v4.86: não apaga mais a calibração.
+            // Antes, se a face já estava desenhada, o programa avisava que ia
+            // "recomeçar a calibração" e apagava P1/P2/GL — e aí caía no alert
+            // "marque P1, P2 e GL primeiro". Os dois avisos se contradiziam.
+            // Para marcar C1/C2/C3 a calibração não precisa ser desfeita:
+            // ela continua valendo e o programa só pede os pontos que faltam.
+            tem2InclData[ladoAtual] = true;
             atualizarBotoesModo();
             const temBase = calib && calib.escala && calib.p1 && calib.p2 && calib.p3;
             if (!temBase) {
-                alert('Marque P1, P2 e GL primeiro. A marcação da inclinação começa depois de calibrar.');
+                // Antes de calibrar: só informa a ordem. Sem alert, sem apagar
+                // nada — dá para ligar e desligar à vontade.
+                mostrarStatusCalib('⛰️ <strong>2 inclinações ligado</strong><br>'
+                    + '<span style="font-size:11px;">Marque P1, P2 e GL. Depois o programa pede C1 → C2 → C3.</span>');
+                redrawCanvas(ladoAtual);
                 return;
             }
             // Se o DEGRAU não está ligado, marca o cume da FACE inteira (C1/C2/C3).
@@ -4990,7 +5038,8 @@
                 ativarCalibCanvas(ladoAtual);
                 redrawCanvas(ladoAtual);
             } else {
-                alert('Modo cume ligado. Agora clique em "Degrau" para marcar o divisor e as partes.');
+                mostrarStatusCalib('⛰️ <strong>2 inclinações ligado</strong><br>'
+                    + '<span style="font-size:11px;">Agora toque em 🪜 Degrau para marcar o divisor e as partes.</span>');
             }
         }
 
@@ -4999,18 +5048,26 @@
         function abrirDegrau() {
             if (!ladoAtual) { alert('Selecione um lado (aba) primeiro.'); return; }
             const calib = calibData[ladoAtual];
-            if (temDegrauData[ladoAtual] && (!calib || calib.estado === 'calibrado')) {
+            // DESLIGAR — em qualquer momento, sem mexer na calibração.
+            // Antes só dava para desligar com a face já calibrada; no meio da
+            // marcação dos divisores o botão caía no caminho de LIGAR e
+            // reiniciava tudo.
+            if (temDegrauData[ladoAtual]) {
                 temDegrauData[ladoAtual] = false;
                 degrauDivsMm[ladoAtual] = null; degrauZonasPts[ladoAtual] = null;
+                if (calib) {
+                    calib._pdivs = []; calib._zonasPts = []; calib._zonaAtual = 0;
+                    calib.pdiv = null; calib.pdz1 = calib.pdz2 = null;
+                    var e0 = String(calib.estado || '');
+                    if (e0.indexOf('div') >= 0 || e0.indexOf('zona') >= 0) _voltarAoCalibrado(calib);
+                }
                 atualizarBotoesModo();
                 redrawCanvas(ladoAtual);
                 return;
             }
-            var jaDesenhou = document.getElementById('acoes-foto').style.display !== 'none';
-            if (jaDesenhou) {
-                if (!confirm('Isso vai recomeçar a calibração desta face. Continuar?')) return;
-                limparPontosCalib();
-            }
+            // LIGAR — v4.86: não apaga mais a calibração (mesmo motivo do
+            // botão de 2 inclinações). Os divisores são pontos a MAIS; P1, P2
+            // e GL continuam valendo.
             const nDeg = Math.max(1, parseInt(document.getElementById('nDegraus').value) || 1);
             temDegrauData[ladoAtual] = true;
             atualizarBotoesModo();
@@ -5053,7 +5110,7 @@
             removerListenerCalib(document.getElementById('fotoCanvas'));
             document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
             document.getElementById('status-calib').style.display = 'none';
-                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
             document.getElementById('acoes-foto').style.display = 'grid';
             atualizarBadges('calibrado');
             atualizarStatusEscala(ladoAtual);
@@ -5161,7 +5218,7 @@
                 document.getElementById('acoes-foto').style.display      = 'none';
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display    = 'none';
-                var _an1=document.getElementById('aviso-nivel'); if(_an1) _an1.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
                 document.getElementById('input-medida-real').style.display = 'none';
                 document.getElementById('btn-limpar-pontos').style.display = 'none';
                 document.getElementById('status-escala').style.display   = 'none';
@@ -5207,7 +5264,7 @@
                     document.getElementById('btn-confirmar-ponto-wrap').style.display='none';
                     document.getElementById('input-medida-real').style.display='none';
                     document.getElementById('status-calib').style.display='none';
-                    var _an2=document.getElementById('aviso-nivel'); if(_an2) _an2.style.display='none';
+                    try { atualizarAvisoNivel(); } catch(e) {}
                     document.getElementById('btn-limpar-pontos').style.display='none';
                     document.getElementById('beiralLadoAtual').value=beiraisCalc[ladoAtual]||0;
                     atualizarBadges('aguardando_p1');
@@ -5475,7 +5532,7 @@
                 calib.estado = 'aguardando_medida';
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
-                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
                 document.getElementById('input-medida-real').style.display = 'block';
                 atualizarBadges('aguardando_medida');
 
@@ -5511,7 +5568,7 @@
                 removerListenerCalib(canvas); // restaura scroll
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
-                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
                 document.getElementById('acoes-foto').style.display = 'grid';
                 atualizarBadges('calibrado');
                 atualizarStatusEscala(ladoAtual);
@@ -5601,7 +5658,7 @@
                 removerListenerCalib(canvas);
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
-                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
                 document.getElementById('acoes-foto').style.display = 'grid';
                 atualizarBadges('calibrado');
                 atualizarStatusEscala(ladoAtual);
@@ -5691,7 +5748,7 @@
             if (typeof atualizarBotoesModo === 'function') atualizarBotoesModo();
 
             document.getElementById('status-calib').style.display = 'none';
-                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
+                try { atualizarAvisoNivel(); } catch(e) {}
             document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
             document.getElementById('input-medida-real').style.display = 'none';
             document.getElementById('btn-limpar-pontos').style.display = 'none';
