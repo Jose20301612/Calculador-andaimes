@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.82 - GL nivelado (foto torta não distorce mais as alturas) + pontos C em cruz</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.83 - Nivelamento opcional (screenshot fica reto como antes) + pontos C em cruz</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -4580,9 +4580,11 @@
                 if (!calibrado) {
                     // Ajustar posições dos pins pelo padding
                     const z = zoomAtual;
-                    if (calib.p1) desenharPin(ctx, calib.p1.x*z + paddingLeft, calib.p1.y*z, 'P1', '#f39c12');
+                    // v4.84: P1/P2 também em cruz — são pontos de precisão
+                    // (definem a escala), o pin grande tapava a base da parede.
+                    if (calib.p1) desenharPinCruz(ctx, calib.p1.x*z + paddingLeft, calib.p1.y*z, 'P1', '#f39c12');
                     if (calib.p2) {
-                        desenharPin(ctx, calib.p2.x*z + paddingLeft, calib.p2.y*z, 'P2', '#f39c12');
+                        desenharPinCruz(ctx, calib.p2.x*z + paddingLeft, calib.p2.y*z, 'P2', '#f39c12');
                         ctx.beginPath();
                         ctx.moveTo(calib.p1.x*z + paddingLeft, calib.p1.y*z);
                         ctx.lineTo(calib.p2.x*z + paddingLeft, calib.p2.y*z);
@@ -4626,7 +4628,17 @@
                             } else {
                                 desn = Math.abs(a.y - b.y) / (calib.escala || 1);
                             }
-                            const reto = desn <= 60;      // até 6cm = reto (erro do toque)
+                            // v4.84: "reto" é comparado com a LARGURA do trecho,
+                            // não com um valor fixo. 60mm fixo era apertado
+                            // demais: 3px de erro de toque num screenshot 1:100
+                            // já passam disso, e uma calha reta saía pontilhada.
+                            // Inclinação de telhado de verdade é 2/10, 3/10,
+                            // 4/10 — ou seja 20% a 40%. Abaixo de 2.5% é erro
+                            // de dedo, não telhado.
+                            const larg = Math.abs(medirXmm(calib, b) - medirXmm(calib, a));
+                            const reto = (desn <= 50) || (larg > 0 && (desn / larg) <= 0.025);
+                            // inclinação no jeito japonês: x em 10 (寸)
+                            const razao = (larg > 0) ? (desn / larg * 10) : 0;
                             ctx.beginPath();
                             ctx.moveTo(a.x*z + paddingLeft, a.y*z);
                             ctx.lineTo(b.x*z + paddingLeft, b.y*z);
@@ -4637,7 +4649,9 @@
                             ctx.setLineDash([]);
                             // etiqueta no meio dizendo o que o programa entendeu
                             const mx = (a.x + b.x)/2*z + paddingLeft, my = (a.y + b.y)/2*z;
-                            const txt = reto ? 'reto' : ('incl. ' + Math.round(desn) + 'mm');
+                            // Mostra a inclinação como o desenho mostra (3.0/10),
+                            // assim dá para conferir direto contra o 立面図.
+                            const txt = reto ? 'reto' : (razao.toFixed(1) + '/10');
                             ctx.font = 'bold 10px Arial';
                             const tw = ctx.measureText(txt).width;
                             ctx.fillStyle = 'rgba(255,255,255,0.88)';
@@ -4737,30 +4751,34 @@
         // O pin normal tapa o ponto e é difícil ver onde ele realmente está;
         // a cruz deixa o centro vazado, então dá para mirar exatamente na
         // quina da calha e conferir o ângulo.
+        // v4.84: cruz reduzida a 1/3 do tamanho (braço 13px → 4.3px). A cruz
+        // grande tapava o desenho do fundo e atrapalhava mirar. A espessura
+        // encolhe menos que o braço, senão some da tela.
         function desenharPinCruz(ctx, x, y, label, cor) {
-            const B = 13;            // braço da cruz
+            const B = 4.3;           // braço da cruz (era 13)
+            const G = 1.1;           // folga no centro, para o ponto ficar vazado
             ctx.save();
             ctx.translate(x, y);
-            ctx.lineCap = 'round';
+            ctx.lineCap = 'butt';
             // contorno branco para aparecer em cima de desenho escuro
-            [['white', 4.5], [cor, 2.2]].forEach(function(par) {
+            [['white', 2.4], [cor, 1.3]].forEach(function(par) {
                 ctx.strokeStyle = par[0]; ctx.lineWidth = par[1];
                 ctx.beginPath();
-                ctx.moveTo(-B, 0); ctx.lineTo(-3, 0);
-                ctx.moveTo( 3, 0); ctx.lineTo( B, 0);
-                ctx.moveTo(0, -B); ctx.lineTo(0, -3);
-                ctx.moveTo(0,  3); ctx.lineTo(0,  B);
+                ctx.moveTo(-B, 0); ctx.lineTo(-G, 0);
+                ctx.moveTo( G, 0); ctx.lineTo( B, 0);
+                ctx.moveTo(0, -B); ctx.lineTo(0, -G);
+                ctx.moveTo(0,  G); ctx.lineTo(0,  B);
                 ctx.stroke();
             });
-            // ponto central pequeno = a posição exata
-            ctx.beginPath(); ctx.arc(0, 0, 1.6, 0, Math.PI*2);
+            // ponto central = a posição exata
+            ctx.beginPath(); ctx.arc(0, 0, 0.9, 0, Math.PI*2);
             ctx.fillStyle = cor; ctx.fill();
             // etiqueta ao lado, fora da cruz, para não tapar o ponto
             if (label) {
-                ctx.font = 'bold 11px Arial';
+                ctx.font = 'bold 10px Arial';
                 const w = ctx.measureText(label).width;
-                ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                ctx.fillRect(B + 2, -8, w + 6, 16);
+                ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                ctx.fillRect(B + 3, -7, w + 5, 14);
                 ctx.fillStyle = cor;
                 ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
                 ctx.fillText(label, B + 5, 0);
@@ -5035,6 +5053,7 @@
             removerListenerCalib(document.getElementById('fotoCanvas'));
             document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
             document.getElementById('status-calib').style.display = 'none';
+                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
             document.getElementById('acoes-foto').style.display = 'grid';
             atualizarBadges('calibrado');
             atualizarStatusEscala(ladoAtual);
@@ -5142,6 +5161,7 @@
                 document.getElementById('acoes-foto').style.display      = 'none';
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display    = 'none';
+                var _an1=document.getElementById('aviso-nivel'); if(_an1) _an1.style.display='none';
                 document.getElementById('input-medida-real').style.display = 'none';
                 document.getElementById('btn-limpar-pontos').style.display = 'none';
                 document.getElementById('status-escala').style.display   = 'none';
@@ -5187,6 +5207,7 @@
                     document.getElementById('btn-confirmar-ponto-wrap').style.display='none';
                     document.getElementById('input-medida-real').style.display='none';
                     document.getElementById('status-calib').style.display='none';
+                    var _an2=document.getElementById('aviso-nivel'); if(_an2) _an2.style.display='none';
                     document.getElementById('btn-limpar-pontos').style.display='none';
                     document.getElementById('beiralLadoAtual').value=beiraisCalc[ladoAtual]||0;
                     atualizarBadges('aguardando_p1');
@@ -5454,6 +5475,7 @@
                 calib.estado = 'aguardando_medida';
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
+                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
                 document.getElementById('input-medida-real').style.display = 'block';
                 atualizarBadges('aguardando_medida');
 
@@ -5489,6 +5511,7 @@
                 removerListenerCalib(canvas); // restaura scroll
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
+                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
                 document.getElementById('acoes-foto').style.display = 'grid';
                 atualizarBadges('calibrado');
                 atualizarStatusEscala(ladoAtual);
@@ -5578,6 +5601,7 @@
                 removerListenerCalib(canvas);
                 document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
                 document.getElementById('status-calib').style.display = 'none';
+                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
                 document.getElementById('acoes-foto').style.display = 'grid';
                 atualizarBadges('calibrado');
                 atualizarStatusEscala(ladoAtual);
@@ -5667,6 +5691,7 @@
             if (typeof atualizarBotoesModo === 'function') atualizarBotoesModo();
 
             document.getElementById('status-calib').style.display = 'none';
+                var _an0=document.getElementById('aviso-nivel'); if(_an0) _an0.style.display='none';
             document.getElementById('btn-confirmar-ponto-wrap').style.display = 'none';
             document.getElementById('input-medida-real').style.display = 'none';
             document.getElementById('btn-limpar-pontos').style.display = 'none';
