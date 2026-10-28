@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.85 - Nivelamento nao fica mais ligado escondido (selo no desenho + botao sempre visivel)</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.89 - Modo Rapido: botoes N/S e L/O para mudar a ordem dos spans de uma face so</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -567,9 +567,15 @@
                         <span style="background:#e74c3c; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px;">NORTE = SUL</span>
                     </div>
                     <div style="text-align:center; margin-bottom:8px;">
-                        <div style="font-size:10px; color:#e74c3c; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
-                        <input type="text" id="mr-spans-ns" placeholder="Ex: 8x1800+1200" oninput="mrValidar()"
-                            style="width:160px; padding:8px; border:2px solid #e74c3c; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                        <div id="mr-lbl-ns" style="font-size:10px; color:#e74c3c; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <button id="mr-btn-norte" onclick="mrAlternarFace('ns','norte')" title="Mudar só a ordem do NORTE"
+                                style="width:34px; padding:9px 0; font-size:13px; font-weight:800; border-radius:6px; border:2px solid #bdc3c7; background:#ecf0f1; color:#95a5a6;">N</button>
+                            <input type="text" id="mr-spans-ns" onblur="mrAtualizarBotoesMR()" placeholder="Ex: 8x1800+1200" oninput="mrDigitou('ns')"
+                                style="width:150px; padding:8px; border:2px solid #e74c3c; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                            <button id="mr-btn-sul" onclick="mrAlternarFace('ns','sul')" title="Mudar só a ordem do SUL"
+                                style="width:34px; padding:9px 0; font-size:13px; font-weight:800; border-radius:6px; border:2px solid #bdc3c7; background:#ecf0f1; color:#95a5a6;">S</button>
+                        </div>
                         <div style="font-size:10px; color:#999; margin-top:3px;">NxMM ou NxMM+MM+...</div>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
@@ -607,9 +613,15 @@
                         <span style="background:#f39c12; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:10px;">LESTE = OESTE</span>
                     </div>
                     <div style="text-align:center; margin-bottom:8px;">
-                        <div style="font-size:10px; color:#f39c12; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
-                        <input type="text" id="mr-spans-lo" placeholder="Ex: 6x1800+600" oninput="mrValidar()"
-                            style="width:160px; padding:8px; border:2px solid #f39c12; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                        <div id="mr-lbl-lo" style="font-size:10px; color:#f39c12; font-weight:700; margin-bottom:3px;">Sequência de spans</div>
+                        <div style="display:flex; align-items:center; justify-content:center; gap:5px;">
+                            <button id="mr-btn-leste" onclick="mrAlternarFace('lo','leste')" title="Mudar só a ordem do LESTE"
+                                style="width:34px; padding:9px 0; font-size:13px; font-weight:800; border-radius:6px; border:2px solid #bdc3c7; background:#ecf0f1; color:#95a5a6;">L</button>
+                            <input type="text" id="mr-spans-lo" onblur="mrAtualizarBotoesMR()" placeholder="Ex: 6x1800+600" oninput="mrDigitou('lo')"
+                                style="width:150px; padding:8px; border:2px solid #f39c12; border-radius:6px; font-size:14px; font-weight:700; text-align:center;">
+                            <button id="mr-btn-oeste" onclick="mrAlternarFace('lo','oeste')" title="Mudar só a ordem do OESTE"
+                                style="width:34px; padding:9px 0; font-size:13px; font-weight:800; border-radius:6px; border:2px solid #bdc3c7; background:#ecf0f1; color:#95a5a6;">O</button>
+                        </div>
                         <div style="font-size:10px; color:#999; margin-top:3px;">NxMM ou NxMM+MM+...</div>
                     </div>
                     <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
@@ -1561,6 +1573,7 @@
         var mrPorta = 'sul';
 
         function abrirModoRapido() {
+            try { mrAtualizarBotoesMR(); } catch(e) {}
             document.getElementById('painelModoRapido').style.display = 'block';
             document.getElementById('painelModoRapido').scrollIntoView({ behavior: 'smooth' });
         }
@@ -1598,6 +1611,151 @@
             return spans;
         }
 
+        // ── Modo Rápido: ordem dos spans face por face (v4.90) ───────────
+        // A sequência da caixa, sozinha, vale para o par inteiro e sai
+        // espelhada — como sempre foi.
+        //
+        // Os botões dizem DE QUEM é a ordem que está na caixa:
+        //   1. digita a sequência;
+        //   2. toca em N  → o que está digitado passa a ser o NORTE,
+        //      e o sul sai espelhado daquilo;
+        //      toca em S  → o digitado é o SUL, e o norte sai espelhado;
+        //      não toca em nada → espelhado como sempre;
+        //   3. para mudar uma delas depois, toca no botão DELA: a caixa
+        //      passa a mostrar a ordem daquela face e o que você digitar
+        //      muda só ela — a outra fica como estava.
+        var mrBase   = { ns:'', lo:'' };                                  // sequência comum
+        var mrCustom = { norte:null, sul:null, leste:null, oeste:null };  // ordem própria da face
+        var mrDono   = { ns:null, lo:null };                              // de quem é a caixa agora
+        var MR_PAR   = { norte:'ns', sul:'ns', leste:'lo', oeste:'lo' };
+        var MR_FACES = { ns:['norte','sul'], lo:['leste','oeste'] };
+        // Qual face recebe a sequência COMO DIGITADA (a outra sai espelhada).
+        // Mantém o comportamento de sempre: sul e oeste são as diretas.
+        var MR_DIRETA = { ns:'sul', lo:'oeste' };
+        var MR_NOME   = { norte:'NORTE 北', sul:'SUL 南', leste:'LESTE 東', oeste:'OESTE 西' };
+        var MR_COR    = { norte:'#3498db', sul:'#e74c3c', leste:'#f39c12', oeste:'#9b59b6' };
+
+        // Lista de spans → texto compacto: [1800,1800,1800,1200] → "3x1800+1200"
+        function mrSpansParaTxt(arr) {
+            if (!arr || !arr.length) return '';
+            var out = [], i = 0;
+            while (i < arr.length) {
+                var v = arr[i], n = 1;
+                while (i + n < arr.length && arr[i + n] === v) n++;
+                out.push(n > 1 ? (n + 'x' + v) : String(v));
+                i += n;
+            }
+            return out.join('+');
+        }
+        function mrInverterTxt(txt) {
+            return mrSpansParaTxt(parseMrSpans(txt).reverse());
+        }
+        // Texto que uma face deve mostrar agora.
+        // Ordem de prioridade:
+        //   1. a face tem ordem própria (o botão dela foi usado) → essa;
+        //   2. a OUTRA face do par tem ordem própria → espelho dela;
+        //   3. ninguém definiu nada → a sequência da caixa, com sul/oeste
+        //      na ordem digitada e norte/leste espelhado (como sempre foi).
+        function mrOutraFace(face) {
+            var fs = MR_FACES[MR_PAR[face]];
+            return (fs[0] === face) ? fs[1] : fs[0];
+        }
+        function mrTxtDaFace(face) {
+            if (mrCustom[face] !== null && mrCustom[face] !== undefined) return mrCustom[face];
+            var outra = mrOutraFace(face);
+            if (mrCustom[outra] !== null && mrCustom[outra] !== undefined) {
+                return mrInverterTxt(mrCustom[outra]);
+            }
+            var par = MR_PAR[face], base = mrBase[par];
+            if (!base) return '';
+            return (face === MR_DIRETA[par]) ? base : mrInverterTxt(base);
+        }
+        // Spans finais de uma face (já na ordem esquerda→direita dela)
+        function mrSpansDaFace(face) { return parseMrSpans(mrTxtDaFace(face)); }
+
+        // Digitou na caixa: se um botão está ligado, o texto é daquela face;
+        // senão é a sequência comum do par.
+        function mrDigitou(par) {
+            var v = (document.getElementById('mr-spans-' + par).value || '').trim();
+            if (mrDono[par]) mrCustom[mrDono[par]] = v;   // a caixa é de uma face
+            else {
+                mrBase[par] = v;                          // ainda é do par inteiro
+                if (!v) { MR_FACES[par].forEach(function(f){ mrCustom[f] = null; }); }
+            }
+            mrAtualizarBotoesMR();
+            mrValidar();
+        }
+
+        // Toca no botão de uma face: a caixa passa a ser DELA.
+        function mrAlternarFace(par, face) {
+            var inp = document.getElementById('mr-spans-' + par);
+            var txtCaixa = ((inp && inp.value) || '').trim();
+            var letra = { norte:'N', sul:'S', leste:'L', oeste:'O' }[face];
+
+            // Só funciona depois que alguma sequência foi digitada.
+            if (parseMrSpans(txtCaixa).length === 0 && !mrTxtDaFace(face)) {
+                mrAvisar('Digite primeiro a sequência de spans. Depois o botão <strong>'
+                       + letra + '</strong> define que essa ordem é a do ' + MR_NOME[face] + '.');
+                return;
+            }
+
+            if (mrDono[par] === null) {
+                // PRIMEIRO toque do par: o que está na caixa é DESTA face.
+                // A outra passa a sair espelhada daqui.
+                mrCustom[face] = txtCaixa || mrTxtDaFace(face);
+            } else if (mrDono[par] !== face) {
+                // Trocar de face: a caixa passa a mostrar a ordem DELA (hoje o
+                // espelho da outra) e só ela muda daqui em diante.
+                if (mrCustom[face] === null || mrCustom[face] === undefined) {
+                    mrCustom[face] = mrTxtDaFace(face);
+                }
+            }
+            // Tocar de novo no mesmo botão não muda nada: a caixa já é dela,
+            // é só digitar a ordem nova por cima.
+            mrDono[par] = face;
+            mrAtualizarBotoesMR();
+            mrValidar();
+        }
+
+        // Deixa a caixa e os botões mostrando o estado atual
+        function mrAtualizarBotoesMR() {
+            ['ns','lo'].forEach(function(par) {
+                var inp = document.getElementById('mr-spans-' + par);
+                var lbl = document.getElementById('mr-lbl-' + par);
+                var temBase = !!(mrBase[par] && parseMrSpans(mrBase[par]).length);
+                var edit = mrEdit[par];
+                if (inp) {
+                    var alvo = edit ? (mrCustom[edit] || '') : mrBase[par];
+                    if (document.activeElement !== inp) inp.value = alvo;
+                    inp.style.borderColor = edit ? MR_COR[edit] : (par === 'ns' ? '#e74c3c' : '#f39c12');
+                }
+                if (lbl) {
+                    lbl.innerHTML = edit
+                        ? ('Ordem do <strong>' + MR_NOME[edit] + '</strong> (esquerda→direita)')
+                        : 'Sequência de spans';
+                    lbl.style.color = edit ? MR_COR[edit] : (par === 'ns' ? '#e74c3c' : '#f39c12');
+                }
+                MR_FACES[par].forEach(function(f) {
+                    var b = document.getElementById('mr-btn-' + f);
+                    if (!b) return;
+                    var ligado = (edit === f);
+                    var proprio = (mrCustom[f] !== null && mrCustom[f] !== undefined);
+                    b.disabled = false;
+                    b.style.opacity = temBase ? '1' : '0.45';
+                    b.style.background  = ligado ? MR_COR[f] : (proprio ? '#fdebd0' : '#ecf0f1');
+                    b.style.color       = ligado ? '#fff'    : (proprio ? '#b9770e' : '#95a5a6');
+                    b.style.borderColor = (ligado || proprio) ? MR_COR[f] : '#bdc3c7';
+                });
+            });
+        }
+
+        function mrAvisar(msg) {
+            var el = document.getElementById('mrAvisoBox');
+            if (!el) return;
+            el.style.display = 'block';
+            el.innerHTML = msg;
+        }
+
         function mrValidar() {
             var avisoEl = document.getElementById('mrAvisoBox');
             var avisos = [];
@@ -1607,6 +1765,21 @@
                 avisos.push('⚠️ N/S: formato inválido. Use ex: 8x1800+1200');
             if (loStr && parseMrSpans(loStr).length === 0)
                 avisos.push('⚠️ L/O: formato inválido. Use ex: 6x1800+600');
+            // v4.89: norte e sul são a MESMA parede — o total tem de bater.
+            // Mesma coisa com leste e oeste. Avisa, mas não trava: só o usuário
+            // sabe se naquele terreno aquilo faz sentido.
+            [['ns','norte','sul'], ['lo','leste','oeste']].forEach(function(t) {
+                var par = t[0], a = t[1], b = t[2];
+                if (!mrBase[par]) return;
+                var sa = mrSpansDaFace(a), sb = mrSpansDaFace(b);
+                if (!sa.length || !sb.length) return;
+                var ta = sa.reduce(function(x,y){return x+y;},0);
+                var tb = sb.reduce(function(x,y){return x+y;},0);
+                if (ta !== tb) {
+                    avisos.push('⚠️ ' + MR_NOME[a] + ' dá <strong>' + ta + 'mm</strong> e '
+                              + MR_NOME[b] + ' dá <strong>' + tb + 'mm</strong> — é a mesma parede, confira.');
+                }
+            });
             if (avisos.length) {
                 avisoEl.style.display = 'block';
                 avisoEl.innerHTML = avisos.join('<br>');
@@ -1616,8 +1789,10 @@
         }
 
         function aplicarModoRapido() {
-            var nsStr  = (document.getElementById('mr-spans-ns').value || '').trim();
-            var loStr  = (document.getElementById('mr-spans-lo').value || '').trim();
+            // v4.89: a sequência do PAR é mrBase. A caixa pode estar mostrando
+            // a ordem de uma face (botão N/S/L/O ligado), então não serve aqui.
+            var nsStr  = (mrBase.ns || document.getElementById('mr-spans-ns').value || '').trim();
+            var loStr  = (mrBase.lo || document.getElementById('mr-spans-lo').value || '').trim();
             var tLeste = parseInt(document.getElementById('mr-t-leste').value) || 0;
             var tOeste = parseInt(document.getElementById('mr-t-oeste').value) || 0;
             var tNorte = parseInt(document.getElementById('mr-t-norte').value) || 0;
@@ -1655,10 +1830,18 @@
             // v4.19: tDaFace = o T que DEFINE o plat desta face (≠ t1/t2 que são
             // as extensões perpendiculares mostradas nas pontas). Exibido no canvas
             // para o usuário ver de onde vem a plataforma.
-            resultadosCalc['sul']   = { spans: spansNS.slice(),           t1: tOeste, t2: tLeste, plat: platSul,   tDaFace: tSul,   avisos: [], ext1: extOeste, ext2: extLeste };
-            resultadosCalc['norte'] = { spans: spansNS.slice().reverse(), t1: tLeste, t2: tOeste, plat: platNorte, tDaFace: tNorte, avisos: [], ext1: extLeste, ext2: extOeste };
-            resultadosCalc['leste'] = { spans: spansLO.slice().reverse(), t1: tSul,   t2: tNorte, plat: platLeste, tDaFace: tLeste, avisos: [], ext1: extSul,   ext2: extNorte };
-            resultadosCalc['oeste'] = { spans: spansLO.slice(),           t1: tNorte, t2: tSul,   plat: platOeste, tDaFace: tOeste, avisos: [], ext1: extNorte, ext2: extSul   };
+            // v4.89: cada face usa a SUA ordem. Sem botão ligado, mrSpansDaFace
+            // devolve exatamente o de antes — sul/oeste como digitado e
+            // norte/leste espelhado. Com o botão, devolve a ordem própria
+            // daquela face, já na leitura esquerda→direita dela.
+            const _sSul   = mrSpansDaFace('sul');
+            const _sNorte = mrSpansDaFace('norte');
+            const _sLeste = mrSpansDaFace('leste');
+            const _sOeste = mrSpansDaFace('oeste');
+            resultadosCalc['sul']   = { spans: _sSul.length   ? _sSul   : spansNS.slice(),           t1: tOeste, t2: tLeste, plat: platSul,   tDaFace: tSul,   avisos: [], ext1: extOeste, ext2: extLeste };
+            resultadosCalc['norte'] = { spans: _sNorte.length ? _sNorte : spansNS.slice().reverse(), t1: tLeste, t2: tOeste, plat: platNorte, tDaFace: tNorte, avisos: [], ext1: extLeste, ext2: extOeste };
+            resultadosCalc['leste'] = { spans: _sLeste.length ? _sLeste : spansLO.slice().reverse(), t1: tSul,   t2: tNorte, plat: platLeste, tDaFace: tLeste, avisos: [], ext1: extSul,   ext2: extNorte };
+            resultadosCalc['oeste'] = { spans: _sOeste.length ? _sOeste : spansLO.slice(),           t1: tNorte, t2: tSul,   plat: platOeste, tDaFace: tOeste, avisos: [], ext1: extNorte, ext2: extSul   };
 
             beiraisCalc = { norte: 0, sul: 0, leste: 0, oeste: 0 };
             // comp/larg = soma dos spans — referência para calibração 1:100
@@ -1704,6 +1887,11 @@
             dados = { pontos:{}, muros:{norte:0,sul:0,leste:0,oeste:0} };
             dadosL = { pontos:{} };
             resultadosCalc = {};
+            // v4.89: ordens por face do modo rápido voltam ao zero
+            mrBase   = { ns:'', lo:'' };
+            mrCustom = { norte:null, sul:null, leste:null, oeste:null };
+            mrEdit   = { ns:null, lo:null };
+            try { mrAtualizarBotoesMR(); } catch(e) {}
             fotosData = {};
             calibData = {};
             alturaCalhaData = {};
@@ -4372,11 +4560,13 @@
                 box.style.display = 'none'; cont.innerHTML = ''; return;
             }
             const total = divs.length + 1;
-            if (!degrauBeirais[ladoAtual]) degrauBeirais[ladoAtual] = new Array(total).fill(0);
+            if (!degrauBeirais[ladoAtual]) degrauBeirais[ladoAtual] = new Array(total).fill(null);
             let html = '';
             for (let i = 0; i < total; i++) {
                 const rot = (total === 2) ? (i === 0 ? 'Esquerda' : 'Direita') : ('Parte ' + (i + 1));
-                const val = degrauBeirais[ladoAtual][i] || '';
+                // v4.87: null/undefined = vazio (herda a face); 0 é zero mesmo
+                const _v = degrauBeirais[ladoAtual][i];
+                const val = (_v === null || _v === undefined) ? '' : _v;
                 html += '<div><label style="font-size:11px;color:#16a085;">' + rot + '</label>'
                      +  '<input type="number" class="beiral-zona" data-i="' + i + '" value="' + val + '" placeholder="0" '
                      +  'onchange="aplicarBeiraisDegrau()" oninput="aplicarBeiraisDegrau()" '
@@ -4389,7 +4579,10 @@
             if (!ladoAtual) return;
             const arr = [];
             document.querySelectorAll('#beirais-degrau-campos .beiral-zona').forEach(function(inp){
-                arr[parseInt(inp.dataset.i)] = parseInt(inp.value) || 0;
+                const t = String(inp.value).trim();
+                // v4.87: vazio vira null (= herda o beiral da face); "0" é zero
+                // de verdade. Antes os dois viravam 0 e a parte herdava a face.
+                arr[parseInt(inp.dataset.i)] = (t === '') ? null : (parseInt(t) || 0);
             });
             degrauBeirais[ladoAtual] = arr;
             const calib = calibData[ladoAtual];
@@ -6157,13 +6350,45 @@
                     let yc = Math.min(yCalhaEmX(xa), yCalhaEmX(xb));
                     const passo = Math.max(2, (xb - xa) / 40);
                     for (let xx = xa; xx <= xb; xx += passo) yc = Math.min(yc, yCalhaEmX(xx));
-                    // beiral DESTA parte (campo por parte); se vazio usa o da face
-                    const bZona = (_bz[i] > 0) ? _bz[i] : (beiralLado || 0);
-                    zonas.push({ xIni: xStart, xFim: xEnd, yCalha: yc, beiral: bZona, daCalha: bZona > 300 });
+                    // Beiral DESTA parte. v4.87: campo VAZIO (null) = usa o da
+                    // face; campo com 0 = esta parte não tem beiral mesmo.
+                    // Antes a conta era (_bz[i] > 0), então digitar 0 numa parte
+                    // era igual a deixar vazio e ela voltava a herdar o beiral
+                    // da face — não dava para zerar uma parte só.
+                    const _bi = _bz[i];
+                    const bZona = (_bi === null || _bi === undefined || _bi === '')
+                                ? (beiralLado || 0) : (parseInt(_bi) || 0);
+                    zonas.push({ xIni: xStart, xFim: xEnd, yCalha: yc, beiral: bZona, daCalha: bZona > 300,
+                                 beiralProprio: !(_bi === null || _bi === undefined || _bi === '') });
                     xStart = xEnd;
                 }
             } else {
                 zonas = [ { xIni: xPrim, xFim: xUlt, yCalha: yCalhaRef, beiral: beiralLado || 0, daCalha: parteDaCalha } ];
+            }
+
+            // v4.87: etiqueta por parte mostrando o beiral que ESTÁ sendo usado.
+            // Sem isso não dava para saber se o número digitado no campo
+            // "Beiral de cada parte" chegou no cálculo — e o usuário via o
+            // desenho não mudar sem entender o porquê (ex.: até 300mm a
+            // distribuição realmente não muda, continua saindo do GL).
+            if (temDegrau && zonas.length > 1) {
+                ctx.save();
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                zonas.forEach(function(z, zi) {
+                    const xm = (z.xIni + z.xFim) / 2;
+                    const txt = 'beiral ' + z.beiral + (z.beiralProprio ? '' : ' (da face)')
+                              + (z.daCalha ? ' ↓calha' : ' ↑GL');
+                    const w = ctx.measureText(txt).width;
+                    const yTag = Math.max(2, z.yCalha - 16);
+                    ctx.fillStyle = 'rgba(232,248,245,0.95)';
+                    ctx.fillRect(xm - w/2 - 4, yTag, w + 8, 13);
+                    ctx.strokeStyle = '#16a085'; ctx.lineWidth = 0.8;
+                    ctx.strokeRect(xm - w/2 - 4, yTag, w + 8, 13);
+                    ctx.fillStyle = '#0e6655';
+                    ctx.fillText(txt, xm, yTag + 2);
+                });
+                ctx.restore();
             }
 
             // ── Coletar linhas horizontais válidas, por zona ──────────────
@@ -6208,8 +6433,26 @@
                 const H = altCumeZ - altCalhaZ;
                 if (H < 50) return; // sem triângulo (reta/1 inclinação) → sem reforço
                 if (H >= 800) {
-                    // Caso A: fileira no nível da calha desta zona
-                    linhasAcimaDaCalha.push({ offsetMm: 0, yL: z.yCalha, empena: true, xIni: z.xIni, xFim: z.xFim });
+                    // Caso A: fileira no nível da calha desta zona.
+                    //
+                    // v4.88: essa fileira deveria cair 1800 acima da primeira
+                    // (o reforço da empena). Mas quando a zona distribui a
+                    // partir do GL, as fileiras não casam com a calha, e essa
+                    // linha caía logo acima de uma fileira que já existia —
+                    // resultado: DUAS plataformas quase coladas no mesmo vão
+                    // (uma pra cima e outra pra baixo), como apareceu no último
+                    // vão de 1800 à direita. Só entra se houver espaço real.
+                    let yTopoZona = null;          // fileira mais alta já criada nesta zona
+                    linhasValidas.forEach(function(LV) {
+                        if (LV.xIni >= z.xIni - 1 && LV.xFim <= z.xFim + 1) {
+                            if (yTopoZona === null || LV.yL < yTopoZona) yTopoZona = LV.yL;
+                        }
+                    });
+                    const _folgaMm = (yTopoZona === null) ? 99999
+                                   : (yTopoZona - z.yCalha) / escZ;
+                    if (_folgaMm >= 1350) {
+                        linhasAcimaDaCalha.push({ offsetMm: 0, yL: z.yCalha, empena: true, xIni: z.xIni, xFim: z.xFim });
+                    }
                     // H>1800: degraus a cada 1800 acima da calha, na parte central
                     for (let k = 1; 1800 * k < H; k++) {
                         const A_k  = 1800 * k;
@@ -6321,6 +6564,38 @@
             // (fileiras + badges). A contagem de peças sai DAQUI, não de estimativa.
             const _capFileiras = [];
             const _capColunas = [];   // {xMm, altMm} — altura final de cada coluna
+
+            // ── v4.88: dois pisos no MESMO vão não podem ficar colados ──────
+            // Apareceu no desenho um vão de 1800 com duas plataformas quase uma
+            // em cima da outra. As fileiras vêm de regras diferentes (grade do
+            // GL, calha da zona, reforço da empena, parte baixa do degrau) e
+            // nenhuma sabia da outra, então duas podiam cair a poucos
+            // centímetros de distância no mesmo vão.
+            // Aqui, vão por vão, de baixo para cima: a fileira que estiver a
+            // menos de MIN_ENTRE_PISOS da anterior não ganha plataforma nesse
+            // vão (a linha continua desenhada; só não vira piso).
+            const MIN_ENTRE_PISOS = 1350;   // 3 kobus
+            const _badgeProibido = {};      // "li:si" → true
+            (function() {
+                const ordem = todasLinhas
+                    .map(function(L, li) { return { li: li, yL: L.yL,
+                        xi: (L.xIni != null ? L.xIni : xPrim),
+                        xf: (L.xFim != null ? L.xFim : xUlt) }; })
+                    .sort(function(a, b) { return b.yL - a.yL; });   // do chão para cima
+                for (let si = 0; si < spanCols.length - 1; si++) {
+                    const xm = (spanCols[si] + spanCols[si + 1]) / 2;
+                    let yAnt = null;
+                    ordem.forEach(function(L) {
+                        if (xm < L.xi - 1 || xm > L.xf + 1) return;   // não cobre este vão
+                        if (yAnt !== null && (yAnt - L.yL) / escZ < MIN_ENTRE_PISOS) {
+                            _badgeProibido[L.li + ':' + si] = true;
+                            return;                                   // mantém yAnt
+                        }
+                        yAnt = L.yL;
+                    });
+                }
+            })();
+
             for (let li = 0; li < todasLinhas.length; li++) {
                 const { offsetMm, yL } = todasLinhas[li];
                 const xIniL = todasLinhas[li].xIni != null ? todasLinhas[li].xIni : xPrim;
@@ -6370,6 +6645,8 @@
                     if (xMid < xIniL - 1 || xMid > xFimL + 1) continue;
                     // 200 e 300: sem badge de plataforma
                     if (spanMm < 400) continue;
+                    // v4.88: já existe um piso muito perto neste vão → só a linha
+                    if (_badgeProibido[li + ':' + si]) continue;
 
                     // Acima da linha do TELHADO não há plataforma → sem badge.
                     // (telhado inclinado: a linha do telhado varia ao longo da face)
@@ -6494,13 +6771,26 @@
                     ctx.lineTo(xLinha + 4, oy - 6);
                     ctx.stroke();
 
-                    // Label com a distância
+                    // Label com a distância.
+                    // v4.88: o texto era sempre desenhado À ESQUERDA da linha
+                    // de cota, mas ali já é a borda do canvas — então ele saía
+                    // cortado e só aparecia a última letra ("m"). Agora, se não
+                    // couber à esquerda, ele vai para a direita; e leva uma
+                    // caixa branca para ficar legível em cima do desenho.
                     ctx.font = 'bold 11px Arial';
-                    ctx.fillStyle = '#7f8c8d';
-                    ctx.textAlign = 'right';
+                    const _txtGL = distGLPrimMm + 'mm';
+                    const _twGL  = ctx.measureText(_txtGL).width;
+                    const yMid   = (oy + yPrimLinha) / 2;
+                    let _txGL, _alGL;
+                    if (xLinha - 5 - _twGL >= 2) { _txGL = xLinha - 5; _alGL = 'right'; }
+                    else                          { _txGL = xLinha + 5; _alGL = 'left';  }
+                    const _bxGL = (_alGL === 'right') ? (_txGL - _twGL - 3) : (_txGL - 3);
+                    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                    ctx.fillRect(_bxGL, yMid - 8, _twGL + 6, 16);
+                    ctx.fillStyle = '#5d6d7e';
+                    ctx.textAlign = _alGL;
                     ctx.textBaseline = 'middle';
-                    const yMid = (oy + yPrimLinha) / 2;
-                    ctx.fillText(distGLPrimMm + 'mm', xLinha - 5, yMid);
+                    ctx.fillText(_txtGL, _txGL, yMid);
                     ctx.restore();
                 }
             }
