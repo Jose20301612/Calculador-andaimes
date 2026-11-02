@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.89 - Modo Rapido: botoes N/S e L/O para mudar a ordem dos spans de uma face so</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.95 - WW=2 plataformas, WS=W+S com tesuri 600+200, M/Sb contam plataforma S</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -653,6 +653,13 @@
                     </div>
                 </div>
 
+                <!-- Kiso: usado para conferir a soma pelo módulo de 455 -->
+                <div style="display:flex; align-items:center; justify-content:center; gap:6px; margin-top:10px;">
+                    <label style="font-size:11px; color:#6c3483; font-weight:600;">Largura do kiso (mm):</label>
+                    <input type="number" id="mr-kiso" value="150" oninput="mrValidar()"
+                        style="width:70px; padding:5px; border:1px solid #8e44ad; border-radius:5px; font-size:13px; text-align:center;">
+                    <span style="font-size:11px; color:#999;">confere o módulo 455</span>
+                </div>
                 <!-- Aviso / erro -->
                 <div id="mrAvisoBox" style="display:none; margin-top:10px; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px; font-size:12px; color:#856404;"></div>
             </div>
@@ -1350,10 +1357,20 @@
                         <div id="input-medida-real" style="display:none; margin-top:8px;">
                             <label style="font-size:13px; font-weight:600;">Distância real P1→P2 (mm):</label>
                             <div style="display:flex; gap:8px; margin-top:6px;">
-                                <input type="number" id="medidaReal" placeholder="Ex: 9100" style="flex:1; padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px;">
+                                <input type="number" id="medidaReal" placeholder="Ex: 9100" oninput="conferirModulo()" style="flex:1; padding:10px; border:2px solid #3498db; border-radius:6px; font-size:15px;">
                                 <button onclick="confirmarCalib()" style="background:#27ae60; color:white; padding:10px 14px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">✓ OK</button>
                                 <button onclick="limparPontosCalib()" style="background:#e74c3c; color:white; padding:10px 14px; border:none; border-radius:6px; font-size:13px; font-weight:600; width:auto;">✕</button>
                             </div>
+                            <!-- Conferência pelo módulo japonês: P1→P2 é a borda
+                                 EXTERNA do kiso, então (medida − kiso) tem de dar
+                                 um múltiplo de 455. -->
+                            <div style="display:flex; align-items:center; gap:6px; margin-top:6px;">
+                                <label style="font-size:11px; color:#7f8c8d;">Largura do kiso (mm):</label>
+                                <input type="number" id="kisoCalib" value="150" oninput="conferirModulo()"
+                                    style="width:70px; padding:5px; border:1px solid #bdc3c7; border-radius:5px; font-size:13px; text-align:center;">
+                                <span style="font-size:11px; color:#aaa;">módulo 455</span>
+                            </div>
+                            <div id="aviso-modulo" style="display:none; margin-top:6px; border-radius:6px; padding:7px; font-size:12px;"></div>
                         </div>
 
                         <!-- Botão confirmar ponto (P1, P2, GL) -->
@@ -1699,20 +1716,29 @@
                 return;
             }
 
-            if (mrDono[par] === null) {
+            if (mrDono[par] === face) {
+                // v4.92: tocar de novo no botão JÁ ACESO = DESSELECIONAR.
+                // Antes isso não fazia nada — nem mudava de cor — e não havia
+                // como voltar atrás depois de definir uma face por engano.
+                // A face volta a sair espelhada. Se a OUTRA ainda tiver ordem
+                // própria, ela assume a caixa (o espelho vem dela).
+                mrCustom[face] = null;
+                var outra = mrOutraFace(face);
+                mrDono[par] = (mrCustom[outra] !== null && mrCustom[outra] !== undefined)
+                            ? outra : null;
+            } else if (mrDono[par] === null) {
                 // PRIMEIRO toque do par: o que está na caixa é DESTA face.
                 // A outra passa a sair espelhada daqui.
                 mrCustom[face] = txtCaixa || mrTxtDaFace(face);
-            } else if (mrDono[par] !== face) {
+                mrDono[par] = face;
+            } else {
                 // Trocar de face: a caixa passa a mostrar a ordem DELA (hoje o
                 // espelho da outra) e só ela muda daqui em diante.
                 if (mrCustom[face] === null || mrCustom[face] === undefined) {
                     mrCustom[face] = mrTxtDaFace(face);
                 }
+                mrDono[par] = face;
             }
-            // Tocar de novo no mesmo botão não muda nada: a caixa já é dela,
-            // é só digitar a ordem nova por cima.
-            mrDono[par] = face;
             mrAtualizarBotoesMR();
             mrValidar();
         }
@@ -1723,9 +1749,9 @@
                 var inp = document.getElementById('mr-spans-' + par);
                 var lbl = document.getElementById('mr-lbl-' + par);
                 var temBase = !!(mrBase[par] && parseMrSpans(mrBase[par]).length);
-                var edit = mrEdit[par];
+                var edit = mrDono[par];
                 if (inp) {
-                    var alvo = edit ? (mrCustom[edit] || '') : mrBase[par];
+                    var alvo = edit ? mrTxtDaFace(edit) : mrBase[par];
                     if (document.activeElement !== inp) inp.value = alvo;
                     inp.style.borderColor = edit ? MR_COR[edit] : (par === 'ns' ? '#e74c3c' : '#f39c12');
                 }
@@ -1778,6 +1804,31 @@
                 if (ta !== tb) {
                     avisos.push('⚠️ ' + MR_NOME[a] + ' dá <strong>' + ta + 'mm</strong> e '
                               + MR_NOME[b] + ' dá <strong>' + tb + 'mm</strong> — é a mesma parede, confira.');
+                }
+            });
+            // v4.91: conferência pelo módulo de 455. A soma dos spans cobre o
+            // kiso inteiro mais os dois T das pontas, então
+            //     soma − T1 − T2 − kiso
+            // tem de dar um múltiplo de 455. Se não der, ou um span foi digitado
+            // errado, ou um T está errado. Avisa; não trava.
+            var _kMR = parseInt((document.getElementById('mr-kiso') || {}).value);
+            if (isNaN(_kMR) || _kMR < 0) _kMR = 150;
+            [['ns','sul','mr-t-oeste','mr-t-leste'], ['lo','oeste','mr-t-norte','mr-t-sul']]
+            .forEach(function(t) {
+                var par = t[0];
+                if (!mrBase[par] || parseMrSpans(mrBase[par]).length === 0) return;
+                var soma = mrSpansDaFace(t[1]).reduce(function(x,y){return x+y;},0);
+                var tA = parseInt((document.getElementById(t[2])||{}).value) || 0;
+                var tB = parseInt((document.getElementById(t[3])||{}).value) || 0;
+                if (!soma || !tA || !tB) return;          // ainda faltam dados
+                var a = analisarModulo(soma - tA - tB, _kMR);
+                if (!a) return;
+                if (Math.abs(a.dif) > 2) {
+                    avisos.push('📐 ' + (par === 'ns' ? 'N/S' : 'L/O') + ': ' + soma
+                        + ' − ' + tA + ' − ' + tB + ' − ' + _kMR + ' (kiso) = <strong>'
+                        + a.interno + '</strong>, fora do módulo de 455 por '
+                        + (a.dif > 0 ? '+' : '') + a.dif + 'mm (o mais perto é ' + a.modulo
+                        + ' = 455×' + a.n + '). Confira os spans ou os T.');
                 }
             });
             if (avisos.length) {
@@ -1890,7 +1941,7 @@
             // v4.89: ordens por face do modo rápido voltam ao zero
             mrBase   = { ns:'', lo:'' };
             mrCustom = { norte:null, sul:null, leste:null, oeste:null };
-            mrEdit   = { ns:null, lo:null };
+            mrDono   = { ns:null, lo:null };
             try { mrAtualizarBotoesMR(); } catch(e) {}
             fotosData = {};
             calibData = {};
@@ -5898,6 +5949,69 @@
         }
 
         // Depois de terminar uma parte, vai pra próxima ou finaliza
+        // ── Conferência pelo módulo japonês (v4.91) ─────────────────────
+        // A casa é construída no módulo de 455mm, mas a linha do projeto passa
+        // no MEIO do kiso. Marcando P1 e P2 nas bordas de FORA do kiso, entra
+        // meio kiso de cada ponta:
+        //      P1→P2  =  455 × n  +  largura do kiso
+        // Ex.: 7280 (455×16) + 150 = 7430.
+        // Então, se (medida − kiso) não der um múltiplo de 455, ou a medida foi
+        // lida errado na planta, ou o ponto foi marcado fora, ou o kiso não é
+        // o que está no campo. Só avisa e sugere — nunca troca sozinho, porque
+        // reforma e parede fora de esquadro existem.
+        var MODULO_JP = 455;
+        function kisoDaCalib() {
+            var el = document.getElementById('kisoCalib');
+            var v = el ? parseInt(el.value) : NaN;
+            if (isNaN(v) || v < 0) {
+                var g = parseInt((document.getElementById('kiso') || {}).value);
+                v = (!isNaN(g) && g > 0) ? g : 150;
+            }
+            return v;
+        }
+        // Devolve {n, exato, modulo, sugestao} para uma medida externa
+        function analisarModulo(medidaMm, kisoMm) {
+            var interno = medidaMm - kisoMm;
+            if (interno <= 0) return null;
+            var n = Math.round(interno / MODULO_JP);
+            if (n < 1) n = 1;
+            var modulo = n * MODULO_JP;
+            return { n: n, modulo: modulo, dif: interno - modulo,
+                     interno: interno, sugestao: modulo + kisoMm };
+        }
+        function conferirModulo() {
+            var el = document.getElementById('aviso-modulo');
+            if (!el) return;
+            var m = parseInt((document.getElementById('medidaReal') || {}).value);
+            if (!m || m <= 0) { el.style.display = 'none'; return; }
+            var k = kisoDaCalib();
+            var a = analisarModulo(m, k);
+            if (!a) { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            if (Math.abs(a.dif) <= 2) {           // 2mm = arredondamento, não erro
+                el.style.background = '#e8f8f5'; el.style.border = '1px solid #16a085';
+                el.style.color = '#0e6655';
+                el.innerHTML = '✅ <strong>' + m + '</strong> − ' + k + ' (kiso) = <strong>'
+                             + a.modulo + '</strong> = 455 × ' + a.n + ' — confere.';
+            } else {
+                el.style.background = '#fef5e7'; el.style.border = '1px solid #e67e22';
+                el.style.color = '#9c640c';
+                el.innerHTML = '⚠️ ' + m + ' − ' + k + ' (kiso) = <strong>' + a.interno
+                    + '</strong>, que não é múltiplo de 455 (sobra '
+                    + (a.dif > 0 ? '+' : '') + a.dif + 'mm).<br>'
+                    + 'O mais perto é <strong>' + a.modulo + '</strong> = 455 × ' + a.n
+                    + ', ou seja P1→P2 = <strong>' + a.sugestao + '</strong>.'
+                    + '<button onclick="usarMedidaSugerida(' + a.sugestao + ')" '
+                    + 'style="background:#e67e22;color:#fff;border:none;border-radius:5px;'
+                    + 'padding:5px 9px;font-size:11px;font-weight:700;width:auto;margin-top:5px;">'
+                    + 'usar ' + a.sugestao + '</button>';
+            }
+        }
+        function usarMedidaSugerida(v) {
+            var el = document.getElementById('medidaReal');
+            if (el) { el.value = v; conferirModulo(); }
+        }
+
         // Confirmar distância P1→P2 e avançar para GL
         function confirmarCalib() {
             const medida = parseInt(document.getElementById('medidaReal').value);
@@ -7483,8 +7597,48 @@
         //   • coluna sem pé interno recebe BURAKETO (nenhuma fica sem nada)
         //   • cantos: buraketo dos dois lados (plataformas se encontram)
         // ══════════════════════════════════════════════════════════════
+        // Peças de tesuri que atravessam a face: ligam a coluna de fora ao pé
+        // interno. A medida é de CENTRO A CENTRO das colunas — a peça em si é
+        // menor, porque as duas pontas encaixam dentro das colunas. Por isso
+        // duas plataformas de 400 (=800) cabem num tesuri de 900.
+        //   S / Sb / M / C → 400
+        //   W              → 600
+        //   WS             → 600 + um tesuri interno de 200 para completar
+        //   WW             → 900
+        function tesurisDaLargura(plat) {
+            const p = String(plat || '');
+            if (p === 'WW') return [900];
+            if (p === 'WS') return [600, 200];
+            if (p.charAt(0) === 'W') return [600];
+            return [400];
+        }
+        // Alcance do tesuri na esquina = a peça principal (a mais comprida).
         function tesuriDaFace(plat) {
-            return (plat && String(plat).charAt(0) === 'W') ? 600 : 400;
+            return tesurisDaLargura(plat)[0];
+        }
+        // Quais plataformas REAIS entram num vão. Só existem duas peças de
+        // verdade: W (400 de largura) e S (250). M, Sb e C usam a S — o que
+        // muda neles é o apoio (buraketo 300 ou 400, sem pé interno), e isso
+        // continua identificado no desenho e na planta.
+        //   M / Sb / S / C → 1 × S
+        //   W              → 1 × W
+        //   WS             → 1 × W + 1 × S
+        //   WW             → 2 × W
+        // Exceção que já existia: vão de 400 numa face da família W usa duas S
+        // de 400 lado a lado (não existe W tão curta).
+        function pecasDaPlataforma(plat, spanMm) {
+            const p = String(plat || '');
+            // v4.96: vão pequeno numa face WW → a plataforma GIRA.
+            // O 900 da largura vira o COMPRIMENTO e o vão vira a largura.
+            // Num vão de 400 o que encaixa é uma S (ela é feita para tesuri de
+            // 400), com 900 de comprimento. Uma peça só, atravessada, em vez de
+            // duas deitadas no sentido da face.
+            if (p === 'WW' && spanMm <= 400) return [['S', 900]];
+            if (spanMm === 400 && p.charAt(0) === 'W') return [['S', 400], ['S', 400]];
+            if (p === 'WW') return [['W', spanMm], ['W', spanMm]];
+            if (p === 'WS') return [['W', spanMm], ['S', spanMm]];
+            if (p.charAt(0) === 'W') return [['W', spanMm]];
+            return [['S', spanMm]];
         }
         // Sb e M: o espaço do terreno é apertado → NÃO cabe pé interno.
         // A face inteira fica só com buraketo em TODAS as colunas.
@@ -7713,6 +7867,62 @@
             const plataformas = {};  // por tipo+medida — vem das badges desenhadas
             const porFace = [];
             let semDesenho = [];
+            let platEsquinaPoupadas = 0;   // plataformas economizadas pela sobreposição
+            function tesuriInt_add(lista, qtd) {
+                lista.forEach(function(mm){ tesuriInt[mm] = (tesuriInt[mm] || 0) + qtd; });
+            }
+
+            // ── v4.93: sobreposição de plataforma na esquina ─────────────────
+            // A plataforma fica entre o BURAKETO de um lado e o TESURI do
+            // outro. Na esquina, o tesuri da face PERPENDICULAR atravessa e se
+            // apoia justamente no vão da ponta desta face — então aquele vão
+            // não precisa de plataforma própria, quem segura ali é a peça da
+            // outra face.
+            //
+            // Caso real, canto nordeste: o leste é S, logo o tesuri dele mede
+            // 400 — exatamente o comprimento do vão de 400 da ponta do norte.
+            // O tesuri cai em cima dele e o 400 some. O contrário não vale: o
+            // 900 do leste precisaria de um tesuri de 900, e o norte (W) só
+            // tem 600.
+            //
+            // Tesuri por tipo de plataforma: W → 600, S e menores → 400.
+            // (Largura da plataforma é outra coisa: W = 400, S = 250. Na v4.93
+            // eu tinha usado a medida do BURAKETO como se fosse a largura da
+            // plataforma — dava o resultado certo nesta casa por coincidência,
+            // mas pelo motivo errado.)
+            function cobertoNaEsquina(spanMm, platVizinha) {
+                return spanMm > 0 && spanMm <= tesuriDaFace(platVizinha);
+            }
+            // Decide esquina por esquina qual das duas pontas fica coberta.
+            // O perímetro vem na ordem sul → leste → norte → oeste, e cada face
+            // guarda os spans na SUA ordem: spans[0] na esquina inicial e o
+            // último na final. Então cada esquina junta o ÚLTIMO span de uma
+            // face com o PRIMEIRO da seguinte.
+            //
+            // Cuidado: pela regra crua as duas pontas podem cobrir uma à outra
+            // (ex.: 400 do sul com 600 do oeste) e as duas sumiriam — mas uma
+            // plataforma tem de existir ali. Quando as duas se qualificam,
+            // quem sai é a MENOR, que é a peça que se apoia na outra.
+            const _pontaCoberta = {};
+            faces.forEach(function(f){ _pontaCoberta[f.k] = { ini:false, fim:false }; });
+            if (faces.length > 1) {
+                faces.forEach(function(A, i) {
+                    const B = faces[(i + 1) % faces.length];
+                    if (faces.length === 2 && i === 1) return;   // não fecha perímetro
+                    const sA = A.spans[A.spans.length - 1], sB = B.spans[0];
+                    // o tesuri de B se apoia no vão da ponta de A, e vice-versa
+                    const cA = cobertoNaEsquina(sA, B.plat);
+                    const cB = cobertoNaEsquina(sB, A.plat);
+                    if (cA && cB) {
+                        if (sA <= sB) _pontaCoberta[A.k].fim = true;
+                        else          _pontaCoberta[B.k].ini = true;
+                    } else if (cA) {
+                        _pontaCoberta[A.k].fim = true;
+                    } else if (cB) {
+                        _pontaCoberta[B.k].ini = true;
+                    }
+                });
+            }
 
             faces.forEach(function(f) {
                 const dados = plantaDados[f.k];
@@ -7791,14 +8001,24 @@
                     // (o tesuri do pé interno é contado por face, não por fileira)
                     // plataformas = badges REAIS desenhadas nesta fileira
                     fi.badges.forEach(function(b) {
-                        if (b.spanMm === 400 && String(platF).charAt(0) === 'W') {
-                            plataformas['S 400'] = (plataformas['S 400'] || 0) + 2;
-                            platsF += 2;
-                        } else {
-                            const ch = b.plat + ' ' + b.spanMm;
+                        // v4.93: vão da PONTA coberto pela plataforma da face
+                        // perpendicular → não leva plataforma própria.
+                        const pc = _pontaCoberta[f.k];
+                        if (pc && ((b.si === 0 && pc.ini) ||
+                                   (b.si === f.spans.length - 1 && pc.fim))) {
+                            platEsquinaPoupadas += (b.spanMm === 400 && String(platF).charAt(0) === 'W') ? 2 : 1;
+                            return;   // a plataforma do vizinho já cobre este vão
+                        }
+                        // v4.95: conta a PEÇA de verdade (só existem W e S).
+                        // O tipo da face (M/Sb/S/W/WS/WW) continua aparecendo
+                        // no desenho e na planta, que é onde ele importa —
+                        // é lá que se vê se o apoio é buraketo de 300, de 400,
+                        // ou pé interno alternado.
+                        pecasDaPlataforma(platF, b.spanMm).forEach(function(pc) {
+                            const ch = pc[0] + ' ' + pc[1];
                             plataformas[ch] = (plataformas[ch] || 0) + 1;
                             platsF += 1;
-                        }
+                        });
                     });
                 });
                 // Pé interno: peça VERTICAL, contada 1x por posição.
@@ -7813,12 +8033,13 @@
                 // Com degrau, cada pé usa a fileira mais alta da SUA zona —
                 // por isso a altura sai das fileiras que cobrem o x do pé.
                 //
-                // Tesuri do pé (600 se a face é W, 400 se é S):
-                //   1 por andar (amarra o pé na coluna de fora) + 1 negarami
-                //   na base. 3 andares → 3 + 1 = 4 tesuris, por pé.
+                // Tesuri do pé: 1 por andar (amarra o pé na coluna de fora)
+                //   + 1 negarami na base. 3 andares → 3 + 1 = 4, por pé.
+                //   A medida vem da largura do andaime: 400 (S/Sb/M), 600 (W),
+                //   900 (WW). O WS leva DOIS por nível: um de 600 e um de 200.
                 //
                 // Jak: o pé apoia no chão, então leva jak igual às outras colunas.
-                const tIntMm = tesuriDaFace(platF);
+                const tIntLista = tesurisDaLargura(platF);
                 pesMm.forEach(function(xm) {
                     let altPe = 0, andaresPe = 0;
                     dados.fileiras.forEach(function(fi) {
@@ -7828,7 +8049,7 @@
                         }
                     });
                     if (altPe <= 0) return;           // pé sem plataforma: não sobe
-                    tesuriInt[tIntMm] = (tesuriInt[tIntMm] || 0) + andaresPe + 1;
+                    tesuriInt_add(tIntLista, andaresPe + 1);
                     const dec = decomporAshira(altPe);
                     Object.keys(dec).forEach(function(mm) {
                         ashira[mm] = (ashira[mm] || 0) + dec[mm];
@@ -7918,6 +8139,11 @@
             Object.keys(plataformas).sort().forEach(function(k) {
                 html += linha('Plataforma ' + k, plataformas[k], '#27ae60');
             });
+            if (platEsquinaPoupadas) {
+                html += '<tr><td colspan="2" style="padding:2px 4px 7px 20px;font-size:11px;color:#777;border-bottom:1px solid #eee;">'
+                      + '↳ ' + platEsquinaPoupadas + ' plataformas a menos: nas esquinas, o vão da ponta '
+                      + 'fica coberto pela plataforma da face perpendicular</td></tr>';
+            }
             html += '</table>';
 
             html += '<div style="font-weight:700;color:#16a085;margin:14px 0 6px;">Por face (andares vêm do desenho)</div>';
