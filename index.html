@@ -505,7 +505,7 @@
 
     <div class="container">
         <h1>🏗️ Calculador de Andaimes</h1>
-        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.95 - WW=2 plataformas, WS=W+S com tesuri 600+200, M/Sb contam plataforma S</div>
+        <div class="version" style="background:#27ae60; color:white; padding:4px 8px; border-radius:4px; display:inline-block; font-weight:bold;">v4.96 - Vao pequeno em face WW: a plataforma gira (1 x S 900 atravessada)</div>
 
         <div class="step" id="stepIndicator">Passo 1: Upload da Planta</div>
 
@@ -1692,12 +1692,17 @@
 
         // Digitou na caixa: se um botão está ligado, o texto é daquela face;
         // senão é a sequência comum do par.
+        // v4.97: digitar NUNCA mexe numa face — é só o que está na caixa.
+        // Antes, depois de clicar em N a caixa "pertencia" ao norte, e
+        // redigitar apagava a ordem que tinha acabado de ser guardada. Agora o
+        // que define é o clique no botão: digita → clica N (guarda o norte) →
+        // redigita → clica S (guarda o sul) → ficam as duas.
         function mrDigitou(par) {
             var v = (document.getElementById('mr-spans-' + par).value || '').trim();
-            if (mrDono[par]) mrCustom[mrDono[par]] = v;   // a caixa é de uma face
-            else {
-                mrBase[par] = v;                          // ainda é do par inteiro
-                if (!v) { MR_FACES[par].forEach(function(f){ mrCustom[f] = null; }); }
+            mrBase[par] = v;
+            if (!v) {                      // apagou tudo → zera o par inteiro
+                MR_FACES[par].forEach(function(f){ mrCustom[f] = null; });
+                mrDono[par] = null;
             }
             mrAtualizarBotoesMR();
             mrValidar();
@@ -1716,27 +1721,16 @@
                 return;
             }
 
-            if (mrDono[par] === face) {
-                // v4.92: tocar de novo no botão JÁ ACESO = DESSELECIONAR.
-                // Antes isso não fazia nada — nem mudava de cor — e não havia
-                // como voltar atrás depois de definir uma face por engano.
-                // A face volta a sair espelhada. Se a OUTRA ainda tiver ordem
-                // própria, ela assume a caixa (o espelho vem dela).
+            // O clique GUARDA o que está na caixa para esta face.
+            // Clicar de novo sem ter mudado nada = desselecionar (a face volta
+            // a sair espelhada), que é o único jeito de desfazer.
+            if (mrCustom[face] === txtCaixa) {
                 mrCustom[face] = null;
                 var outra = mrOutraFace(face);
                 mrDono[par] = (mrCustom[outra] !== null && mrCustom[outra] !== undefined)
                             ? outra : null;
-            } else if (mrDono[par] === null) {
-                // PRIMEIRO toque do par: o que está na caixa é DESTA face.
-                // A outra passa a sair espelhada daqui.
-                mrCustom[face] = txtCaixa || mrTxtDaFace(face);
-                mrDono[par] = face;
             } else {
-                // Trocar de face: a caixa passa a mostrar a ordem DELA (hoje o
-                // espelho da outra) e só ela muda daqui em diante.
-                if (mrCustom[face] === null || mrCustom[face] === undefined) {
-                    mrCustom[face] = mrTxtDaFace(face);
-                }
+                mrCustom[face] = txtCaixa;
                 mrDono[par] = face;
             }
             mrAtualizarBotoesMR();
@@ -1749,28 +1743,44 @@
                 var inp = document.getElementById('mr-spans-' + par);
                 var lbl = document.getElementById('mr-lbl-' + par);
                 var temBase = !!(mrBase[par] && parseMrSpans(mrBase[par]).length);
-                var edit = mrDono[par];
+                // v4.97: a caixa é SÓ o que o usuário digitou. O programa não
+                // escreve nela — senão ele apagava o que a pessoa estava
+                // digitando para a próxima face.
                 if (inp) {
-                    var alvo = edit ? mrTxtDaFace(edit) : mrBase[par];
-                    if (document.activeElement !== inp) inp.value = alvo;
-                    inp.style.borderColor = edit ? MR_COR[edit] : (par === 'ns' ? '#e74c3c' : '#f39c12');
+                    if (document.activeElement !== inp && inp.value !== mrBase[par]) {
+                        inp.value = mrBase[par];
+                    }
+                    inp.style.borderColor = (par === 'ns' ? '#e74c3c' : '#f39c12');
                 }
+                // Etiqueta diz quais faces já estão guardadas.
                 if (lbl) {
-                    lbl.innerHTML = edit
-                        ? ('Ordem do <strong>' + MR_NOME[edit] + '</strong> (esquerda→direita)')
+                    var guardadas = MR_FACES[par].filter(function(f){
+                        return mrCustom[f] !== null && mrCustom[f] !== undefined;
+                    });
+                    lbl.innerHTML = guardadas.length
+                        ? ('Sequência de spans — guardado: <strong>'
+                           + guardadas.map(function(f){ return MR_NOME[f]; }).join('</strong> e <strong>')
+                           + '</strong>')
                         : 'Sequência de spans';
-                    lbl.style.color = edit ? MR_COR[edit] : (par === 'ns' ? '#e74c3c' : '#f39c12');
+                    lbl.style.color = (par === 'ns' ? '#e74c3c' : '#f39c12');
                 }
                 MR_FACES[par].forEach(function(f) {
                     var b = document.getElementById('mr-btn-' + f);
                     if (!b) return;
-                    var ligado = (edit === f);
                     var proprio = (mrCustom[f] !== null && mrCustom[f] !== undefined);
+                    // aceso = essa face tem ordem guardada
+                    // destacado = é a que vai ser desfeita se clicar de novo
+                    var naCaixa = proprio && (mrCustom[f] === mrBase[par]);
                     b.disabled = false;
                     b.style.opacity = temBase ? '1' : '0.45';
-                    b.style.background  = ligado ? MR_COR[f] : (proprio ? '#fdebd0' : '#ecf0f1');
-                    b.style.color       = ligado ? '#fff'    : (proprio ? '#b9770e' : '#95a5a6');
-                    b.style.borderColor = (ligado || proprio) ? MR_COR[f] : '#bdc3c7';
+                    b.style.background  = proprio ? MR_COR[f] : '#ecf0f1';
+                    b.style.color       = proprio ? '#fff'    : '#95a5a6';
+                    b.style.borderColor = proprio ? MR_COR[f] : '#bdc3c7';
+                    b.style.boxShadow   = naCaixa ? '0 0 0 2px #2c3e50' : 'none';
+                    b.title = proprio
+                        ? ('Ordem do ' + MR_NOME[f] + ' guardada: ' + mrCustom[f]
+                           + (naCaixa ? ' — toque de novo para desfazer' : ''))
+                        : ('Guardar a ordem da caixa como ' + MR_NOME[f]);
                 });
             });
         }
